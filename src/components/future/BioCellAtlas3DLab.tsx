@@ -4,8 +4,24 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { Camera, Layers, Microscope, Pause, Play, RotateCcw } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
+import {
+  captureCanvasPng,
+  exportRowsToCsv,
+  MiniTelemetryChart,
+  RecordVideoButton,
+  useCanvasRecorder
+} from '../common/SimProToolkit';
 import { SimAnalysisProBar } from '../common/SimAnalysisProBar';
+import {
+  applyClipPlaneToObject,
+  CameraBookmarkPose,
+  detectSoftwareGl,
+  Pre3DProControlsBar,
+  QuickCamPreset,
+  scheduleSyncedGlFrame,
+  SliceAxis,
+  updateClipPlaneFromState
+} from './Pre3DViewportBar';
 
 interface BioCellAtlas3DLabProps {
   onEarnXP?: (xp: number) => void;
@@ -21,6 +37,9 @@ interface OrganelleInfo {
   metricEn: string;
   colorHex: number;
 }
+
+const DEFAULT_CAM_POS: [number, number, number] = [5.2, 3.8, 5.8];
+const DEFAULT_CAM_TARGET: [number, number, number] = [0, 0, 0];
 
 const ORGANELLES: OrganelleInfo[] = [
   {
@@ -85,21 +104,6 @@ const ORGANELLES: OrganelleInfo[] = [
   }
 ];
 
-function detectSoftwareGl(): boolean {
-  try {
-    const c = document.createElement('canvas');
-    const gl = c.getContext('webgl2') || c.getContext('webgl');
-    if (!gl) return true;
-    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
-    if (!dbg) return false;
-    const renderer = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '');
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
-    return /SwiftShader|llvmpipe|softpipe|Software/i.test(renderer);
-  } catch {
-    return true;
-  }
-}
-
 export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -109,10 +113,20 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
   const [atpActivity, setAtpActivity] = useState<number>(1.2);
   const [isolateSelected, setIsolateSelected] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [sliceEnabled, setSliceEnabled] = useState<boolean>(false);
+  const [sliceAxis, setSliceAxis] = useState<SliceAxis>('y');
+  const [sliceOffset, setSliceOffset] = useState<number>(1.1);
+  const [showTelemetry, setShowTelemetry] = useState<boolean>(false);
+  const [telemetryRows, setTelemetryRows] = useState<{ t: string; atpOut: number; explodePct: number; flux: number }[]>([]);
+  const [bookmark, setBookmark] = useState<CameraBookmarkPose | null>(null);
   const [isSoftwareGl] = useState(() => detectSoftwareGl());
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const cellRootRef = useRef<THREE.Group | null>(null);
+  const clipPlaneRef = useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, -1, 0), 1.1));
   const inspectedRef = useRef<Set<string>>(new Set(['mitochondria']));
 
   const recorder = useCanvasRecorder(() => canvasRef.current, 'synapse-pre-bio-cell-atlas-3d');
@@ -134,8 +148,36 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
   };
 
   useEffect(() => {
+    updateClipPlaneFromState(clipPlaneRef.current, sliceAxis, sliceOffset);
+    if (cellRootRef.current) {
+      applyClipPlaneToObject(cellRootRef.current, sliceEnabled ? [clipPlaneRef.current] : null);
+    }
+  }, [sliceEnabled, sliceAxis, sliceOffset]);
+
+  const atpOutputRate = Math.round(atpActivity * 32 * 100) / 100;
+
+  useEffect(() => {
+    if (!showTelemetry) return;
+    const pushPoint = () => {
+      const nowLabel = new Date().toLocaleTimeString('en-GB', { hour12: false });
+      setTelemetryRows((prev) => [
+        ...prev.slice(-39),
+        {
+          t: nowLabel,
+          atpOut: atpOutputRate,
+          explodePct: Math.round(explodeFactor * 100),
+          flux: Number((atpActivity * 10).toFixed(2))
+        }
+      ]);
+    };
+    pushPoint();
+    const id = window.setInterval(pushPoint, 450);
+    return () => window.clearInterval(id);
+  }, [showTelemetry, atpOutputRate, explodeFactor, atpActivity]);
+
+  useEffect(() => {
     const container = mountRef.current;
-    if (!container || isSoftwareGl) return;
+    if (!container) return;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x061219);
@@ -143,14 +185,20 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
     const w = container.clientWidth || 800;
     const h = container.clientHeight || 480;
     const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
-    camera.position.set(5.2, 3.8, 5.8);
+    camera.position.set(...DEFAULT_CAM_POS);
+    cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isSoftwareGl,
+      preserveDrawingBuffer: true,
+      powerPreference: 'high-performance'
+    });
     renderer.setSize(w, h);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
+    renderer.localClippingEnabled = true;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
     canvasRef.current = renderer.domElement;
@@ -161,8 +209,10 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
     pmrem.dispose();
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
+    controls.enableDamping = !isSoftwareGl;
     controls.dampingFactor = 0.06;
+    controls.target.set(...DEFAULT_CAM_TARGET);
+    controlsRef.current = controls;
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const key = new THREE.DirectionalLight(0xffffff, 1.45);
@@ -175,6 +225,7 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
 
     const cellRoot = new THREE.Group();
     scene.add(cellRoot);
+    cellRootRef.current = cellRoot;
 
     const orgRecords: {
       id: string;
@@ -187,7 +238,6 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
 
     const disposables: { dispose: () => void }[] = [];
 
-    // 1. Cutaway Plasma Membrane Shell
     const memGroup = new THREE.Group();
     const memGeo = new THREE.SphereGeometry(2.55, 36, 28, 0, Math.PI * 1.45);
     const memMat = new THREE.MeshStandardMaterial({
@@ -210,7 +260,6 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
       mats: [memMat]
     });
 
-    // 2. Nucleus & Nucleolus
     const nucGroup = new THREE.Group();
     const nucGeo = new THREE.SphereGeometry(0.85, 28, 24, 0, Math.PI * 1.55);
     const nucMat = new THREE.MeshStandardMaterial({
@@ -237,7 +286,6 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
       mats: [nucMat, coreMat]
     });
 
-    // 3. Rough ER arcs around Nucleus
     const erGroup = new THREE.Group();
     const erMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.35 });
     const riboMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.2 });
@@ -269,7 +317,6 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
       mats: erMats
     });
 
-    // 4. Mitochondrion + Spinning ATP Synthase F1 Rotor
     const mitoGroup = new THREE.Group();
     const mitoGeo = new THREE.CapsuleGeometry(0.32, 0.85, 14, 24);
     const mitoMat = new THREE.MeshStandardMaterial({
@@ -310,7 +357,6 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
       spinRotor: rotorGroup
     });
 
-    // 5. Chloroplast with Thylakoid Grana Stacks
     const chloroGroup = new THREE.Group();
     const chShellGeo = new THREE.SphereGeometry(0.58, 22, 18);
     const chShellMat = new THREE.MeshStandardMaterial({
@@ -343,7 +389,6 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
       mats: [chShellMat, discMat]
     });
 
-    // 6. Golgi Apparatus Cisternae
     const golgiGroup = new THREE.Group();
     const gMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 });
     for (let c = 0; c < 4; c++) {
@@ -364,8 +409,8 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
       mats: [gMat]
     });
 
-    // Raycaster to click organelles inside 3D canvas
     const raycaster = new THREE.Raycaster();
+    const ndcVec = new THREE.Vector2();
     const downPos = { x: 0, y: 0 };
     const onPointerDown = (e: PointerEvent) => {
       downPos.x = e.clientX;
@@ -374,11 +419,11 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
     const onPointerUp = (e: PointerEvent) => {
       if (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) > 5) return;
       const rect = renderer.domElement.getBoundingClientRect();
-      const ndc = new THREE.Vector2(
+      ndcVec.set(
         ((e.clientX - rect.left) / rect.width) * 2 - 1,
         -((e.clientY - rect.top) / rect.height) * 2 + 1
       );
-      raycaster.setFromCamera(ndc, camera);
+      raycaster.setFromCamera(ndcVec, camera);
       const hits = raycaster.intersectObjects(cellRoot.children, true);
       if (hits.length > 0 && hits[0].object.userData.orgId) {
         handleSelectOrg(String(hits[0].object.userData.orgId));
@@ -398,28 +443,31 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
     const ro = new ResizeObserver(onResize);
     ro.observe(container);
 
-    let rafId = 0;
+    let cancelNextFrame = () => {};
+    let disposed = false;
     let last = performance.now();
 
     const animate = (now: number) => {
-      rafId = requestAnimationFrame(animate);
+      if (disposed) return;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
       const cur = liveRef.current;
 
-      orgRecords.forEach((rec) => {
+      for (let i = 0; i < orgRecords.length; i++) {
+        const rec = orgRecords[i];
         rec.group.position.copy(rec.home).addScaledVector(rec.explodeDir, cur.explodeFactor * 1.4);
         const isTarget = rec.id === cur.selectedOrgId;
         rec.group.visible = !cur.isolateSelected || isTarget;
-        rec.mats.forEach((m) => {
+        for (let j = 0; j < rec.mats.length; j++) {
+          const m = rec.mats[j];
           m.emissive.setHex(isTarget ? 0x22d3ee : 0x000000);
           m.emissiveIntensity = isTarget ? 0.28 : 0;
-        });
+        }
         if (!cur.isPaused && rec.spinRotor) {
           rec.spinRotor.rotation.y += dt * 3.5 * cur.atpActivity;
         }
-      });
+      }
 
       if (!cur.isPaused) {
         cellRoot.rotation.y += dt * 0.16;
@@ -427,11 +475,20 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
 
       controls.update();
       renderer.render(scene, camera);
+      if (!disposed) {
+        scheduleSyncedGlFrame(renderer, isSoftwareGl, animate, (c) => {
+          cancelNextFrame = c;
+        });
+      }
     };
-    rafId = requestAnimationFrame(animate);
+
+    scheduleSyncedGlFrame(renderer, isSoftwareGl, animate, (c) => {
+      cancelNextFrame = c;
+    });
 
     return () => {
-      cancelAnimationFrame(rafId);
+      disposed = true;
+      cancelNextFrame();
       ro.disconnect();
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
@@ -439,8 +496,50 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
       disposables.forEach((d) => d.dispose());
       envRT.dispose();
       renderer.dispose();
+      cameraRef.current = null;
+      controlsRef.current = null;
+      cellRootRef.current = null;
     };
   }, [isSoftwareGl]);
+
+  const applyCameraPreset = (preset: QuickCamPreset) => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    if (preset === 'iso') cam.position.set(...DEFAULT_CAM_POS);
+    else if (preset === 'top') cam.position.set(0.01, 8.2, 0.01);
+    else cam.position.set(0, 0.8, 7.6);
+    ctrl.target.set(...DEFAULT_CAM_TARGET);
+    ctrl.update();
+  };
+
+  const resetCamera = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    cam.position.set(...DEFAULT_CAM_POS);
+    ctrl.target.set(...DEFAULT_CAM_TARGET);
+    ctrl.update();
+  };
+
+  const handleSaveBookmark = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    setBookmark({
+      pos: [cam.position.x, cam.position.y, cam.position.z],
+      target: [ctrl.target.x, ctrl.target.y, ctrl.target.z]
+    });
+  };
+
+  const handleRecallBookmark = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl || !bookmark) return;
+    cam.position.set(...bookmark.pos);
+    ctrl.target.set(...bookmark.target);
+    ctrl.update();
+  };
 
   const handleReset = () => {
     setSelectedOrgId('mitochondria');
@@ -448,9 +547,9 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
     setAtpActivity(1.2);
     setIsolateSelected(false);
     setIsPaused(false);
+    setSliceEnabled(false);
+    resetCamera();
   };
-
-  const atpOutputRate = Math.round(atpActivity * 32 * 100) / 100;
 
   return (
     <div className="space-y-4">
@@ -504,13 +603,32 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
               type="button"
               onClick={handleReset}
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap shrink-0"
+              title={isEn ? 'Reset Lab' : 'Đặt lại'}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Organelle Selector Bar */}
+        <Pre3DProControlsBar
+          isEn={isEn}
+          sliceEnabled={sliceEnabled}
+          onToggleSlice={() => setSliceEnabled((v) => !v)}
+          sliceAxis={sliceAxis}
+          onChangeSliceAxis={setSliceAxis}
+          sliceOffset={sliceOffset}
+          onChangeSliceOffset={setSliceOffset}
+          sliceMin={-2.6}
+          sliceMax={2.6}
+          showTelemetry={showTelemetry}
+          onToggleTelemetry={() => setShowTelemetry((v) => !v)}
+          hasBookmark={Boolean(bookmark)}
+          onSaveBookmark={handleSaveBookmark}
+          onRecallBookmark={handleRecallBookmark}
+          onCameraPreset={applyCameraPreset}
+          onResetCamera={resetCamera}
+        />
+
         <div className="px-4 py-2.5 border-b border-slate-800/80 bg-slate-900/60 flex flex-wrap gap-1.5">
           {ORGANELLES.map((org) => (
             <button
@@ -529,18 +647,29 @@ export const BioCellAtlas3DLab: React.FC<BioCellAtlas3DLabProps> = ({ onEarnXP }
         </div>
 
         <div className="relative h-[420px] sm:h-[470px] w-full bg-[#061219]">
-          {isSoftwareGl ? (
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-300 space-y-2">
-              <Microscope className="w-8 h-8 text-emerald-400" />
-              <p className="text-sm font-bold text-white">{isEn ? selectedOrg.nameEn : selectedOrg.nameVi}</p>
-              <p className="text-xs max-w-md text-slate-400">{isEn ? selectedOrg.roleEn : selectedOrg.roleVi}</p>
-            </div>
-          ) : (
-            <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
-          )}
+          <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
         </div>
 
         <div className="p-4 border-t border-slate-800 bg-slate-900/90 space-y-4">
+          {showTelemetry && (
+            <MiniTelemetryChart
+              title={isEn ? 'Cellular Respiration & Cutaway Telemetry' : 'Dao động ký Hô hấp Tế bào & ATP'}
+              darkSurface
+              onExportCsv={() =>
+                exportRowsToCsv(
+                  'bio-cell-atlas.csv',
+                  ['Time', 'ATP_per_glucose', 'Explode_%', 'Flux_Index'],
+                  telemetryRows.map((r) => [r.t, r.atpOut, r.explodePct, r.flux])
+                )
+              }
+              series={[
+                { id: 'atp', label: 'ATP/glc', color: '#fbbf24', values: telemetryRows.map((r) => r.atpOut) },
+                { id: 'exp', label: 'Explode %', color: '#38bdf8', values: telemetryRows.map((r) => r.explodePct) },
+                { id: 'flux', label: 'Flux', color: '#10b981', values: telemetryRows.map((r) => r.flux) }
+              ]}
+            />
+          )}
+
           <div className="rounded-xl bg-slate-950/85 border border-emerald-500/30 p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="text-sm font-extrabold text-emerald-300">

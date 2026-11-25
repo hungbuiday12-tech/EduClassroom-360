@@ -1,6 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Atom, Beaker, Calculator, CheckCircle2, FlaskConical, RotateCcw, Scale } from 'lucide-react';
+import { Atom, Beaker, Calculator, CheckCircle2, Download, FlaskConical, RotateCcw, Scale } from 'lucide-react';
 import { MathFormula } from '../common/MathRenderer';
+
+function triggerDownloadText(filename: string, content: string, mime = 'text/csv;charset=utf-8;') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 interface ElementInfo {
   z: number;
@@ -318,11 +328,13 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
   }, [activeTab, activeVsepr]);
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-            {isEn ? 'Interactive Chemistry Sandbox Workbench (4 Labs)' : 'Sandbox Hóa Học Tương Tác (4 Phòng Thực Hành)'}
+    <div className="chem-zone-frame sci-frame rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-7 space-y-6 relative overflow-hidden">
+      <span className="chem-energy-sweep" aria-hidden="true" />
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="space-y-1">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <FlaskConical className="w-5 h-5 text-emerald-600 icon-anim-flask shrink-0" />
+            <span>{isEn ? 'Interactive Chemistry Sandbox Workbench (4 Labs)' : 'Sandbox Hóa Học Tương Tác (4 Phòng Thực Hành)'}</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {isEn
@@ -346,10 +358,11 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
               <button
                 key={tab.id}
                 type="button"
+                data-ripple="true"
                 onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
+                className={`sim-btn-chem inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0 transition-colors ${
                   active
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-emerald-600 text-white chem-zone-active'
                     : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
                 }`}
               >
@@ -398,16 +411,74 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
                 })
               )}
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-              <span>Khối s: Nhóm IA – IIA (H, He, Li, Na, Mg, K, Ca...)</span>
-              <span>·</span>
-              <span>Khối p: Nhóm IIIA – VIIIA (C, N, O, F, Cl...)</span>
-              <span>·</span>
-              <span>Khối d: Kim loại chuyển tiếp chu kì 4 (Sc → Zn)</span>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="flex flex-wrap items-center gap-3">
+                <span>Khối s: IA–IIA</span>
+                <span>·</span>
+                <span>Khối p: IIIA–VIIIA</span>
+                <span>·</span>
+                <span>Khối d: Chuyển tiếp Sc → Zn</span>
+              </div>
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() =>
+                  triggerDownloadText(
+                    'bang_tuan_hoan_Z1_36.csv',
+                    'Z,Symbol,Name,Mass,Group,Period,Block,Electronegativity,RadiusPm,Config\n' +
+                      ELEMENTS_36.map((e) => `${e.z},${e.symbol},${e.name},${e.mass},${e.group},${e.period},${e.block},${e.en},${e.radiusPm},"${e.config}"`).join('\n')
+                  )
+                }
+                className="sim-btn-chem inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                <Download className="w-3 h-3 text-emerald-600" />
+                <span>Xuất CSV Z=1..36</span>
+              </button>
+            </div>
+            {/* Live Periodic Electronegativity & Atomic Radius Trend SVG */}
+            <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-950 p-3">
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-300 mb-1">
+                <span>Biến thiên Độ âm điện (Xanh ngọc) &amp; Bán kính nguyên tử (Vàng) theo Z = 1..36</span>
+                <span className="text-emerald-400">Đang chọn: {selectedEl.symbol} (Z={selectedEl.z})</span>
+              </div>
+              <svg viewBox="0 0 540 96" className="w-full h-24">
+                <path
+                  d={ELEMENTS_36.map((e, i) => {
+                    const x = 14 + (i / 35) * 512;
+                    const y = 84 - (e.radiusPm / 250) * 68;
+                    return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+                  }).join(' ')}
+                  fill="none"
+                  stroke="#fbbf24"
+                  strokeWidth="1.8"
+                />
+                <path
+                  d={ELEMENTS_36.map((e, i) => {
+                    const x = 14 + (i / 35) * 512;
+                    const y = 84 - (e.en / 4.0) * 68;
+                    return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+                  }).join(' ')}
+                  fill="none"
+                  stroke="#34d399"
+                  strokeWidth="2"
+                />
+                <circle
+                  cx={14 + ((selectedEl.z - 1) / 35) * 512}
+                  cy={84 - (selectedEl.radiusPm / 250) * 68}
+                  r="4"
+                  fill="#fbbf24"
+                />
+                <circle
+                  cx={14 + ((selectedEl.z - 1) / 35) * 512}
+                  cy={84 - (selectedEl.en / 4.0) * 68}
+                  r="4"
+                  fill="#34d399"
+                />
+              </svg>
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-4 space-y-3">
+          <div className="chem-card-frame rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-5 space-y-3.5">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold">
@@ -652,25 +723,42 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
               <div className="flex flex-wrap gap-1.5 pt-1">
                 <button
                   type="button"
+                  data-ripple="true"
                   onClick={() => setVBaseMl((v) => Math.min(50, Math.round((v + 0.5) * 10) / 10))}
-                  className="px-2.5 py-1.5 rounded-md bg-sky-600 hover:bg-sky-500 text-white font-semibold cursor-pointer"
+                  className="sim-btn-chem px-2.5 py-1.5 rounded-md bg-sky-600 hover:bg-sky-500 text-white font-semibold cursor-pointer"
                 >
                   +0,5 mL nhỏ giọt
                 </button>
                 <button
                   type="button"
+                  data-ripple="true"
                   onClick={() => setVBaseMl(Math.min(50, Math.round(eqVolMl * 10) / 10))}
-                  className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer"
+                  className="sim-btn-chem px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer"
                 >
                   Nhảy tới điểm tương đương ({eqVolMl.toFixed(1)} mL)
                 </button>
                 <button
                   type="button"
+                  data-ripple="true"
                   onClick={() => setVBaseMl(0)}
-                  className="px-2.5 py-1.5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold cursor-pointer inline-flex items-center gap-1"
+                  className="sim-btn-chem px-2.5 py-1.5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold cursor-pointer inline-flex items-center gap-1"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>0 mL</span>
+                </button>
+                <button
+                  type="button"
+                  data-ripple="true"
+                  onClick={() =>
+                    triggerDownloadText(
+                      `duong_cong_chuan_do_${acidType}.csv`,
+                      'V_NaOH_mL,pH\n' + titrationCurvePoints.map((pt) => `${pt.v.toFixed(1)},${pt.ph.toFixed(3)}`).join('\n')
+                    )
+                  }
+                  className="sim-btn-chem px-2.5 py-1.5 rounded-md bg-slate-800 text-white font-semibold cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Download className="w-3 h-3" />
+                  <span>Xuất CSV pH</span>
                 </button>
               </div>
             </div>

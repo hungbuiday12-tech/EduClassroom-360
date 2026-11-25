@@ -1,11 +1,10 @@
 import React from 'react';
-import { PhysicsSimType } from '../../types';
 
 interface LectureThumbnailProps {
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'cs' | 'chemistry' | 'biology';
   id: string;
   category?: string;
-  simType?: PhysicsSimType;
+  simType?: string;
   sim2dMode?: string;
   sim3dMode?: string;
   lessonNumber?: number;
@@ -566,11 +565,167 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
     );
   };
 
+  const renderChemistryArt = () => {
+    switch (simType) {
+      case 'atom_orbital_2d':
+      case 'periodic_trends_2d':
+      case 'flame_spectroscopy_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <g className="holo-orbit-cw">
+              <ellipse cx="28" cy="28" rx="18" ry="7" transform="rotate(30 28 28)" fill="none" stroke="#10b981" strokeWidth="1.6" />
+              <circle cx="44" cy="24" r="2.4" fill="#0ea5e9" />
+            </g>
+            <g className="holo-orbit-ccw">
+              <ellipse cx="28" cy="28" rx="18" ry="7" transform="rotate(-30 28 28)" fill="none" stroke="#0ea5e9" strokeWidth="1.6" />
+              <circle cx="12" cy="32" r="2.4" fill="#f59e0b" />
+            </g>
+            <circle cx="28" cy="28" r="4.5" fill="#10b981" className="math-focus-pulse" />
+          </svg>
+        );
+      case 'vsepr_bonding_2d':
+      case 'crystal_lattice_2d':
+      case 'chemical_bond_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <line x1="28" y1="28" x2="14" y2="18" stroke="#0284c7" strokeWidth="2" />
+            <line x1="28" y1="28" x2="42" y2="18" stroke="#0284c7" strokeWidth="2" />
+            <line x1="28" y1="28" x2="28" y2="45" stroke="#0284c7" strokeWidth="2" />
+            <circle cx="28" cy="28" r="6" fill="#6366f1" />
+            <circle cx="14" cy="18" r="4.2" fill="#10b981" className="chem-bubble-rise" />
+            <circle cx="42" cy="18" r="4.2" fill="#10b981" className="chem-bubble-rise" style={{ animationDelay: '0.4s' }} />
+            <circle cx="28" cy="45" r="4.2" fill="#f59e0b" className="chem-bubble-rise" style={{ animationDelay: '0.8s' }} />
+          </svg>
+        );
+      case 'reaction_kinetics_2d':
+      case 'enthalpy_hess_2d':
+      case 'catalysis_energy_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <path d="M8 40C16 40 20 14 28 14C36 14 40 34 48 34" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" />
+            <path d="M8 40C16 40 22 23 28 23C34 23 40 34 48 34" fill="none" stroke="#10b981" strokeWidth="1.8" className="holo-dash" />
+            <circle cx="28" cy="14" r="2.6" fill="#f59e0b" className="math-focus-pulse" />
+            <circle cx="28" cy="23" r="2.4" fill="#10b981" className="math-focus-pulse" style={{ animationDelay: '0.4s' }} />
+          </svg>
+        );
+      case 'galvanic_daniell_2d':
+      case 'electrolysis_faraday_chem_2d':
+      case 'redox_balancing_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <rect x="9" y="22" width="14" height="22" rx="3" fill="#0ea5e9" fillOpacity="0.22" stroke="#0284c7" strokeWidth="1.6" />
+            <rect x="33" y="22" width="14" height="22" rx="3" fill="#10b981" fillOpacity="0.22" stroke="#059669" strokeWidth="1.6" />
+            <path d="M16 22V12H40V22" fill="none" stroke="#f59e0b" strokeWidth="2" className="animate-electric-flow" />
+            <circle cx="28" cy="12" r="3.4" fill="#f59e0b" className="math-focus-pulse" />
+          </svg>
+        );
+      case 'alkane_alkene_2d':
+      case 'benzene_aromatic_2d':
+      case 'esterification_2d':
+      case 'polymerization_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <polygon points="28,12 42,20 42,36 28,44 14,36 14,20" fill="#10b981" fillOpacity="0.16" stroke="#059669" strokeWidth="2" strokeLinejoin="round" />
+            <circle cx="28" cy="28" r="8" fill="none" stroke="#f59e0b" strokeWidth="1.6" className="holo-dash" />
+            <circle cx="28" cy="12" r="2.3" fill="#0ea5e9" className="math-focus-pulse" />
+          </svg>
+        );
+      default:
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <path d="M22 12H34M24 12V22L13 41C12 43 13.5 45 16 45H40C42.5 45 44 43 43 41L32 22V12" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M17 34H39L41.5 40C42 41.5 41 43 39 43H17C15 43 14 41.5 14.5 40L17 34Z" fill="#10b981" fillOpacity="0.45" />
+            <circle cx="24" cy="36" r="2" fill="#38bdf8" className="chem-bubble-rise" />
+            <circle cx="31" cy="32" r="2.2" fill="#f59e0b" className="chem-bubble-rise" style={{ animationDelay: '0.55s' }} />
+            <circle cx="28" cy="26" r="1.6" fill="#10b981" className="chem-bubble-rise" style={{ animationDelay: '1s' }} />
+          </svg>
+        );
+    }
+  };
+
+  const renderBiologyArt = () => {
+    switch (simType) {
+      case 'dna_replication_2d':
+      case 'transcription_translation_2d':
+      case 'lac_operon_2d':
+      case 'crispr_editing_2d':
+      case 'pcr_electrophoresis_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <path d="M16 10C36 18 20 38 40 46" fill="none" stroke="#0d9488" strokeWidth="2.2" strokeLinecap="round" />
+            <path d="M40 10C20 18 36 38 16 46" fill="none" stroke="#0ea5e9" strokeWidth="2.2" strokeLinecap="round" />
+            <line x1="21" y1="16" x2="35" y2="16" stroke="#f59e0b" strokeWidth="1.6" className="bio-strand-pulse" />
+            <line x1="23" y1="28" x2="33" y2="28" stroke="#10b981" strokeWidth="1.6" className="bio-strand-pulse" style={{ animationDelay: '0.35s' }} />
+            <line x1="21" y1="40" x2="35" y2="40" stroke="#f59e0b" strokeWidth="1.6" className="bio-strand-pulse" style={{ animationDelay: '0.7s' }} />
+          </svg>
+        );
+      case 'enzyme_kinetics_2d':
+      case 'photosynthesis_calvin_2d':
+      case 'cellular_respiration_2d':
+      case 'plant_transpiration_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <ellipse cx="28" cy="28" rx="18" ry="11" fill="#10b981" fillOpacity="0.22" stroke="#059669" strokeWidth="1.8" className="bio-cell-breathe" />
+            <path d="M14 28Q21 20 28 28T42 28" fill="none" stroke="#0ea5e9" strokeWidth="1.8" className="physics-wave-bob" />
+            <circle cx="28" cy="28" r="3" fill="#f59e0b" className="math-focus-pulse" />
+          </svg>
+        );
+      case 'cardiac_cycle_2d':
+      case 'bohr_hemoglobin_2d':
+      case 'action_potential_2d':
+      case 'synapse_transmission_2d':
+      case 'nephron_filtration_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <path d="M8 30H17L21 18L26 39L31 23L35 30H48" fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="physics-wave-bob" />
+            <circle cx="31" cy="23" r="2.5" fill="#14b8a6" className="math-focus-pulse" />
+          </svg>
+        );
+      case 'mendel_punnett_2d':
+      case 'gene_linkage_2d':
+      case 'hardy_weinberg_2d':
+      case 'natural_selection_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <rect x="12" y="12" width="14" height="14" rx="3" fill="#14b8a6" fillOpacity="0.8" />
+            <rect x="30" y="12" width="14" height="14" rx="3" fill="#38bdf8" fillOpacity="0.65" />
+            <rect x="12" y="30" width="14" height="14" rx="3" fill="#38bdf8" fillOpacity="0.65" />
+            <rect x="30" y="30" width="14" height="14" rx="3" fill="#f59e0b" fillOpacity="0.85" className="bio-cell-breathe" />
+          </svg>
+        );
+      case 'predator_prey_2d':
+      case 'logistic_population_2d':
+      case 'trophic_pyramid_2d':
+      case 'carbon_nitrogen_cycle_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <polygon points="28,10 10,44 46,44" fill="#14b8a6" fillOpacity="0.22" stroke="#0d9488" strokeWidth="1.8" strokeLinejoin="round" />
+            <line x1="19" y1="26" x2="37" y2="26" stroke="#0d9488" strokeWidth="1.4" />
+            <line x1="14" y1="35" x2="42" y2="35" stroke="#0d9488" strokeWidth="1.4" />
+            <circle cx="28" cy="18" r="2.3" fill="#f59e0b" className="math-focus-pulse" />
+          </svg>
+        );
+      default:
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <circle cx="28" cy="28" r="17" fill="#14b8a6" fillOpacity="0.16" stroke="#0d9488" strokeWidth="2" className="bio-cell-breathe" />
+            <circle cx="26" cy="26" r="6.5" fill="#6366f1" fillOpacity="0.4" stroke="#4f46e5" strokeWidth="1.6" />
+            <ellipse cx="36" cy="34" rx="4.5" ry="2.6" transform="rotate(-25 36 34)" fill="#f59e0b" />
+            <circle cx="18" cy="21" r="2.2" fill="#10b981" className="chem-bubble-rise" />
+          </svg>
+        );
+    }
+  };
+
   const containerStyle =
     subject === 'math'
       ? 'bg-indigo-50/90 dark:bg-indigo-950/60 border-indigo-200/80 dark:border-indigo-800/70'
       : subject === 'physics'
       ? 'bg-amber-50/90 dark:bg-amber-950/50 border-amber-200/80 dark:border-amber-800/70'
+      : subject === 'chemistry'
+      ? 'bg-emerald-50/90 dark:bg-emerald-950/55 border-emerald-200/80 dark:border-emerald-800/70'
+      : subject === 'biology'
+      ? 'bg-teal-50/90 dark:bg-teal-950/55 border-teal-200/80 dark:border-teal-800/70'
       : 'bg-emerald-50/90 dark:bg-emerald-950/50 border-emerald-200/80 dark:border-emerald-800/70';
 
   return (
@@ -580,6 +735,8 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
     >
       {subject === 'math' && renderMathArt()}
       {subject === 'physics' && renderPhysicsArt()}
+      {subject === 'chemistry' && renderChemistryArt()}
+      {subject === 'biology' && renderBiologyArt()}
       {subject === 'cs' && renderCSArt()}
     </div>
   );

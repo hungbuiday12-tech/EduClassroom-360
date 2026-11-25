@@ -491,7 +491,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   >
                     <span>Admin: Cấp quyền Pre</span>
                     {pendingRequestsCount > 0 && (
-                      <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-600 text-white text-[10px] font-mono font-extrabold animate-pulse">
+                      <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-rose-600 text-white text-[10px] font-mono font-extrabold">
                         {pendingRequestsCount} chờ duyệt
                       </span>
                     )}
@@ -1702,10 +1702,22 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             onClick={() => navigate({ subject: 'chemistry', chemistryView: 'catalog', tutorOpen: false })}
             className="xl:col-span-2 group sci-frame relative overflow-hidden bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-violet-300/85 dark:border-violet-500/30 hover:border-violet-500 hover:-translate-y-0.5 rounded-xl p-6 shadow-[0_14px_34px_-14px_rgba(139,92,246,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(139,92,246,0.3)] transition-all cursor-pointer flex flex-col justify-between gap-5"
           >
+            <span aria-hidden="true" className="chem-energy-sweep" />
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 220 140"
+              className="absolute right-0 bottom-12 w-44 h-28 opacity-20 dark:opacity-30 pointer-events-none group-hover:opacity-45 transition-opacity"
+            >
+              <circle cx="155" cy="70" r="34" fill="none" stroke="#8b5cf6" strokeWidth="1.8" strokeDasharray="6 4" className="animate-orbit-slow" style={{ transformOrigin: '155px 70px' }} />
+              <circle cx="155" cy="70" r="18" fill="none" stroke="#f59e0b" strokeWidth="1.6" />
+              <line x1="121" y1="70" x2="90" y2="52" stroke="#8b5cf6" strokeWidth="1.8" className="animate-electric-flow" />
+              <circle cx="90" cy="52" r="5" fill="#10b981" />
+              <circle cx="155" cy="70" r="5" fill="#8b5cf6" />
+            </svg>
             <div className="relative z-10 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="w-11 h-11 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-200/90 dark:border-violet-800/70 text-violet-600 dark:text-violet-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                  <FlaskConical className="w-6 h-6" />
+                  <FlaskConical className="w-6 h-6 icon-anim-flask" />
                 </div>
                 <span className="font-mono text-[11px] font-bold px-2 py-1 rounded bg-violet-500/12 border border-violet-400/35 text-violet-800 dark:text-violet-300 tabular-nums">
                   {chemistryCount} {isEn ? 'lessons' : 'bài'} · {chemSimTotal}+4
@@ -1769,10 +1781,22 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             onClick={() => navigate({ subject: 'biology', biologyView: 'catalog', tutorOpen: false })}
             className="xl:col-span-2 group sci-frame relative overflow-hidden bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-teal-300/85 dark:border-teal-500/30 hover:border-teal-500 hover:-translate-y-0.5 rounded-xl p-6 shadow-[0_14px_34px_-14px_rgba(20,184,166,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(20,184,166,0.3)] transition-all cursor-pointer flex flex-col justify-between gap-5"
           >
+            <span aria-hidden="true" className="bio-helix-sweep" />
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 240 120"
+              className="absolute right-0 bottom-14 w-48 h-24 opacity-20 dark:opacity-30 pointer-events-none group-hover:opacity-45 transition-opacity"
+            >
+              <path d="M20 35 Q70 95 120 35 T220 35" fill="none" stroke="#14b8a6" strokeWidth="2.2" className="animate-wave-glide" />
+              <path d="M20 85 Q70 25 120 85 T220 85" fill="none" stroke="#38bdf8" strokeWidth="2" />
+              <line x1="70" y1="55" x2="70" y2="65" stroke="#10b981" strokeWidth="2" />
+              <line x1="120" y1="35" x2="120" y2="85" stroke="#14b8a6" strokeWidth="1.6" />
+              <line x1="170" y1="55" x2="170" y2="65" stroke="#38bdf8" strokeWidth="2" />
+            </svg>
             <div className="relative z-10 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="w-11 h-11 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200/90 dark:border-teal-800/70 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                  <Dna className="w-6 h-6" />
+                  <Dna className="w-6 h-6 icon-anim-dna" />
                 </div>
                 <span className="font-mono text-[11px] font-bold px-2 py-1 rounded bg-teal-500/12 border border-teal-400/35 text-teal-800 dark:text-teal-300 tabular-nums">
                   {biologyCount} {isEn ? 'lessons' : 'bài'} · {bioSimTotal}+4
@@ -2150,6 +2174,10 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
                   ? 'icon-anim-compass'
                   : item.subj === 'physics'
                   ? 'icon-anim-zap'
+                  : item.subj === 'chemistry'
+                  ? 'icon-anim-flask'
+                  : item.subj === 'biology'
+                  ? 'icon-anim-dna'
                   : item.subj === 'cs'
                   ? 'icon-anim-code'
                   : '';

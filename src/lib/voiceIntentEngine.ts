@@ -802,7 +802,7 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
     plan: {
       replyVi: 'Đang mở Phòng Lab Orbital & Hình học Phân tử VSEPR 3D trong Synapse Pre.',
       actionType: 'navigate_future',
-      targetFutureTab: 'chem_orbital_3d'
+      targetFutureTab: 'chem_orbital_vsepr_3d'
     }
   },
   {
@@ -811,7 +811,7 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
     plan: {
       replyVi: 'Đang mở Atlas Tế bào Nhân thực 3D trong Synapse Pre.',
       actionType: 'navigate_future',
-      targetFutureTab: 'bio_cell_3d'
+      targetFutureTab: 'bio_cell_atlas_3d'
     }
   },
   {
@@ -820,7 +820,7 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
     plan: {
       replyVi: 'Đang mở Phòng Lab DNA & Chỉnh sửa Gen CRISPR-Cas9 3D trong Synapse Pre.',
       actionType: 'navigate_future',
-      targetFutureTab: 'bio_dna_3d'
+      targetFutureTab: 'bio_dna_crispr_3d'
     }
   },
   {

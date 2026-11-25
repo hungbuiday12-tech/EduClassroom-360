@@ -53,7 +53,9 @@ import {
   Download,
   Crown,
   HelpCircle,
-  Users
+  Users,
+  FlaskConical,
+  Dna
 } from 'lucide-react';
 import { useAudio } from '../../context/AudioContext';
 import { useNavigation } from '../../context/NavigationContext';
@@ -67,6 +69,9 @@ import type {
 
 import { CURRICULUM_COUNTS } from '../../data/curriculumCounts';
 import { getPhysicsSimCounts } from '../../data/physicsDomainsData';
+import { CHEMISTRY_2D_SIMS, CHEMISTRY_3D_SIMS } from '../../data/chemistryDomainsData';
+import { BIOLOGY_2D_SIMS, BIOLOGY_3D_SIMS } from '../../data/biologyDomainsData';
+import { PRE_STUDIOS } from '../../data/preLabsData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
 
 const LectureDirectorySection = lazy(() =>
@@ -80,7 +85,15 @@ interface VisitorLandingPageProps {
   onOpenInstallApp?: () => void;
 }
 
-type LandingSpotlightKey = 'synapse_v2' | 'spatial_3d' | 'math' | 'physics' | 'cs' | 'exams';
+type LandingSpotlightKey =
+  | 'synapse_v2'
+  | 'spatial_3d'
+  | 'math'
+  | 'physics'
+  | 'chemistry'
+  | 'biology'
+  | 'cs'
+  | 'exams';
 type FeatureCategoryFilter = 'all' | 'simulation' | 'curriculum_ai' | 'arena_tools';
 
 export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
@@ -199,6 +212,22 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         physicsTab: 'theory',
         tutorOpen: false
       });
+    } else if (target.subject === 'chemistry') {
+      navigate({
+        subject: 'chemistry',
+        chemistryView: 'lecture',
+        chemistryLessonId: target.lectureId,
+        chemistryTab: 'theory',
+        tutorOpen: false
+      });
+    } else if (target.subject === 'biology') {
+      navigate({
+        subject: 'biology',
+        biologyView: 'lecture',
+        biologyLessonId: target.lectureId,
+        biologyTab: 'theory',
+        tutorOpen: false
+      });
     } else {
       navigate({
         subject: 'cs',
@@ -299,7 +328,15 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
   const totalLessons = CURRICULUM_COUNTS.totalLessons;
   const mathCount = CURRICULUM_COUNTS.mathLectures;
   const physicsCount = CURRICULUM_COUNTS.physicsLessons;
+  const chemistryCount = CURRICULUM_COUNTS.chemistryLessons;
+  const biologyCount = CURRICULUM_COUNTS.biologyLessons;
   const csCount = CURRICULUM_COUNTS.csLessons;
+  const chemTotalSims = CHEMISTRY_2D_SIMS.length + CHEMISTRY_3D_SIMS.length;
+  const bioTotalSims = BIOLOGY_2D_SIMS.length + BIOLOGY_3D_SIMS.length;
+  const preTotal = PRE_STUDIOS.length;
+  const preLabsCount = PRE_STUDIOS.filter((s) => s.sidebarGroup === 'labs').length;
+  const preSimsCount = PRE_STUDIOS.filter((s) => s.sidebarGroup === 'simulations').length;
+  const preSandboxesCount = PRE_STUDIOS.filter((s) => s.sidebarGroup === 'sandboxes').length;
 
   const spotlightDetails: Record<
     LandingSpotlightKey,
@@ -313,24 +350,24 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     }
   > = {
     synapse_v2: {
-      label: isEn ? 'Synapse Pre · 22 Labs & AI Pro' : 'Synapse Pre · 22 Lab & AI Pro',
+      label: isEn ? `Synapse Pre · ${preTotal} Labs & AI Pro` : `Synapse Pre · ${preTotal} Lab & AI Pro`,
       badge: isEn
-        ? '22 Pre Studios (3 Sidebar Groups) · Syn AI Pro · Voice OS'
-        : '22 Phòng Lab (3 Nhóm Menu) · Syn AI Pro · Voice OS',
+        ? `${preTotal} Pre Studios (5 Subject Zones) · Syn AI Pro · Voice OS`
+        : `${preTotal} Không Gian (5 Khu Môn) · Syn AI Pro · Voice OS`,
       headline: isEn
-        ? 'Synapse Pre: 22 Interactive 3D/4D Studios, Dedicated Syn AI Pro & Voice OS'
-        : 'Synapse Pre: 22 Phòng Lab / Mô Phỏng / Sandboxes, Syn AI Pro Riêng & Voice OS',
+        ? `Synapse Pre: ${preTotal} Subject-Partitioned 3D/4D Labs, Dedicated Syn AI Pro & Voice OS`
+        : `Synapse Pre: ${preTotal} Phòng Lab / Mô Phỏng / Sandboxes Phân Khu 5 Môn & Syn AI Pro`,
       summary: isEn
-        ? 'Organizes all 22 advanced WebGL studios right into 3 left-sidebar menus (7 Labs, 9 Simulations including 3D Mechanical Assembly, 6 Sandboxes) alongside exclusive Syn AI Pro, Voice OS (Alt+Space) & Multi-User Meet 3D.'
-        : 'Tích hợp 22 không gian 3D/4D ngay trên menu trái thành 3 nhóm (7 Phòng Lab, 9 Mô phỏng có Lắp Ráp Cơ Khí 3D, 6 Sandboxes) cùng trợ lý Syn AI Pro riêng biệt (Giải 3 tầng, Suy luận sâu, Sơ đồ Pro, Video 3B1B), Voice OS (Alt+Space) & Meet 3D nhiều người.',
+        ? `Organizes all ${preTotal} advanced WebGL studios by subject zone across 3 sidebar menus (${preLabsCount} Labs, ${preSimsCount} Simulations including 3D Chem Reaction, Orbital VSEPR, Cell Atlas, DNA CRISPR & Mechanical Assembly, ${preSandboxesCount} Sandboxes) alongside exclusive Syn AI Pro & Voice OS.`
+        : `Phân tách rành mạch ${preTotal} không gian 3D/4D theo từng môn (Toán, Lí, Hóa, Sinh, Tin) và 3 nhóm menu trái (${preLabsCount} Phòng Lab, ${preSimsCount} Mô phỏng gồm Lò Phản Ứng Hóa, Orbital VSEPR, Atlas Tế Bào, CRISPR 3D & Lắp Ráp Cơ Khí, ${preSandboxesCount} Sandboxes) cùng Syn AI Pro riêng biệt & Voice OS.`,
       highlights: isEn
         ? [
-            '3 Sidebar Menus: 7 Labs · 9 Simulations (3D Assembly, Rocket, Jet) · 6 Sandboxes',
+            `3 Sidebar Menus × 5 Subjects: ${preLabsCount} Labs · ${preSimsCount} Sims · ${preSandboxesCount} Sandboxes`,
             'Dedicated Syn AI Pro + Pause/Resume Minichat + 3B1B Video Studio',
             'Hands-free Synapse Voice OS (Alt+Space) & Multi-User Shared Syn Meet 3D',
           ]
         : [
-            '3 Nhóm Menu Trái: 7 Phòng Lab · 9 Mô phỏng (Lắp Ráp 3D, Tên lửa) · 6 Sandboxes',
+            `3 Nhóm Menu Trái × 5 Môn: ${preLabsCount} Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes`,
             'Syn AI Pro độc quyền (3 tầng, Sơ đồ Pro, Video 3B1B) & Tạm đóng giữ hội thoại',
             'Voice OS ra lệnh giọng nói (Alt+Space) & Syn Meet chiếu 3D nhiều người',
           ],
@@ -364,20 +401,20 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       label: isEn ? 'Math 2D & 3D' : 'Toán 2D & 3D',
       badge: isEn ? `${mathCount} Grades 9–12 topics` : `${mathCount} chuyên đề 9–12`,
       headline: isEn
-        ? 'Oxy Analytic Grapher, Circle Geometry & 8 Oxyz 3D Scenes'
-        : 'Đồ thị Oxy, Đường tròn Tương tác & 8 mô hình Oxyz 3D',
+        ? 'Oxy Analytic Grapher, Circle Geometry & 11 Oxyz 3D Scenes'
+        : 'Đồ thị Oxy, Đường tròn Tương tác & 11 mô hình Oxyz 3D',
       summary: isEn
         ? 'Plot polynomials, rationals, exponentials, logarithms, and integrals; explore circle chords, tangents, Power of a Point and ellipses in 2D alongside sphere tangent cones, Conic sections and Oxyz lines.'
         : 'Khảo sát hàm đa thức, phân thức, mũ – lôgarit, tích phân; tương tác dây cung, góc nội tiếp, hai tiếp tuyến, phương tích đường tròn 2D cùng nón tiếp tuyến mặt cầu và Oxyz 3D.',
       highlights: isEn
         ? [
             'Visualize definite integral shaded area ∫ f(x)dx',
-            '8 interactive 3D scenes: Circle Spheres, Conic, Oxyz, Pyramids',
+            '11 interactive 3D scenes: Circle Spheres, Conic, Oxyz, Pyramids',
             '5-step lectures + 2 MCQs & 1 essay synced with AI roadmap',
           ]
         : [
             'Tô bóng diện tích tích phân ∫ f(x)dx & Hình học Đường tròn',
-            '8 cảnh 3D xoay tự do: Tiếp tuyến cầu, Conic, Oxyz, Thiết diện chóp',
+            '11 cảnh 3D xoay tự do: Tiếp tuyến cầu, Conic, Oxyz, Thiết diện chóp',
             'Bài giảng 5 bước + 2 TN & 1 TL tự lưu phân tích lộ trình AI',
           ],
       accentClass: 'text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/10',
@@ -406,6 +443,54 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
           ],
       accentClass: 'text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10',
     },
+    chemistry: {
+      label: isEn ? 'Chemistry 2D/3D & Sandbox' : 'Hóa Học 2D/3D & Sandbox',
+      badge: isEn
+        ? `${chemistryCount} Lessons · ${chemTotalSims} Labs + 4 Sandboxes`
+        : `${chemistryCount} Bài (2006/2018/Chuyên) · ${chemTotalSims} Lab + 4 Sandbox`,
+      headline: isEn
+        ? 'Dedicated Chemistry Zone: Titration, Stoichiometry, Organic & VSEPR 3D'
+        : 'Khu Vực Hóa Học Riêng: Chuẩn Độ, Cân Bằng PTHH, Hữu Cơ & VSEPR 3D',
+      summary: isEn
+        ? `Full Grades 9–12 GDPT 2006, 2018 & Olympiad lectures paired with ${CHEMISTRY_2D_SIMS.length} 2D interactive canvases, ${CHEMISTRY_3D_SIMS.length} 3D VSEPR/crystal labs, 4 standalone Chemistry Sandboxes, and 350 Chemistry exams.`
+        : `Trọn bộ ${chemistryCount} bài giảng GDPT 2006, 2018 & Chuyên HSG cùng ${CHEMISTRY_2D_SIMS.length} thí nghiệm 2D, ${CHEMISTRY_3D_SIMS.length} mô hình VSEPR/Tinh thể 3D, 4 Sandbox tách riêng (Pha chế, Cân bằng PTHH, Hữu cơ, Điện phân) và 350 đề thi Hóa.`,
+      highlights: isEn
+        ? [
+            `${chemistryCount} lessons + Syn Chem AI (Ctrl+H) & 350 Chem exams`,
+            `${CHEMISTRY_2D_SIMS.length} 2D + ${CHEMISTRY_3D_SIMS.length} 3D molecular labs & 4 Chemistry Sandboxes`,
+            'Pre 3D Chem Reaction Potential Surface & Quantum Orbital Labs',
+          ]
+        : [
+            `${chemistryCount} bài 2006/2018/Chuyên · Syn Chem AI (Ctrl+H) & 350 Đề Hóa`,
+            `${CHEMISTRY_2D_SIMS.length} Lab 2D + ${CHEMISTRY_3D_SIMS.length} Lab 3D & 4 Sandbox Hóa tách riêng`,
+            'Bổ trợ Pre: Lò Phản Ứng Ea 3D & Orbital Lai Hóa VSEPR 3D',
+          ],
+      accentClass: 'text-violet-700 dark:text-violet-300 border-violet-500/35 bg-violet-500/10',
+    },
+    biology: {
+      label: isEn ? 'Biology 2D/3D & Sandbox' : 'Sinh Học 2D/3D & Sandbox',
+      badge: isEn
+        ? `${biologyCount} Lessons · ${bioTotalSims} Labs + 4 Sandboxes`
+        : `${biologyCount} Bài (2006/2018/Chuyên) · ${bioTotalSims} Lab + 4 Sandbox`,
+      headline: isEn
+        ? 'Dedicated Biology Zone: Cell Atlas, DNA/CRISPR 3D & Mendel Genetics Sandbox'
+        : 'Khu Vực Sinh Học Riêng: Atlas Tế Bào, ADN/CRISPR 3D & Sandbox Di Truyền',
+      summary: isEn
+        ? `Complete Grades 9–12 GDPT 2006, 2018 & Olympiad lectures paired with ${BIOLOGY_2D_SIMS.length} 2D labs, ${BIOLOGY_3D_SIMS.length} 3D cellular/DNA scenes, 4 standalone Biology Sandboxes, and 350 Biology exams.`
+        : `Đủ ${biologyCount} bài giảng GDPT 2006, 2018 & Chuyên HSG cùng ${BIOLOGY_2D_SIMS.length} mô phỏng 2D, ${BIOLOGY_3D_SIMS.length} mô hình Tế bào/ADN 3D, 4 Sandbox tách riêng (Lai Menđen, Giải mã mARN, Kính hiển vi, Hệ sinh thái) và 350 đề Sinh.`,
+      highlights: isEn
+        ? [
+            `${biologyCount} lessons + Syn Bio AI (Ctrl+B) & 350 Biology exams`,
+            `${BIOLOGY_2D_SIMS.length} 2D + ${BIOLOGY_3D_SIMS.length} 3D cellular labs & 4 Biology Sandboxes`,
+            'Pre 3D Eukaryotic Cell Atlas & 4-Stage CRISPR-Cas9 Cutaway',
+          ]
+        : [
+            `${biologyCount} bài 2006/2018/Chuyên · Syn Bio AI (Ctrl+B) & 350 Đề Sinh`,
+            `${BIOLOGY_2D_SIMS.length} Lab 2D + ${BIOLOGY_3D_SIMS.length} Lab 3D & 4 Sandbox Sinh tách riêng`,
+            'Bổ trợ Pre: Atlas Tế Bào Nhân Thực 3D & Cắt Chỉnh Gen CRISPR 3D',
+          ],
+      accentClass: 'text-teal-700 dark:text-teal-300 border-teal-500/35 bg-teal-500/10',
+    },
     cs: {
       label: isEn ? 'CS · Trace & 5 Roadmaps' : 'Tin Học · Trace & 5 Lộ Trình',
       badge: isEn
@@ -431,26 +516,26 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
       accentClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
     },
     exams: {
-      label: isEn ? `${totalExams} Exams & Dual AI` : `${totalExams} Đề Thi & AI 2 Tầng`,
+      label: isEn ? `${totalExams} Exams & 5+1 AI` : `${totalExams} Đề Thi & 5+1 AI`,
       badge: isEn
-        ? `${chuyenExams} Spec · 3 Base AIs + Syn AI Pro · Pause/Resume`
-        : `${chuyenExams} Chuyên · 3 AI Cơ Bản & Syn AI Pro · Tạm Đóng`,
+        ? `${chuyenExams} Spec · 5 Subject AIs + Syn AI Pro · Pause/Resume`
+        : `${chuyenExams} Chuyên · 5 AI Chuyên Môn & Syn AI Pro`,
       headline: isEn
-        ? `${totalExams} Exam Bank + Dual-Tier AI (Free Base Tutors & Exclusive Syn AI Pro)`
-        : `Kho ${totalExams} Đề Thi + Hệ Thống AI 2 Tầng (3 AI Cơ Bản & Syn AI Pro)`,
+        ? `${totalExams} Exam Bank (5 Subjects) + Dual-Tier AI (5 Base Tutors & Syn AI Pro)`
+        : `Kho ${totalExams} Đề Thi 5 Môn + Hệ AI 2 Tầng (5 AI Chuyên Môn & Syn AI Pro)`,
       summary: isEn
-        ? 'Free users get 3 dedicated tutors (Syn Math, Syn Physics, Syn Code) with Live Vision & Pause/Resume continuity; Synapse Pre unlocks standalone Syn AI Pro with 3-Layer Fast Solve, Deep Reasoning, Pro Flowchart & 3B1B Video.'
-        : 'Bản Free có 3 AI chuyên môn (Syn Math · Syn Physics · Syn Code) kèm Mắt Thần & nút Tạm đóng giữ hội thoại; Synapse Pre mở khóa trợ lý riêng Syn AI Pro (Giải 3 tầng siêu tốc, Suy luận sâu, Sơ đồ Pro & Dựng Video 3B1B).',
+        ? 'Free users get 5 subject tutors (Math, Physics, Chem, Bio, Code) with Live Vision & Pause/Resume continuity; Synapse Pre unlocks standalone Syn AI Pro with 3-Layer Fast Solve, Deep Reasoning, Pro Flowchart & 3B1B Video.'
+        : 'Bản Free có đủ 5 AI chuyên môn (Toán · Lí · Hóa · Sinh · Tin) kèm Mắt Thần & nút Tạm đóng giữ hội thoại; Synapse Pre mở khóa trợ lý riêng Syn AI Pro (Giải 3 tầng siêu tốc, Suy luận sâu, Sơ đồ Pro & Dựng Video 3B1B).',
       highlights: isEn
         ? [
             'Pause button keeps your active conversation ready to resume anytime',
-            'Free: 3 Subject AIs (Ctrl+D/F/G) · Pre: Standalone Syn AI Pro + 3B1B Video',
-            `Complete ${totalExams} official exams + Drag-Drop / Ctrl+V / Voice + 0–10 grading`,
+            'Free: 5 Subject AIs (Ctrl+D/F/H/B/G) · Pre: Standalone Syn AI Pro',
+            `350 exams × 5 subjects (${totalExams} total) + Drag-Drop / Ctrl+V / AI grading`,
           ]
         : [
             'Nút Tạm đóng giữ nguyên nội dung chat để mở lại trò chuyện tiếp',
-            'Free: 3 AI Cơ bản (Ctrl+D/F/G) · Pre: Syn AI Pro độc quyền & Video 3B1B',
-            `Đủ ${totalExams} đề Toán · Lí · Tin + Up ảnh/Ctrl+V/Giọng nói & Chấm 0–10`,
+            'Free: 5 AI Môn (Ctrl+D/F/H/B/G) · Pre: Syn AI Pro & Video 3B1B',
+            `Đủ 350 đề × 5 môn (${totalExams} đề) + Up ảnh/Ctrl+V & Chấm 0–10`,
           ],
       accentClass: 'text-cyan-700 dark:text-cyan-300 border-cyan-500/30 bg-cyan-500/10',
     },
@@ -817,29 +902,29 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               {isEn ? (
                 <>
                   Complete Grades 9–12 &amp; Olympiad STEM workspace featuring{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Free Base Classroom ({totalLessons} lessons · {totalExams} exams · 5 Physics domains · Sublime 4 Code Trace 1-1 · 3 Base AI Tutors with Pause/Resume · Syn Meet Screen Share)</strong>{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Free Base Classroom ({totalLessons} lessons across 5 subjects · {totalExams} exams · Chemistry &amp; Biology 2D/3D + Sandboxes · Sublime 4 Code Trace 1-1 · 5 Subject AI Tutors)</strong>{' '}
                   and{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (21 3D/4D Labs across 3 sidebar menus · Dedicated Syn AI Pro &amp; 3B1B Video · Voice OS · Multi-User Shared Syn Meet 3D)</strong>, plus{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre ({preTotal} 3D/4D Studios split by subject · Dedicated Syn AI Pro &amp; 3B1B Video · Voice OS · Shared Syn Meet 3D)</strong>, plus{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Holo Atlas 58-part 3D &amp; WebAR Desk Pro</strong>.
                 </>
               ) : (
                 <>
                   Hệ sinh thái học tập toàn diện cho THCS, THPT &amp; Đội tuyển Chuyên:{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Bản Miễn Phí ({totalLessons} bài giảng · {totalExams} đề thi · Toán 2D/Oxyz · 5 lĩnh vực Vật lí &amp; bệ pháo 3D chuẩn hóa · IDE Sublime 4 Truy vết 1-1 · 3 AI Cơ bản có nút Tạm đóng · Syn Meet chia sẻ màn hình)</strong>{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Bản Miễn Phí ({totalLessons} bài giảng 5 môn · {totalExams} đề thi · Hóa &amp; Sinh 2D/3D + Sandbox tách riêng · IDE Sublime 4 Trace 1-1 · 5 AI Chuyên Môn có nút Tạm đóng)</strong>{' '}
                   và{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre (22 Phòng Lab, Mô phỏng Lắp Ráp 3D &amp; Sandboxes tách 3 nhóm menu trái · Syn AI Pro độc quyền &amp; Video 3B1B · Voice OS · Syn Meet chiếu 3D nhiều người)</strong>, cùng{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre ({preTotal} Lab, Mô phỏng &amp; Sandboxes phân khu 5 môn · Syn AI Pro độc quyền &amp; Video 3B1B · Voice OS · Meet 3D)</strong>, cùng{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Học Cảm Giác 3D Holo Atlas 58 bộ phận &amp; WebAR Pro</strong>.
                 </>
               )}
             </p>
 
-            {/* Interactive 6-Pillar Quick Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-1">
+            {/* Interactive 8-Pillar Quick Cards (5 Subjects + Pre + Atlas + Exams/AI) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
               <button
                 type="button"
                 data-ripple="true"
                 onClick={() => setActiveSpotlight('synapse_v2')}
-                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group cs-deck-btn min-w-0 text-left p-3 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'synapse_v2'
                     ? 'bg-white dark:bg-slate-900/90 border-amber-500 ring-2 ring-amber-500/20'
                     : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400/60'
@@ -850,7 +935,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'Synapse Pre · AI Pro' : 'Synapse Pre · AI Pro'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '22 Labs · 3 Menus · Voice OS' : '22 Lab · 3 Nhóm · Voice OS'}
+                  {isEn ? `${preTotal} Labs · 5 Zones` : `${preTotal} Lab · 5 Khu Môn`}
                 </p>
               </button>
 
@@ -858,7 +943,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => setActiveSpotlight('spatial_3d')}
-                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group cs-deck-btn min-w-0 text-left p-3 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'spatial_3d'
                     ? 'bg-white dark:bg-slate-900/90 border-teal-500 ring-2 ring-teal-500/20'
                     : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-teal-400/60'
@@ -866,10 +951,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               >
                 <Hand className="w-5 h-5 text-teal-600 dark:text-teal-400 mb-1.5 icon-anim-hand" />
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                  {isEn ? 'Holo Atlas & 3D Touch' : 'Học cảm giác & Atlas 3D'}
+                  {isEn ? 'Holo Atlas 3D' : 'Học cảm giác 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '58 Parts · Fullscreen Dock' : '58 Bộ phận · Fullscreen đủ nút'}
+                  {isEn ? '58 Parts · WebAR' : '58 Bộ phận · WebAR'}
                 </p>
               </button>
 
@@ -877,7 +962,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => setActiveSpotlight('physics')}
-                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group cs-deck-btn min-w-0 text-left p-3 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'physics'
                     ? 'bg-white dark:bg-slate-900/90 border-amber-500 ring-2 ring-amber-500/20'
                     : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400/60'
@@ -889,8 +974,46 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
                   {isEn
-                    ? `${phyCounts.domainCount} Domains · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D`
-                    : `${phyCounts.domainCount} Lĩnh vực · ${phyCounts.count2D} 2D + ${phyCounts.count3D} 3D`}
+                    ? `${physicsCount} lessons · ${phyCounts.total} Labs`
+                    : `${physicsCount} bài · ${phyCounts.total} Lab`}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => setActiveSpotlight('chemistry')}
+                className={`group cs-deck-btn min-w-0 text-left p-3 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                  activeSpotlight === 'chemistry'
+                    ? 'bg-white dark:bg-slate-900/90 border-violet-500 ring-2 ring-violet-500/20'
+                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-violet-400/60'
+                }`}
+              >
+                <FlaskConical className="w-5 h-5 text-violet-600 dark:text-violet-400 mb-1.5 icon-anim-flask" />
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                  {isEn ? 'Chemistry 2D/3D' : 'Hóa Học 2D & 3D'}
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
+                  {isEn ? `${chemistryCount} · ${chemTotalSims}+4 Labs` : `${chemistryCount} bài · ${chemTotalSims}+4 Lab`}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => setActiveSpotlight('biology')}
+                className={`group cs-deck-btn min-w-0 text-left p-3 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                  activeSpotlight === 'biology'
+                    ? 'bg-white dark:bg-slate-900/90 border-teal-500 ring-2 ring-teal-500/20'
+                    : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-teal-400/60'
+                }`}
+              >
+                <Dna className="w-5 h-5 text-teal-600 dark:text-teal-400 mb-1.5 icon-anim-dna" />
+                <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                  {isEn ? 'Biology 2D/3D' : 'Sinh Học 2D & 3D'}
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
+                  {isEn ? `${biologyCount} · ${bioTotalSims}+4 Labs` : `${biologyCount} bài · ${bioTotalSims}+4 Lab`}
                 </p>
               </button>
 
@@ -898,7 +1021,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => setActiveSpotlight('math')}
-                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group cs-deck-btn min-w-0 text-left p-3 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'math'
                     ? 'bg-white dark:bg-slate-900/90 border-blue-500 ring-2 ring-blue-500/20'
                     : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-blue-400/60'
@@ -906,10 +1029,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               >
                 <Compass className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-1.5 icon-anim-compass" />
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                  {isEn ? 'Math 2D / Oxyz 3D' : 'Toán 2D / Oxyz 3D'}
+                  {isEn ? 'Math 2D / Oxyz' : 'Toán 2D / Oxyz 3D'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${mathCount} topics · 11 3D scenes` : `${mathCount} bài · 11 cảnh 3D`}
+                  {isEn ? `${mathCount} · 11 3D scenes` : `${mathCount} bài · 11 cảnh 3D`}
                 </p>
               </button>
 
@@ -917,7 +1040,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => setActiveSpotlight('cs')}
-                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group cs-deck-btn min-w-0 text-left p-3 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'cs'
                     ? 'bg-white dark:bg-slate-900/90 border-emerald-500 ring-2 ring-emerald-500/20'
                     : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-emerald-400/60'
@@ -928,7 +1051,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   {isEn ? 'CS · 5 Roadmaps' : 'Tin Học · 5 Lộ Trình'}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? `${csCount} VNOI + ${csSpecializedStageCount}` : `${csCount} VNOI + ${csSpecializedStageCount} C++`}
+                  {isEn ? `${csCount}+${csSpecializedStageCount} Trace` : `${csCount}+${csSpecializedStageCount} Trace`}
                 </p>
               </button>
 
@@ -936,7 +1059,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 type="button"
                 data-ripple="true"
                 onClick={() => setActiveSpotlight('exams')}
-                className={`group cs-deck-btn min-w-0 text-left p-3 sm:p-3.5 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
+                className={`group cs-deck-btn min-w-0 text-left p-3 rounded border backdrop-blur-md shadow-xs transition-all cursor-pointer ${
                   activeSpotlight === 'exams'
                     ? 'bg-white dark:bg-slate-900/90 border-cyan-500 ring-2 ring-cyan-500/20'
                     : 'bg-white/85 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-cyan-400/60'
@@ -944,10 +1067,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               >
                 <Award className="w-5 h-5 text-cyan-600 dark:text-cyan-400 mb-1.5 icon-anim-award" />
                 <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate tabular-nums">
-                  {isEn ? `${totalExams} Exams & Dual AI` : `${totalExams} Đề & AI 2 Tầng`}
+                  {isEn ? `${totalExams} Exams & AI` : `${totalExams} Đề & 5+1 AI`}
                 </h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums truncate">
-                  {isEn ? '3 Base AIs + Syn AI Pro' : '3 AI Cơ bản · Syn AI Pro'}
+                  {isEn ? '5 AIs + Syn AI Pro' : '5 AI Môn · AI Pro'}
                 </p>
               </button>
             </div>
@@ -1075,10 +1198,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       </span>
                       <div className="min-w-0">
                         <div className="font-display text-xs sm:text-[13px] font-bold leading-snug">
-                          {isEn ? 'Synapse Pre · 22 Labs & Syn AI Pro' : 'Synapse Pre · 22 Lab & Syn AI Pro'}
+                          {isEn ? `Synapse Pre · ${preTotal} Labs & Syn AI Pro` : `Synapse Pre · ${preTotal} Lab & Syn AI Pro`}
                         </div>
                         <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-amber-200/95">
-                          {isEn ? '7 Labs · 9 Sims · 6 Sandboxes · Voice OS' : '7 Phòng Lab · 9 Mô phỏng · 6 Sandboxes'}
+                          {isEn ? `${preLabsCount} Labs · ${preSimsCount} Sims · ${preSandboxesCount} Sandboxes` : `${preLabsCount} Phòng Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes`}
                         </div>
                       </div>
                     </div>
@@ -1086,8 +1209,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </div>
                   <p className="text-[11px] leading-relaxed text-sky-50/90">
                     {isEn
-                      ? '22 3D/4D labs (with 3D Mechanical Assembly) organized in 3 left-sidebar menus, standalone Syn AI Pro, Voice OS & Meet 3D.'
-                      : 'Gói 120k/3 tháng mở 22 Lab 3D/4D (có Lắp Ráp Cơ Khí 3D) chia sẵn 3 mục bên trái, Syn AI Pro độc quyền, Voice OS & Meet chiếu 3D.'}
+                      ? `${preTotal} 3D/4D labs (Chem Ea, VSEPR, Cell, CRISPR, 3D Assembly) split by 5 subjects, standalone Syn AI Pro & Meet 3D.`
+                      : `Mở ${preTotal} Lab 3D/4D phân khu 5 môn (Hóa Ea, VSEPR, Tế Bào, CRISPR, Lắp Ráp 3D), Syn AI Pro độc quyền & Meet 3D.`}
                   </p>
                 </button>
 
@@ -1620,8 +1743,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 </div>
                 <p className="text-xs sm:text-sm text-sky-100/95 font-medium truncate">
                   {isEn
-                    ? `Math (${mathCount}) · Physics (${physicsCount}) · CS (${csCount}) · ${totalExams} Official Exam Papers`
-                    : `Toán học (${mathCount} bài) · Vật lí (${physicsCount} bài) · Tin học (${csCount} bài) · ${totalExams} Đề thi chuẩn`}
+                    ? `Math (${mathCount}) · Physics (${physicsCount}) · Chemistry (${chemistryCount}) · Biology (${biologyCount}) · CS (${csCount}) · ${totalExams} Exams`
+                    : `Toán (${mathCount}) · Vật lí (${physicsCount}) · Hóa học (${chemistryCount}) · Sinh học (${biologyCount}) · Tin (${csCount}) · ${totalExams} Đề thi`}
                 </p>
               </div>
             </div>
@@ -1650,7 +1773,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <button
               type="button"
               data-ripple="true"
@@ -1663,10 +1786,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               />
               <div className="relative z-10 min-w-0">
                 <span className="font-mono text-[11px] font-semibold text-blue-700 dark:text-sky-400 block">
-                  01 · {isEn ? 'ALL 9 PLATFORM SYSTEMS' : 'TOÀN BỘ 9 HỆ THỐNG'}
+                  01 · {isEn ? 'ALL PLATFORM SYSTEMS' : 'TOÀN BỘ HỆ THỐNG'}
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-sky-200 truncate block transition-colors">
-                  {isEn ? 'Complete Feature Tour' : 'Giới thiệu toàn bộ chức năng web'}
+                  {isEn ? 'Complete Feature Tour' : 'Giới thiệu toàn bộ chức năng'}
                 </span>
               </div>
               <span className="relative z-10 w-8 h-8 rounded bg-blue-600/10 group-hover:bg-blue-700 text-blue-700 dark:text-sky-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -1689,7 +1812,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   02 · {isEn ? 'FULL DIRECTORY' : 'TOÀN BỘ BÀI GIẢNG'}
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-sky-200 truncate block transition-colors">
-                  {isEn ? `All Lectures (${totalLessons} lessons)` : `Danh sách bài giảng (${totalLessons} bài)`}
+                  {isEn ? `All Lectures (${totalLessons} lessons)` : `Tất cả bài giảng (${totalLessons} bài)`}
                 </span>
               </div>
               <span className="relative z-10 w-8 h-8 rounded bg-blue-600/10 group-hover:bg-blue-700 text-blue-700 dark:text-sky-300 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -1735,10 +1858,56 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   04 · {isEn ? 'PHYSICS' : 'VẬT LÍ'}
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
-                  {isEn ? `Physics Labs & Lessons (${physicsCount})` : `Bài giảng Vật lí (${physicsCount} bài)`}
+                  {isEn ? `Physics Labs (${physicsCount})` : `Bài giảng Vật lí (${physicsCount} bài)`}
                 </span>
               </div>
               <span className="relative z-10 w-8 h-8 rounded bg-amber-500/12 group-hover:bg-amber-500 text-amber-600 dark:text-amber-400 group-hover:text-slate-950 flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => scrollToLectureDirectory('chemistry')}
+              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/90 dark:bg-slate-800/65 hover:bg-violet-50 dark:hover:bg-violet-950/45 border border-slate-200/85 dark:border-white/10 hover:border-violet-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+              />
+              <div className="relative z-10 min-w-0">
+                <span className="font-mono text-[11px] font-semibold text-violet-600 dark:text-violet-400 block">
+                  05 · {isEn ? 'CHEMISTRY' : 'HÓA HỌC'}
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-violet-700 dark:group-hover:text-violet-300 truncate block transition-colors">
+                  {isEn ? `Chemistry (${chemistryCount})` : `Bài giảng Hóa (${chemistryCount} bài)`}
+                </span>
+              </div>
+              <span className="relative z-10 w-8 h-8 rounded bg-violet-500/12 group-hover:bg-violet-600 text-violet-600 dark:text-violet-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
+                <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => scrollToLectureDirectory('biology')}
+              className="group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-3 px-4 py-3.5 rounded bg-slate-50/90 dark:bg-slate-800/65 hover:bg-teal-50 dark:hover:bg-teal-950/45 border border-slate-200/85 dark:border-white/10 hover:border-teal-400/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] shadow-xs"
+            >
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/10 to-transparent -translate-x-[160%] group-hover-sheen"
+              />
+              <div className="relative z-10 min-w-0">
+                <span className="font-mono text-[11px] font-semibold text-teal-600 dark:text-teal-400 block">
+                  06 · {isEn ? 'BIOLOGY' : 'SINH HỌC'}
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 truncate block transition-colors">
+                  {isEn ? `Biology (${biologyCount})` : `Bài giảng Sinh (${biologyCount} bài)`}
+                </span>
+              </div>
+              <span className="relative z-10 w-8 h-8 rounded bg-teal-500/12 group-hover:bg-teal-600 text-teal-600 dark:text-teal-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
                 <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
               </span>
             </button>
@@ -1755,12 +1924,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               />
               <div className="relative z-10 min-w-0">
                 <span className="font-mono text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 block">
-                  05 · {isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC'}
+                  07 · {isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC'}
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 truncate block transition-colors">
                   {isEn
-                    ? `CS 5 Roadmaps (${csCount} + ${csSpecializedStageCount})`
-                    : `Tin học · 5 lộ trình (${csCount} + ${csSpecializedStageCount} chặng)`}
+                    ? `CS 5 Roadmaps (${csCount}+${csSpecializedStageCount})`
+                    : `Tin học (${csCount}+${csSpecializedStageCount} chặng)`}
                 </span>
               </div>
               <span className="relative z-10 w-8 h-8 rounded bg-emerald-500/12 group-hover:bg-emerald-600 text-emerald-600 dark:text-emerald-400 group-hover:text-white flex items-center justify-center shrink-0 transition-all group-hover:scale-105">
@@ -1780,7 +1949,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               />
               <div className="relative z-10 min-w-0">
                 <span className="font-mono text-[11px] font-semibold text-amber-600 dark:text-amber-400 block">
-                  06 · {isEn ? 'COMMUNITY' : 'CỘNG ĐỒNG'}
+                  08 · {isEn ? 'COMMUNITY' : 'CỘNG ĐỒNG'}
                 </span>
                 <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 truncate block transition-colors">
                   {isEn ? 'Platform Ratings & Votes' : 'Đánh giá & Bình chọn'}
@@ -1794,10 +1963,10 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         </section>
         </ScrollReveal>
 
-        {/* GRAND ANIMATED OVERVIEW SHOWCASE: FREE VS SYNAPSE PRE · 21 LABS · HOLO ATLAS 3D */}
+        {/* GRAND ANIMATED OVERVIEW SHOWCASE: FREE VS SYNAPSE PRE · LABS · HOLO ATLAS 3D */}
         <ScrollReveal direction="up" className="mt-10 sm:mt-14">
         <section
-          aria-label={isEn ? 'Free vs Synapse Pre, 21 3D/4D Labs and Holo Atlas Overview' : 'Giới thiệu Miễn phí & Synapse Pre, 21 Phòng Lab 3D/4D và Học tương tác 3D'}
+          aria-label={isEn ? `Free vs Synapse Pre, ${preTotal} 3D/4D Labs and Holo Atlas Overview` : `Giới thiệu Miễn phí & Synapse Pre, ${preTotal} Phòng Lab 3D/4D và Học tương tác 3D`}
           className="space-y-6"
         >
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
@@ -1808,8 +1977,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </div>
               <h3 className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tight text-balance">
                 {isEn
-                  ? 'Free Classroom · Synapse Pre (22 Labs & AI Pro) · Holo Atlas 3D'
-                  : 'Lớp Học Free · Synapse Pre (22 Lab & Syn AI Pro) · Holo Atlas 3D'}
+                  ? `Free Classroom (5 Subjects) · Synapse Pre (${preTotal} Labs & AI Pro) · Holo Atlas`
+                  : `Lớp Học Free (5 Môn) · Synapse Pre (${preTotal} Lab & Syn AI Pro) · Holo Atlas`}
               </h3>
             </div>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md">
@@ -1843,12 +2012,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
                   <div className="font-bold text-slate-900 dark:text-white">
-                    {isEn ? '3 Base AI Tutors + Pause' : '3 Trợ Lý AI Cơ Bản · Tạm Đóng'}
+                    {isEn ? '5 Subject AI Tutors + Pause' : '5 Trợ Lý AI Môn · Tạm Đóng'}
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Syn Math (Ctrl+D), Syn Physics (Ctrl+F) & Syn Code (Ctrl+G) with Live Vision and Pause button to resume chats anytime.'
-                      : 'Syn Math, Syn Physics & Syn Code kèm Mắt Thần và nút Tạm đóng giữ nguyên nội dung để mở lại trò chuyện tiếp.'}
+                      ? 'Syn Math (Ctrl+D), Syn Physics (Ctrl+F), Syn Chem (Ctrl+H), Syn Bio (Ctrl+B) & Syn Code (Ctrl+G) with Pause/Resume.'
+                      : 'Syn Math, Physics, Chem, Bio & Code kèm Mắt Thần và nút Tạm đóng giữ hội thoại để mở lại trò chuyện tiếp.'}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
@@ -1857,8 +2026,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </div>
                   <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? `Math 2D/Oxyz (GDPT 2018 & 2006), ${phyCounts.total} Physics 2D/3D labs, Sublime 4 Code Trace 1-1 & 0–10 AI grading.`
-                      : `Toán Oxy/Oxyz & Vật lí (${phyCounts.total} Lab 2D/3D chuẩn 2018 & 2006), Code Trace 1-1 & Chấm ảnh đề 0–10.`}
+                      ? `Math, Physics (${phyCounts.total} labs), Chem (${chemTotalSims}+4), Bio (${bioTotalSims}+4) across 2006/2018 & 350 exams/subject.`
+                      : `Toán, Lí (${phyCounts.total} Lab), Hóa (${chemTotalSims}+4), Sinh (${bioTotalSims}+4) chuẩn 2006/2018 & 350 đề/môn.`}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
@@ -1914,12 +2083,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-cyan-400/30 space-y-1">
                   <div className="font-bold text-cyan-300">
-                    {isEn ? '22 Labs in 3 Sidebar Menus' : '22 Phòng Lab Xếp Gọn 3 Nhóm Trái'}
+                    {isEn ? `${preTotal} Labs Across 5 Subjects` : `${preTotal} Lab Phân Khu 5 Môn`}
                   </div>
                   <p className="text-[11px] text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Instant sidebar access: 7 Pre Labs, 9 Simulations (3D Assembly, Rocket, Brayton) & 6 Sandboxes.'
-                      : '7 Phòng Lab · 9 Mô phỏng (Lắp Ráp 3D, Tên lửa, Phản lực) · 6 Sandboxes (28K GPU, AlgoCity).'}
+                      ? `${preLabsCount} Pre Labs (incl. Chem Reaction Ea, Cell Atlas), ${preSimsCount} Sims & ${preSandboxesCount} Sandboxes.`
+                      : `${preLabsCount} Phòng Lab (có Lò Hóa Ea, Atlas Tế Bào, CRISPR), ${preSimsCount} Mô phỏng & ${preSandboxesCount} Sandboxes.`}
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-white/5 border border-emerald-400/30 space-y-1">
@@ -1946,7 +2115,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             </div>
           </div>
 
-          {/* FRAME 1: SYNAPSE PRE (21 PHÒNG LAB · 3 NHÓM MENU TRÁI · SYN AI PRO) */}
+          {/* FRAME 1: SYNAPSE PRE */}
           <div
             id="visitor-synapse-overview"
             style={{ ['--holo-accent' as string]: '#38bdf8', ['--holo-secondary' as string]: '#f59e0b' }}
@@ -1976,29 +2145,29 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   <div className="flex flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-amber-500/15 border border-amber-400/40 text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-amber-300">
                       <Crown className="w-4 h-4" />
-                      <span>{isEn ? 'SYNAPSE PRE · 22 LABS IN 3 SIDEBAR MENUS' : 'SYNAPSE PRE · 22 LAB 3D/4D TRÊN MENU TRÁI'}</span>
+                      <span>{isEn ? `SYNAPSE PRE · ${preTotal} LABS IN 5 SUBJECT ZONES` : `SYNAPSE PRE · ${preTotal} LAB 3D/4D PHÂN KHU 5 MÔN`}</span>
                     </span>
                   </div>
 
                   <h4 className="font-display text-xl sm:text-2xl lg:text-[1.75rem] font-semibold tracking-tight text-white leading-snug">
                     {isEn
-                      ? '22 WebGL Labs Organized into 3 Left-Sidebar Menus + Dedicated Syn AI Pro'
-                      : '22 Không Gian Lab, Mô Phỏng & Sandboxes 3D/4D + Trợ Lý Syn AI Pro Riêng'}
+                      ? `${preTotal} WebGL Labs Separated by Subject Zone + Dedicated Syn AI Pro`
+                      : `${preTotal} Không Gian Lab, Mô Phỏng & Sandboxes Phân Khu 5 Môn + Syn AI Pro`}
                   </h4>
 
                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
                     {isEn
-                      ? 'When Synapse Pre is active, all 22 interactive chambers appear neatly under 3 sidebar groups (Pre Labs, Simulations, Sandboxes) — paired with Syn AI Pro, Voice OS, and transparent subscription dates.'
-                      : 'Khi kích hoạt Synapse Pre, toàn bộ 22 không gian được xếp gọn vào 3 nút ngay thanh menu trái (Phòng Lab · Mô phỏng · Sandboxes), đi cùng Syn AI Pro riêng biệt, Voice OS (Alt+Space) & thẻ theo dõi ngày hết hạn gói.'}
+                      ? `When Synapse Pre is active, all ${preTotal} interactive chambers appear neatly by subject across 3 sidebar groups (${preLabsCount} Pre Labs, ${preSimsCount} Simulations, ${preSandboxesCount} Sandboxes) — paired with Syn AI Pro, Voice OS, and transparent subscription dates.`
+                      : `Khi kích hoạt Synapse Pre, toàn bộ ${preTotal} không gian được tách theo từng môn trong 3 nhóm menu trái (${preLabsCount} Phòng Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes), đi cùng Syn AI Pro riêng biệt, Voice OS (Alt+Space) & thẻ theo dõi ngày hết hạn gói.`}
                   </p>
 
                   {/* Interactive Domain Tabs */}
                   <div className="flex flex-wrap gap-2 pt-1">
                     {(
                       [
-                        { id: 'physics', vi: '7 Phòng Lab', en: '7 Pre Labs' },
-                        { id: 'space', vi: '9 Mô Phỏng 3D/4D', en: '9 Simulations' },
-                        { id: 'cs', vi: '6 Sandboxes AI/GPU', en: '6 Sandboxes' },
+                        { id: 'physics', vi: `${preLabsCount} Phòng Lab`, en: `${preLabsCount} Pre Labs` },
+                        { id: 'space', vi: `${preSimsCount} Mô Phỏng 3D/4D`, en: `${preSimsCount} Simulations` },
+                        { id: 'cs', vi: `${preSandboxesCount} Sandboxes AI/GPU`, en: `${preSandboxesCount} Sandboxes` },
                         { id: 'math', vi: 'Syn AI Pro & Voice OS', en: 'Syn AI Pro & Voice' },
                       ] as const
                     ).map((tab) => {
@@ -2025,9 +2194,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     {(
                       {
                         physics: [
-                          { title: isEn ? 'Quantum Holodeck 3D' : 'Máy Tính Lượng Tử 3D', desc: isEn ? 'Bloch sphere & Bell gates' : 'Quả cầu Bloch & cổng CNOT' },
-                          { title: isEn ? 'Nanobot Bio-Swarm 4D' : 'Nanobot Y Sinh 4D', desc: isEn ? '36 vascular swarm bots' : '36 robot nano phá huyết khối' },
-                          { title: isEn ? '3D Hardware & VOM Repair' : 'Phẫu Thuật Thiết Bị & VOM', desc: isEn ? 'USB-C GaN, BMS & PCB probe' : 'Đo que VOM & hàn linh kiện' },
+                          { title: isEn ? 'Chem Reaction & Orbital 3D' : 'Lò Phản Ứng Hóa & VSEPR 3D', desc: isEn ? 'Potential surface Ea & sp3d2 orbitals' : 'Bề mặt thế năng Ea & Orbital sp³d²' },
+                          { title: isEn ? 'Cell Atlas & CRISPR-Cas9' : 'Atlas Tế Bào & CRISPR 3D', desc: isEn ? 'Cutaway organelles & gene editing' : 'Cắt lớp bào quan & cắt gen sgARN' },
+                          { title: isEn ? 'Quantum & Hardware 3D' : 'Lượng Tử & Phẫu Thuật PCB', desc: isEn ? 'Bloch sphere & VOM circuit probe' : 'Quả cầu Bloch & đo que VOM thật' },
                         ],
                         space: [
                           { title: isEn ? '3D Mechanical Assembly' : 'Lắp Ráp Cơ Khí 3D Tương Tác', desc: isEn ? 'V4 Engine, Watch & Drone snap-fit' : 'Kéo thả Động cơ, Đồng hồ & Drone' },
@@ -2069,7 +2238,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </button>
                     <span className="text-xs text-slate-400">
-                      {isEn ? '22 Labs across 3 Sidebar Groups · 120k/3 mo' : '7 Lab · 9 Mô phỏng · 6 Sandboxes · Mở qua Admin'}
+                      {isEn ? `${preTotal} Labs across 5 Subject Zones · 120k/3 mo` : `${preLabsCount} Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes · Mở qua Admin`}
                     </span>
                   </div>
                 </div>
@@ -2087,11 +2256,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     />
 
                     <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-sky-300/95">
-                      <span>SYNAPSE PRE · 22 LABS</span>
+                      <span>SYNAPSE PRE · {preTotal} LABS</span>
                       <span className="tabular-nums px-2 py-0.5 rounded bg-sky-500/15 border border-sky-400/30 text-amber-200">
-                        {synapsePreviewDomain === 'physics' && '7 PRE LABS'}
-                        {synapsePreviewDomain === 'space' && '9 SIMULATIONS'}
-                        {synapsePreviewDomain === 'cs' && '6 SANDBOXES'}
+                        {synapsePreviewDomain === 'physics' && `${preLabsCount} PRE LABS`}
+                        {synapsePreviewDomain === 'space' && `${preSimsCount} SIMULATIONS`}
+                        {synapsePreviewDomain === 'cs' && `${preSandboxesCount} SANDBOXES`}
                         {synapsePreviewDomain === 'math' && 'AI PRO + VOICE'}
                       </span>
                     </div>
@@ -2694,7 +2863,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* 01: Synapse Pre (21 Labs in 3 Sidebar Menus) */}
+            {/* 01: Synapse Pre */}
             {(featureCategory === 'all' || featureCategory === 'simulation') && (
               <div
                 data-ripple="true"
@@ -2723,21 +2892,21 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-300 transition-colors">
-                    {isEn ? 'Synapse Pre · 22 Labs (3 Sidebar Menus) & Voice OS' : 'Synapse Pre · 22 Lab (3 Nhóm Menu) & Voice OS'}
+                    {isEn ? `Synapse Pre · ${preTotal} Labs (5 Subject Zones)` : `Synapse Pre · ${preTotal} Lab (Phân Khu 5 Môn)`}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Organized cleanly into 7 Pre Labs, 9 Simulations (3D Mechanical Assembly, Rocket, Brayton, 30 Worlds), and 6 Sandboxes (28K GPU, AlgoCity, What-If Physics) plus Voice OS & plan expiry tracking.'
-                      : 'Tổ chức gọn trên menu trái: 7 Phòng Lab, 9 Mô phỏng (Lắp Ráp 3D, Tên lửa, Phản lực, 30 Đại công trình) & 6 Sandboxes (28K GPU, AlgoCity, Định luật đổi), kèm Voice OS & quản lí hạn gói.'}
+                      ? `Separated by 5 subjects & 3 sidebar groups: ${preLabsCount} Pre Labs (incl. Chem Reaction Ea, Orbital VSEPR, Cell Atlas, DNA CRISPR), ${preSimsCount} Simulations & ${preSandboxesCount} Sandboxes.`
+                      : `Tách riêng 5 khu môn học trên thanh điều hướng: ${preLabsCount} Phòng Lab (có Lò Phản Ứng Hóa, VSEPR, Tế Bào, CRISPR 3D), ${preSimsCount} Mô phỏng & ${preSandboxesCount} Sandboxes GPU.`}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      <span>{isEn ? '22 3D/4D Labs across 3 Left-Sidebar Menus' : '22 Phòng Lab, Mô phỏng & Sandboxes ngay Menu trái'}</span>
+                      <span>{isEn ? `${preTotal} 3D/4D Studios + 30 Megastructures` : `${preTotal} Studio 3D/4D + 30 Đại công trình WebGL`}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      <span>{isEn ? 'Voice OS (Alt+Space) + QR Telemetry + Admin Plan Control' : 'Voice OS (Alt+Space) + Gia hạn gói & Admin cấp quyền'}</span>
+                      <span>{isEn ? 'Voice OS (Alt+Space) + QR Telemetry + Admin Plan' : 'Voice OS (Alt+Space) + QR Cảm biến & Gia hạn gói'}</span>
                     </li>
                   </ul>
                 </div>
@@ -2749,7 +2918,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   }}
                   className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
                 >
-                  <span>{isEn ? 'Explore Synapse Pre Labs' : 'Khám phá Synapse Pre & 22 Lab'}</span>
+                  <span>{isEn ? `Explore ${preTotal} Synapse Pre Labs` : `Khám phá ${preTotal} Lab Synapse Pre`}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>
@@ -2989,6 +3158,148 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               </div>
             )}
 
+            {/* 05B: Chemistry 2D/3D + Dedicated Sandbox */}
+            {(featureCategory === 'all' || featureCategory === 'simulation' || featureCategory === 'curriculum_ai') && (
+              <div
+                data-ripple="true"
+                onClick={() => {
+                  navigate({ subject: 'chemistry', chemistryView: 'catalog', tutorOpen: false });
+                  onEnterAsGuest();
+                }}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-violet-300/85 dark:border-violet-500/35 hover:border-violet-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-violet-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <FlaskConical className="w-6 h-6 icon-anim-flask" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-violet-700 dark:text-violet-300">
+                      05B · CHEMISTRY
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
+                    {isEn ? `Chemistry (${chemistryCount}) & 4 Sandboxes` : `Hóa Học (${chemistryCount} Bài) · 2D/3D & Sandbox`}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? `GDPT 2006, 2018 & Olympiad lectures, ${CHEMISTRY_2D_SIMS.length} 2D + ${CHEMISTRY_3D_SIMS.length} 3D labs (Titration, VSEPR, Electrolysis), 4 dedicated Sandboxes & 350 Chemistry exams.`
+                      : `Đủ GDPT 2006, 2018 & Chuyên, ${CHEMISTRY_2D_SIMS.length} Lab 2D + ${CHEMISTRY_3D_SIMS.length} mô hình 3D (Chuẩn độ, VSEPR, Điện phân), 4 Sandbox Hóa tách riêng & 350 Đề Hóa.`}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ subject: 'chemistry_sims', chemistryView: 'sim2d_hub', tutorOpen: false });
+                        onEnterAsGuest();
+                      }}
+                      className="px-2.5 py-1 rounded bg-violet-500/15 hover:bg-violet-600 hover:text-white text-violet-700 dark:text-violet-300 text-[11px] font-semibold cursor-pointer"
+                    >
+                      {isEn ? 'Chem 2D/3D' : 'Mô phỏng 2D/3D'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ subject: 'chemistry_sims', chemistryView: 'sandbox', tutorOpen: false });
+                        onEnterAsGuest();
+                      }}
+                      className="px-2.5 py-1 rounded bg-slate-900 dark:bg-slate-800 text-violet-300 border border-violet-500/40 text-[11px] font-semibold cursor-pointer"
+                    >
+                      Sandbox Hóa
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ subject: 'chemistry', chemistryView: 'catalog', tutorOpen: false });
+                    onEnterAsGuest();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Open Chemistry Zone' : 'Vào Phòng Hóa Học'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* 05C: Biology 2D/3D + Dedicated Sandbox */}
+            {(featureCategory === 'all' || featureCategory === 'simulation' || featureCategory === 'curriculum_ai') && (
+              <div
+                data-ripple="true"
+                onClick={() => {
+                  navigate({ subject: 'biology', biologyView: 'catalog', tutorOpen: false });
+                  onEnterAsGuest();
+                }}
+                className="group sci-frame relative overflow-hidden p-5 sm:p-6 rounded-xl bg-white/92 dark:bg-slate-900/82 border border-teal-300/85 dark:border-teal-500/35 hover:border-teal-500 hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 shadow-sm"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-teal-300/20 to-transparent -translate-x-[160%] group-hover-sheen"
+                />
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="w-11 h-11 rounded-lg bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Dna className="w-6 h-6 icon-anim-dna" />
+                    </div>
+                    <span className="font-mono text-[11px] font-semibold text-teal-700 dark:text-teal-300">
+                      05C · BIOLOGY
+                    </span>
+                  </div>
+                  <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-300 transition-colors">
+                    {isEn ? `Biology (${biologyCount}) & 4 Sandboxes` : `Sinh Học (${biologyCount} Bài) · 2D/3D & Sandbox`}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn
+                      ? `GDPT 2006, 2018 & Olympiad lectures, ${BIOLOGY_2D_SIMS.length} 2D + ${BIOLOGY_3D_SIMS.length} 3D cellular/DNA labs, 4 dedicated Sandboxes & 350 Biology exams.`
+                      : `Đủ GDPT 2006, 2018 & Chuyên, ${BIOLOGY_2D_SIMS.length} Lab 2D + ${BIOLOGY_3D_SIMS.length} mô hình Tế bào/ADN 3D, 4 Sandbox Sinh tách riêng & 350 Đề Sinh.`}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ subject: 'biology_sims', biologyView: 'sim2d_hub', tutorOpen: false });
+                        onEnterAsGuest();
+                      }}
+                      className="px-2.5 py-1 rounded bg-teal-500/15 hover:bg-teal-600 hover:text-white text-teal-700 dark:text-teal-300 text-[11px] font-semibold cursor-pointer"
+                    >
+                      {isEn ? 'Bio 2D/3D' : 'Mô phỏng 2D/3D'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({ subject: 'biology_sims', biologyView: 'sandbox', tutorOpen: false });
+                        onEnterAsGuest();
+                      }}
+                      className="px-2.5 py-1 rounded bg-slate-900 dark:bg-slate-800 text-teal-300 border border-teal-500/40 text-[11px] font-semibold cursor-pointer"
+                    >
+                      Sandbox Sinh
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ subject: 'biology', biologyView: 'catalog', tutorOpen: false });
+                    onEnterAsGuest();
+                  }}
+                  className="cs-deck-btn relative z-10 w-full py-2.5 px-4 rounded bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <span>{isEn ? 'Open Biology Zone' : 'Vào Phòng Sinh Học'}</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
             {/* 06: Exam Bank + Fast Drag-Drop/Ctrl+V/Voice Upload */}
             {(featureCategory === 'all' || featureCategory === 'curriculum_ai') && (
               <div
@@ -3070,12 +3381,12 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     </span>
                   </div>
                   <h4 className="font-display text-base sm:text-lg font-semibold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
-                    {isEn ? '3 Base AIs + Standalone Syn AI Pro & Pause' : '3 AI Cơ Bản · Syn AI Pro Độc Quyền & Tạm Đóng'}
+                    {isEn ? '5 Base AIs + Standalone Syn AI Pro & Pause' : '5 AI Chuyên Môn · Syn AI Pro & Tạm Đóng'}
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Free includes Syn Math/Physics/Code (Ctrl+D/F/G) with Live Vision & Pause/Resume continuity; Synapse Pre unlocks separate Syn AI Pro with 3-Layer Fast Solve, Deep Reasoning, Pro Flowchart & 3B1B Video.'
-                      : 'Bản Free có 3 AI (Syn Math · Syn Physics · Syn Code) kèm Mắt Thần & nút Tạm đóng giữ hội thoại; Synapse Pre mở khóa Syn AI Pro riêng biệt giải 3 tầng siêu tốc, Suy luận sâu & Video 3B1B.'}
+                      ? 'Free includes 5 subject tutors (Math/Physics/Chem/Bio/Code · Ctrl+D/F/H/B/G) with Live Vision & Pause/Resume; Synapse Pre unlocks Syn AI Pro with 3-Layer Solve & 3B1B Video.'
+                      : 'Bản Free có đủ 5 AI (Syn Math · Physics · Chem · Bio · Code) kèm Mắt Thần & nút Tạm đóng giữ hội thoại; Synapse Pre mở khóa Syn AI Pro giải 3 tầng, Suy luận sâu & Video 3B1B.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
@@ -3320,11 +3631,11 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               : 'Synapse · Hệ thống giáo dục mô phỏng vũ trụ học thuật'}
           </span>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
-            <span>{isEn ? 'Synapse Pre (22 Labs · 3 Sidebar Groups)' : 'Synapse Pre (22 Lab · 3 Nhóm Menu)'}</span>
+            <span>{isEn ? `Synapse Pre (${preTotal} Labs · 5 Subject Zones)` : `Synapse Pre (${preTotal} Lab · 5 Khu Môn)`}</span>
             <span aria-hidden="true">·</span>
             <span>{isEn ? 'Holo Atlas 3D (58 Parts)' : 'Holo Atlas 3D (58 Bộ Phận)'}</span>
             <span aria-hidden="true">·</span>
-            <span>{isEn ? 'Syn AI Pro & Pause/Resume' : 'Syn AI Pro & Tạm Đóng Chat'}</span>
+            <span>{isEn ? '5 Subject AIs + Syn AI Pro' : '5 AI Môn + Syn AI Pro'}</span>
             <span aria-hidden="true">·</span>
             <span>{isEn ? 'Syn Meet Free & 3D Pre' : 'Syn Meet & Meet 3D'}</span>
             <span aria-hidden="true">·</span>

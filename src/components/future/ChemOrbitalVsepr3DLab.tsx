@@ -4,8 +4,24 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { Atom, Camera, Pause, Play, RotateCcw } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
+import {
+  captureCanvasPng,
+  exportRowsToCsv,
+  MiniTelemetryChart,
+  RecordVideoButton,
+  useCanvasRecorder
+} from '../common/SimProToolkit';
 import { SimAnalysisProBar } from '../common/SimAnalysisProBar';
+import {
+  applyClipPlaneToObject,
+  CameraBookmarkPose,
+  detectSoftwareGl,
+  Pre3DProControlsBar,
+  QuickCamPreset,
+  scheduleSyncedGlFrame,
+  SliceAxis,
+  updateClipPlaneFromState
+} from './Pre3DViewportBar';
 
 interface ChemOrbitalVsepr3DLabProps {
   onEarnXP?: (xp: number) => void;
@@ -23,8 +39,10 @@ interface VseprConfig {
   bondAngleDeg: number;
   hybridization: string;
   vectors: [number, number, number][];
-  lonePairIdx: number[];
 }
+
+const DEFAULT_CAM_POS: [number, number, number] = [4.5, 3.2, 5.2];
+const DEFAULT_CAM_TARGET: [number, number, number] = [0, 0, 0];
 
 const VSEPR_PRESETS: VseprConfig[] = [
   {
@@ -36,8 +54,7 @@ const VSEPR_PRESETS: VseprConfig[] = [
     geometryEn: 'Linear · 180°',
     bondAngleDeg: 180,
     hybridization: 'sp (2 AO)',
-    vectors: [[1, 0, 0], [-1, 0, 0]],
-    lonePairIdx: []
+    vectors: [[1, 0, 0], [-1, 0, 0]]
   },
   {
     id: 'sp2',
@@ -52,8 +69,7 @@ const VSEPR_PRESETS: VseprConfig[] = [
       [1, 0, 0],
       [-0.5, 0, 0.866],
       [-0.5, 0, -0.866]
-    ],
-    lonePairIdx: []
+    ]
   },
   {
     id: 'sp3',
@@ -69,8 +85,7 @@ const VSEPR_PRESETS: VseprConfig[] = [
       [0.943, -0.333, 0],
       [-0.471, -0.333, 0.816],
       [-0.471, -0.333, -0.816]
-    ],
-    lonePairIdx: []
+    ]
   },
   {
     id: 'sp3d',
@@ -87,8 +102,7 @@ const VSEPR_PRESETS: VseprConfig[] = [
       [1, 0, 0],
       [-0.5, 0, 0.866],
       [-0.5, 0, -0.866]
-    ],
-    lonePairIdx: []
+    ]
   },
   {
     id: 'sp3d2',
@@ -106,8 +120,7 @@ const VSEPR_PRESETS: VseprConfig[] = [
       [0, -1, 0],
       [0, 0, 1],
       [0, 0, -1]
-    ],
-    lonePairIdx: []
+    ]
   },
   {
     id: 'p_z',
@@ -118,8 +131,7 @@ const VSEPR_PRESETS: VseprConfig[] = [
     geometryEn: 'Dumbbell Lobes (+ψ / −ψ)',
     bondAngleDeg: 180,
     hybridization: '2p_z AO',
-    vectors: [[0, 1, 0], [0, -1, 0]],
-    lonePairIdx: []
+    vectors: [[0, 1, 0], [0, -1, 0]]
   },
   {
     id: 'd_z2',
@@ -130,25 +142,9 @@ const VSEPR_PRESETS: VseprConfig[] = [
     geometryEn: 'Axial Lobes + Equatorial Torus',
     bondAngleDeg: 90,
     hybridization: '3d_z² AO',
-    vectors: [[0, 1, 0], [0, -1, 0]],
-    lonePairIdx: []
+    vectors: [[0, 1, 0], [0, -1, 0]]
   }
 ];
-
-function detectSoftwareGl(): boolean {
-  try {
-    const c = document.createElement('canvas');
-    const gl = c.getContext('webgl2') || c.getContext('webgl');
-    if (!gl) return true;
-    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
-    if (!dbg) return false;
-    const renderer = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '');
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
-    return /SwiftShader|llvmpipe|softpipe|Software/i.test(renderer);
-  } catch {
-    return true;
-  }
-}
 
 export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ onEarnXP }) => {
   const { language } = useLanguage();
@@ -160,10 +156,20 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
   const [cloudOpacity, setCloudOpacity] = useState<number>(0.72);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [rotSpeed, setRotSpeed] = useState<number>(0.8);
+  const [sliceEnabled, setSliceEnabled] = useState<boolean>(false);
+  const [sliceAxis, setSliceAxis] = useState<SliceAxis>('y');
+  const [sliceOffset, setSliceOffset] = useState<number>(0.5);
+  const [showTelemetry, setShowTelemetry] = useState<boolean>(false);
+  const [telemetryRows, setTelemetryRows] = useState<{ t: string; angle: number; density: number; aoCount: number }[]>([]);
+  const [bookmark, setBookmark] = useState<CameraBookmarkPose | null>(null);
   const [isSoftwareGl] = useState(() => detectSoftwareGl());
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const modelGroupRef = useRef<THREE.Group | null>(null);
+  const clipPlaneRef = useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, -1, 0), 0.5));
   const exploredRef = useRef<Set<VseprPresetId>>(new Set(['sp3']));
 
   const recorder = useCanvasRecorder(() => canvasRef.current, `synapse-pre-vsepr-${presetId}`);
@@ -173,7 +179,6 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
     [presetId]
   );
 
-  // VSEPR lone-pair angle compression (~2.5 deg per lone pair)
   const effectiveAngleDeg = useMemo(() => {
     const maxLp = Math.max(0, activePreset.vectors.length - 2);
     const clampedLp = Math.min(lonePairs, maxLp);
@@ -181,8 +186,24 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
     return Math.max(82, Math.round((activePreset.bondAngleDeg - clampedLp * 2.5) * 10) / 10);
   }, [activePreset, lonePairs, presetId]);
 
-  const liveRef = useRef({ presetId, lonePairs, lobeScale, cloudOpacity, isPaused, rotSpeed });
-  liveRef.current = { presetId, lonePairs, lobeScale, cloudOpacity, isPaused, rotSpeed };
+  const liveRef = useRef({
+    presetId,
+    lonePairs,
+    lobeScale,
+    cloudOpacity,
+    isPaused,
+    rotSpeed,
+    sliceEnabled
+  });
+  liveRef.current = {
+    presetId,
+    lonePairs,
+    lobeScale,
+    cloudOpacity,
+    isPaused,
+    rotSpeed,
+    sliceEnabled
+  };
 
   const selectPreset = (id: VseprPresetId) => {
     setPresetId(id);
@@ -193,8 +214,34 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
   };
 
   useEffect(() => {
+    updateClipPlaneFromState(clipPlaneRef.current, sliceAxis, sliceOffset);
+    if (modelGroupRef.current) {
+      applyClipPlaneToObject(modelGroupRef.current, sliceEnabled ? [clipPlaneRef.current] : null);
+    }
+  }, [sliceEnabled, sliceAxis, sliceOffset]);
+
+  useEffect(() => {
+    if (!showTelemetry) return;
+    const pushPoint = () => {
+      const nowLabel = new Date().toLocaleTimeString('en-GB', { hour12: false });
+      setTelemetryRows((prev) => [
+        ...prev.slice(-39),
+        {
+          t: nowLabel,
+          angle: effectiveAngleDeg,
+          density: Math.round(cloudOpacity * 100),
+          aoCount: activePreset.vectors.length
+        }
+      ]);
+    };
+    pushPoint();
+    const id = window.setInterval(pushPoint, 450);
+    return () => window.clearInterval(id);
+  }, [showTelemetry, effectiveAngleDeg, cloudOpacity, activePreset.vectors.length]);
+
+  useEffect(() => {
     const container = mountRef.current;
-    if (!container || isSoftwareGl) return;
+    if (!container) return;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x090f1d);
@@ -202,14 +249,20 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
     const w = container.clientWidth || 800;
     const h = container.clientHeight || 480;
     const camera = new THREE.PerspectiveCamera(44, w / h, 0.1, 100);
-    camera.position.set(4.5, 3.2, 5.2);
+    camera.position.set(...DEFAULT_CAM_POS);
+    cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isSoftwareGl,
+      preserveDrawingBuffer: true,
+      powerPreference: 'high-performance'
+    });
     renderer.setSize(w, h);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
+    renderer.localClippingEnabled = true;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
     canvasRef.current = renderer.domElement;
@@ -220,8 +273,10 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
     pmrem.dispose();
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
+    controls.enableDamping = !isSoftwareGl;
     controls.dampingFactor = 0.06;
+    controls.target.set(...DEFAULT_CAM_TARGET);
+    controlsRef.current = controls;
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.45));
     const key = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -234,8 +289,11 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
 
     const modelGroup = new THREE.Group();
     scene.add(modelGroup);
+    modelGroupRef.current = modelGroup;
 
     const disposables: { dispose: () => void }[] = [];
+    const upVec = new THREE.Vector3(0, 1, 0);
+    const dirVec = new THREE.Vector3();
 
     const rebuildModel = () => {
       while (modelGroup.children.length > 0) {
@@ -246,10 +304,15 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
 
       const cur = liveRef.current;
       const cfg = VSEPR_PRESETS.find((p) => p.id === cur.presetId) || VSEPR_PRESETS[2];
+      const activePlanes = cur.sliceEnabled ? [clipPlaneRef.current] : null;
 
-      // Central Atom
       const nucGeo = new THREE.SphereGeometry(0.32, 24, 24);
-      const nucMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.25, metalness: 0.4 });
+      const nucMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        roughness: 0.25,
+        metalness: 0.4,
+        clippingPlanes: activePlanes
+      });
       modelGroup.add(new THREE.Mesh(nucGeo, nucMat));
       disposables.push(nucGeo, nucMat);
 
@@ -259,13 +322,15 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
           color: 0x0ea5e9,
           transparent: true,
           opacity: cur.cloudOpacity,
-          roughness: 0.22
+          roughness: 0.22,
+          clippingPlanes: activePlanes
         });
         const mNeg = new THREE.MeshStandardMaterial({
           color: 0xf43f5e,
           transparent: true,
           opacity: cur.cloudOpacity,
-          roughness: 0.22
+          roughness: 0.22,
+          clippingPlanes: activePlanes
         });
         const topMesh = new THREE.Mesh(gTop, mPos);
         topMesh.scale.set(0.7, 1.45, 0.7);
@@ -283,7 +348,8 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
             color: 0xa855f7,
             transparent: true,
             opacity: cur.cloudOpacity * 0.85,
-            roughness: 0.25
+            roughness: 0.25,
+            clippingPlanes: activePlanes
           });
           const torMesh = new THREE.Mesh(torGeo, torMat);
           torMesh.rotation.x = Math.PI / 2;
@@ -297,52 +363,51 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
       const activeLp = Math.min(cur.lonePairs, maxLp);
       const bondLen = 2.05 * cur.lobeScale;
 
-      const bondMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.5 });
-      const ligMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.25, metalness: 0.35 });
+      const bondMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.5, clippingPlanes: activePlanes });
+      const ligMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.25, metalness: 0.35, clippingPlanes: activePlanes });
       const lpMat = new THREE.MeshStandardMaterial({
         color: 0xf43f5e,
         transparent: true,
         opacity: cur.cloudOpacity,
-        roughness: 0.2
+        roughness: 0.2,
+        clippingPlanes: activePlanes
       });
       const orbitalMat = new THREE.MeshStandardMaterial({
         color: 0x10b981,
         transparent: true,
         opacity: cur.cloudOpacity * 0.45,
-        roughness: 0.28
+        roughness: 0.28,
+        clippingPlanes: activePlanes
       });
       disposables.push(bondMat, ligMat, lpMat, orbitalMat);
 
-      const up = new THREE.Vector3(0, 1, 0);
-
       cfg.vectors.forEach((rawV, idx) => {
-        const dir = new THREE.Vector3(rawV[0], rawV[1], rawV[2]).normalize();
+        dirVec.set(rawV[0], rawV[1], rawV[2]).normalize();
         const isLone = idx < activeLp;
 
         if (isLone) {
           const lobeGeo = new THREE.SphereGeometry(0.42 * cur.lobeScale, 20, 18);
           const lobeMesh = new THREE.Mesh(lobeGeo, lpMat);
           lobeMesh.scale.set(0.85, 1.5, 0.85);
-          lobeMesh.quaternion.setFromUnitVectors(up, dir);
-          lobeMesh.position.copy(dir).multiplyScalar(0.92 * cur.lobeScale);
+          lobeMesh.quaternion.setFromUnitVectors(upVec, dirVec);
+          lobeMesh.position.copy(dirVec).multiplyScalar(0.92 * cur.lobeScale);
           modelGroup.add(lobeMesh);
           disposables.push(lobeGeo);
         } else {
-          // Bond cylinder + ligand sphere + hybrid orbital cloud envelope
           const cylGeo = new THREE.CylinderGeometry(0.06, 0.06, bondLen, 12);
           const cyl = new THREE.Mesh(cylGeo, bondMat);
-          cyl.quaternion.setFromUnitVectors(up, dir);
-          cyl.position.copy(dir).multiplyScalar(bondLen * 0.5);
+          cyl.quaternion.setFromUnitVectors(upVec, dirVec);
+          cyl.position.copy(dirVec).multiplyScalar(bondLen * 0.5);
 
           const ligGeo = new THREE.SphereGeometry(0.24, 20, 20);
           const lig = new THREE.Mesh(ligGeo, ligMat);
-          lig.position.copy(dir).multiplyScalar(bondLen);
+          lig.position.copy(dirVec).multiplyScalar(bondLen);
 
           const envGeo = new THREE.SphereGeometry(0.35 * cur.lobeScale, 18, 16);
           const env = new THREE.Mesh(envGeo, orbitalMat);
           env.scale.set(0.75, 1.5, 0.75);
-          env.quaternion.setFromUnitVectors(up, dir);
-          env.position.copy(dir).multiplyScalar(bondLen * 0.48);
+          env.quaternion.setFromUnitVectors(upVec, dirVec);
+          env.position.copy(dirVec).multiplyScalar(bondLen * 0.48);
 
           modelGroup.add(cyl, lig, env);
           disposables.push(cylGeo, ligGeo, envGeo);
@@ -352,7 +417,8 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
 
     rebuildModel();
 
-    let rafId = 0;
+    let cancelNextFrame = () => {};
+    let disposed = false;
     let last = performance.now();
     let prevSig = '';
 
@@ -368,7 +434,7 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
     ro.observe(container);
 
     const tick = (now: number) => {
-      rafId = requestAnimationFrame(tick);
+      if (disposed) return;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const cur = liveRef.current;
@@ -382,18 +448,69 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
       }
       controls.update();
       renderer.render(scene, camera);
+      if (!disposed) {
+        scheduleSyncedGlFrame(renderer, isSoftwareGl, tick, (c) => {
+          cancelNextFrame = c;
+        });
+      }
     };
-    rafId = requestAnimationFrame(tick);
+
+    scheduleSyncedGlFrame(renderer, isSoftwareGl, tick, (c) => {
+      cancelNextFrame = c;
+    });
 
     return () => {
-      cancelAnimationFrame(rafId);
+      disposed = true;
+      cancelNextFrame();
       ro.disconnect();
       controls.dispose();
       disposables.forEach((d) => d.dispose());
       envRT.dispose();
       renderer.dispose();
+      cameraRef.current = null;
+      controlsRef.current = null;
+      modelGroupRef.current = null;
     };
   }, [isSoftwareGl]);
+
+  const applyCameraPreset = (preset: QuickCamPreset) => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    if (preset === 'iso') cam.position.set(...DEFAULT_CAM_POS);
+    else if (preset === 'top') cam.position.set(0.01, 7.2, 0.01);
+    else cam.position.set(0, 0.6, 6.4);
+    ctrl.target.set(...DEFAULT_CAM_TARGET);
+    ctrl.update();
+  };
+
+  const resetCamera = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    cam.position.set(...DEFAULT_CAM_POS);
+    ctrl.target.set(...DEFAULT_CAM_TARGET);
+    ctrl.update();
+  };
+
+  const handleSaveBookmark = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    setBookmark({
+      pos: [cam.position.x, cam.position.y, cam.position.z],
+      target: [ctrl.target.x, ctrl.target.y, ctrl.target.z]
+    });
+  };
+
+  const handleRecallBookmark = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl || !bookmark) return;
+    cam.position.set(...bookmark.pos);
+    ctrl.target.set(...bookmark.target);
+    ctrl.update();
+  };
 
   const handleReset = () => {
     setPresetId('sp3');
@@ -402,6 +519,8 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
     setCloudOpacity(0.72);
     setRotSpeed(0.8);
     setIsPaused(false);
+    setSliceEnabled(false);
+    resetCamera();
   };
 
   return (
@@ -442,13 +561,32 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
               type="button"
               onClick={handleReset}
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap shrink-0"
+              title={isEn ? 'Reset Lab' : 'Đặt lại'}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Preset Strip */}
+        <Pre3DProControlsBar
+          isEn={isEn}
+          sliceEnabled={sliceEnabled}
+          onToggleSlice={() => setSliceEnabled((v) => !v)}
+          sliceAxis={sliceAxis}
+          onChangeSliceAxis={setSliceAxis}
+          sliceOffset={sliceOffset}
+          onChangeSliceOffset={setSliceOffset}
+          sliceMin={-2.5}
+          sliceMax={2.5}
+          showTelemetry={showTelemetry}
+          onToggleTelemetry={() => setShowTelemetry((v) => !v)}
+          hasBookmark={Boolean(bookmark)}
+          onSaveBookmark={handleSaveBookmark}
+          onRecallBookmark={handleRecallBookmark}
+          onCameraPreset={applyCameraPreset}
+          onResetCamera={resetCamera}
+        />
+
         <div className="px-4 py-2.5 border-b border-slate-800/80 bg-slate-900/60 flex flex-wrap gap-1.5">
           {VSEPR_PRESETS.map((p) => (
             <button
@@ -467,20 +605,29 @@ export const ChemOrbitalVsepr3DLab: React.FC<ChemOrbitalVsepr3DLabProps> = ({ on
         </div>
 
         <div className="relative h-[420px] sm:h-[470px] w-full bg-[#090f1d]">
-          {isSoftwareGl ? (
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-300 space-y-2">
-              <Atom className="w-8 h-8 text-sky-400" />
-              <p className="text-sm font-bold text-white">{isEn ? activePreset.nameEn : activePreset.nameVi}</p>
-              <p className="text-xs text-slate-400">
-                {activePreset.formulaExample} · {isEn ? activePreset.geometryEn : activePreset.geometryVi} · {effectiveAngleDeg}°
-              </p>
-            </div>
-          ) : (
-            <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
-          )}
+          <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
         </div>
 
         <div className="p-4 border-t border-slate-800 bg-slate-900/90 space-y-4">
+          {showTelemetry && (
+            <MiniTelemetryChart
+              title={isEn ? 'VSEPR Orbital Telemetry' : 'Dao động ký Orbital & VSEPR'}
+              darkSurface
+              onExportCsv={() =>
+                exportRowsToCsv(
+                  `chem-vsepr-${presetId}.csv`,
+                  ['Time', 'BondAngle_deg', 'ElectronCloud_%', 'HybridAOs'],
+                  telemetryRows.map((r) => [r.t, r.angle, r.density, r.aoCount])
+                )
+              }
+              series={[
+                { id: 'angle', label: isEn ? 'Angle (°)' : 'Góc (°)', color: '#fbbf24', values: telemetryRows.map((r) => r.angle) },
+                { id: 'density', label: '|ψ|² (%)', color: '#38bdf8', values: telemetryRows.map((r) => r.density) },
+                { id: 'ao', label: 'AO', color: '#10b981', values: telemetryRows.map((r) => r.aoCount) }
+              ]}
+            />
+          )}
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
             <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-3">
               <div className="text-slate-400 text-[11px]">{isEn ? 'Hybridization' : 'Trạng thái Lai hóa'}</div>

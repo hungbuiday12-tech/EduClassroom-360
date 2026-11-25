@@ -7,7 +7,9 @@ import {
   Code2,
   Cpu,
   Crown,
+  Dna,
   Film,
+  FlaskConical,
   Layers,
   Orbit,
   Play,
@@ -21,7 +23,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 import { usePremium } from '../../context/PremiumContext';
 import { FutureLabTabId, SubjectType } from '../../types';
-import { PRE_STUDIOS } from '../../data/preLabsData';
+import { PRE_SANDBOX_DIVISIONS, PRE_STUDIOS } from '../../data/preLabsData';
 import { SynapsePremiumGateModal } from './SynapsePremiumGateModal';
 
 interface SynapsePremiumHomeProps {
@@ -390,7 +392,7 @@ export const SynapsePremiumHome: React.FC<SynapsePremiumHomeProps> = ({
               Mô Phỏng Tương Tác Chuẩn Astra AI
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Đồ họa 3D/WebGL độ phân giải cao, phản hồi vật lí & thuật toán thời gian thực. Toàn bộ 21 phòng Lab nằm gọn ở thanh menu bên trái.
+              Đồ họa 3D/WebGL độ phân giải cao, phản hồi vật lí & thuật toán thời gian thực. Toàn bộ {PRE_STUDIOS.length} phòng Lab nằm gọn ở thanh menu bên trái.
             </p>
           </div>
         </div>
@@ -427,13 +429,93 @@ export const SynapsePremiumHome: React.FC<SynapsePremiumHomeProps> = ({
         </div>
       </section>
 
-      {/* TRUY CẬP NHANH 3 MÔN HỌC & PHÒNG MEET (GIAO DIỆN PRO) */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* SANDBOX ĐỘC QUYỀN SYNAPSE PREMIUM (CHIA 2 KHU: KHTN & KHKT) */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-emerald-500" />
+              Hệ Thống Sandbox Tương Tác Synapse Premium (5 Môn STEM)
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Phân tách rành mạch thành 2 khu vực thực nghiệm tự do: Sandbox KHTN (Lí – Hóa – Sinh) và Sandbox KHKT (Toán – Tin).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenAllLabs}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-3.5 py-2 text-xs font-bold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20 cursor-pointer"
+          >
+            <Orbit className="h-3.5 w-3.5" />
+            <span>Mở toàn bộ {PRE_STUDIOS.length} Studio Pre</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {PRE_SANDBOX_DIVISIONS.map((div) => {
+            const divSandboxes = PRE_STUDIOS.filter(
+              (s) => s.sidebarGroup === 'sandboxes' && s.sandboxDivision === div.id
+            );
+            return (
+              <div
+                key={div.id}
+                className="rounded-2xl border border-slate-800 bg-slate-950/95 p-5 sm:p-6 text-white space-y-4 shadow-lg"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1.5">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-extrabold tracking-wide ${
+                        div.id === 'khtn'
+                          ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-300'
+                          : 'border-indigo-400/60 bg-indigo-500/20 text-indigo-300'
+                      }`}
+                    >
+                      {div.labelVi}
+                    </span>
+                    <p className="text-xs text-slate-300 leading-relaxed">{div.descVi}</p>
+                  </div>
+                  <span className="font-mono text-xs font-bold text-slate-400 shrink-0 tabular-nums">
+                    {divSandboxes.length} phòng
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {divSandboxes.map((lab) => {
+                    const LabIcon = lab.icon;
+                    return (
+                      <button
+                        key={lab.id}
+                        type="button"
+                        onClick={() => onOpenLab(lab.id)}
+                        className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-800 bg-slate-900/90 px-3.5 py-3 text-left hover:border-cyan-400/60 hover:bg-slate-900 transition cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${lab.iconBgClass}`}>
+                            <LabIcon className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-extrabold text-white truncate">{lab.shortVi}</div>
+                            <div className="text-[10px] text-slate-400 truncate">{lab.subjectZone.toUpperCase()}</div>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* TRUY CẬP NHANH 5 MÔN HỌC & PHÒNG MEET (GIAO DIỆN PRO) */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {[
           {
             id: 'math' as SubjectType,
             title: 'Toán Học Pro',
-            desc: 'Hình học Oxyz 3D & Giải tích',
+            desc: 'Hình học Oxyz 3D, Đồ thị & Giải tích',
             icon: BookOpen,
             color: 'text-sky-400 border-sky-500/40',
           },
@@ -445,11 +527,25 @@ export const SynapsePremiumHome: React.FC<SynapsePremiumHomeProps> = ({
             color: 'text-amber-400 border-amber-500/40',
           },
           {
+            id: 'chemistry' as SubjectType,
+            title: 'Hóa Học Pro',
+            desc: 'GDPT 2018/2006, Chuẩn độ pH & Orbital 3D',
+            icon: FlaskConical,
+            color: 'text-emerald-400 border-emerald-500/40',
+          },
+          {
+            id: 'biology' as SubjectType,
+            title: 'Sinh Học Pro',
+            desc: 'Di truyền DNA, CRISPR 3D & Atlas Tế Bào',
+            icon: Dna,
+            color: 'text-teal-400 border-teal-500/40',
+          },
+          {
             id: 'cs' as SubjectType,
             title: 'Tin Học Pro',
-            desc: 'Sublime 4 IDE & Lộ trình VNOI',
+            desc: 'Sublime 4 IDE, Trace 1-1 & Lộ trình VNOI',
             icon: Code2,
-            color: 'text-emerald-400 border-emerald-500/40',
+            color: 'text-cyan-400 border-cyan-500/40',
           },
           {
             id: 'live_meet' as SubjectType,
@@ -465,7 +561,7 @@ export const SynapsePremiumHome: React.FC<SynapsePremiumHomeProps> = ({
               key={item.id}
               type="button"
               onClick={() => onNavigateSubject(item.id)}
-              className={`flex items-start gap-3 rounded-2xl border ${item.color} bg-slate-950/90 p-4 text-left hover:bg-slate-900 transition cursor-pointer`}
+              className={`flex items-start gap-3 rounded-2xl border ${item.color} bg-slate-950/90 p-4 sm:p-5 text-left hover:bg-slate-900 transition cursor-pointer`}
             >
               <Icon className="h-5 w-5 shrink-0 mt-0.5" />
               <div>

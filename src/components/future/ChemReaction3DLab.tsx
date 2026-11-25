@@ -4,27 +4,31 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { Camera, Flame, Pause, Play, RotateCcw, Sparkles } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
+import {
+  captureCanvasPng,
+  exportRowsToCsv,
+  MiniTelemetryChart,
+  RecordVideoButton,
+  useCanvasRecorder
+} from '../common/SimProToolkit';
 import { SimAnalysisProBar } from '../common/SimAnalysisProBar';
+import {
+  applyClipPlaneToObject,
+  CameraBookmarkPose,
+  detectSoftwareGl,
+  Pre3DProControlsBar,
+  QuickCamPreset,
+  scheduleSyncedGlFrame,
+  SliceAxis,
+  updateClipPlaneFromState
+} from './Pre3DViewportBar';
 
 interface ChemReaction3DLabProps {
   onEarnXP?: (xp: number) => void;
 }
 
-function detectSoftwareGl(): boolean {
-  try {
-    const c = document.createElement('canvas');
-    const gl = c.getContext('webgl2') || c.getContext('webgl');
-    if (!gl) return true;
-    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
-    if (!dbg) return false;
-    const renderer = String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '');
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
-    return /SwiftShader|llvmpipe|softpipe|Software/i.test(renderer);
-  } catch {
-    return true;
-  }
-}
+const DEFAULT_CAM_POS: [number, number, number] = [5.6, 4.4, 7.6];
+const DEFAULT_CAM_TARGET: [number, number, number] = [0, 1.1, 0];
 
 export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }) => {
   const { language } = useLanguage();
@@ -37,10 +41,20 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [speed, setSpeed] = useState<number>(1.0);
   const [showCatalystCurve, setShowCatalystCurve] = useState<boolean>(true);
+  const [sliceEnabled, setSliceEnabled] = useState<boolean>(false);
+  const [sliceAxis, setSliceAxis] = useState<SliceAxis>('z');
+  const [sliceOffset, setSliceOffset] = useState<number>(1.2);
+  const [showTelemetry, setShowTelemetry] = useState<boolean>(false);
+  const [telemetryRows, setTelemetryRows] = useState<{ t: string; kCat: number; yieldPct: number; ea: number }[]>([]);
+  const [bookmark, setBookmark] = useState<CameraBookmarkPose | null>(null);
   const [isSoftwareGl] = useState(() => detectSoftwareGl());
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const specimenRef = useRef<THREE.Group | null>(null);
+  const clipPlaneRef = useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, 0, -1), 1.2));
   const xpAwardedRef = useRef(false);
 
   const recorder = useCanvasRecorder(() => canvasRef.current, 'synapse-pre-chem-reaction-3d');
@@ -50,9 +64,8 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
     return Math.max(8, Math.round(raw * 10) / 10);
   }, [eaKj, catalystDrop, showCatalystCurve]);
 
-  // Arrhenius factor normalized relative to 298 K, Ea = 58 kJ/mol
   const kinetics = useMemo(() => {
-    const R = 8.314e-3; // kJ/(mol*K)
+    const R = 8.314e-3;
     const kUncat = 1e6 * Math.exp(-eaKj / (R * tempK));
     const kCat = 1e6 * Math.exp(-effectiveEa / (R * tempK));
     const speedup = kCat / Math.max(1e-18, kUncat);
@@ -92,8 +105,34 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
   }, [catalystDrop, showCatalystCurve, onEarnXP]);
 
   useEffect(() => {
+    updateClipPlaneFromState(clipPlaneRef.current, sliceAxis, sliceOffset);
+    if (specimenRef.current) {
+      applyClipPlaneToObject(specimenRef.current, sliceEnabled ? [clipPlaneRef.current] : null);
+    }
+  }, [sliceEnabled, sliceAxis, sliceOffset]);
+
+  useEffect(() => {
+    if (!showTelemetry) return;
+    const pushPoint = () => {
+      const nowLabel = new Date().toLocaleTimeString('en-GB', { hour12: false });
+      setTelemetryRows((prev) => [
+        ...prev.slice(-39),
+        {
+          t: nowLabel,
+          kCat: Number(Math.log10(Math.max(1e-6, kinetics.kCat)).toFixed(3)),
+          yieldPct: Number(kinetics.boltzmannFraction.toFixed(4)),
+          ea: effectiveEa
+        }
+      ]);
+    };
+    pushPoint();
+    const id = window.setInterval(pushPoint, 450);
+    return () => window.clearInterval(id);
+  }, [showTelemetry, kinetics.kCat, kinetics.boltzmannFraction, effectiveEa]);
+
+  useEffect(() => {
     const container = mountRef.current;
-    if (!container || isSoftwareGl) return;
+    if (!container) return;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x07101e);
@@ -101,14 +140,20 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
     const w = container.clientWidth || 800;
     const h = container.clientHeight || 480;
     const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 120);
-    camera.position.set(5.6, 4.4, 7.6);
+    camera.position.set(...DEFAULT_CAM_POS);
+    cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isSoftwareGl,
+      preserveDrawingBuffer: true,
+      powerPreference: 'high-performance'
+    });
     renderer.setSize(w, h);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
+    renderer.localClippingEnabled = true;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
     canvasRef.current = renderer.domElement;
@@ -119,9 +164,10 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
     pmrem.dispose();
 
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
+    controls.enableDamping = !isSoftwareGl;
     controls.dampingFactor = 0.06;
-    controls.target.set(0, 1.1, 0);
+    controls.target.set(...DEFAULT_CAM_TARGET);
+    controlsRef.current = controls;
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.48));
     const dir = new THREE.DirectionalLight(0xf8fafc, 1.45);
@@ -131,9 +177,12 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
     const grid = new THREE.GridHelper(12, 16, 0x1e293b, 0x0f172a);
     scene.add(grid);
 
-    // 3D Potential Energy Surface mesh (X: reaction coordinate, Z: solvent/orientation coordinate)
-    const segX = 52;
-    const segZ = 24;
+    const specimenRoot = new THREE.Group();
+    scene.add(specimenRoot);
+    specimenRef.current = specimenRoot;
+
+    const segX = 48;
+    const segZ = 22;
     const surfaceGeo = new THREE.PlaneGeometry(8.4, 3.8, segX, segZ);
     surfaceGeo.rotateX(-Math.PI / 2);
     const colors = new Float32Array((segX + 1) * (segZ + 1) * 3);
@@ -148,7 +197,7 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
       opacity: 0.86
     });
     const surfaceMesh = new THREE.Mesh(surfaceGeo, surfaceMat);
-    scene.add(surfaceMesh);
+    specimenRoot.add(surfaceMesh);
 
     const wireMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
@@ -157,36 +206,31 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
       opacity: 0.18
     });
     const wireMesh = new THREE.Mesh(surfaceGeo, wireMat);
-    scene.add(wireMesh);
+    specimenRoot.add(wireMesh);
 
-    // Catalytic glowing minimum-energy path ribbon
     const catCurveMat = new THREE.LineBasicMaterial({ color: 0x10b981, linewidth: 2 });
     const catCurveGeo = new THREE.BufferGeometry();
     const catLine = new THREE.Line(catCurveGeo, catCurveMat);
-    scene.add(catLine);
+    specimenRoot.add(catLine);
 
-    // Uncatalyzed ridge line
     const uncatCurveMat = new THREE.LineBasicMaterial({ color: 0xf43f5e, linewidth: 2 });
     const uncatCurveGeo = new THREE.BufferGeometry();
     const uncatLine = new THREE.Line(uncatCurveGeo, uncatCurveMat);
-    scene.add(uncatLine);
+    specimenRoot.add(uncatLine);
 
-    // Activated Complex Marker Sphere
-    const tsMarker = new THREE.Mesh(
-      new THREE.SphereGeometry(0.18, 20, 20),
-      new THREE.MeshStandardMaterial({
-        color: 0xf59e0b,
-        emissive: 0xd97706,
-        emissiveIntensity: 0.55,
-        roughness: 0.2
-      })
-    );
-    scene.add(tsMarker);
+    const tsGeo = new THREE.SphereGeometry(0.18, 20, 20);
+    const tsMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.55,
+      roughness: 0.2
+    });
+    const tsMarker = new THREE.Mesh(tsGeo, tsMat);
+    specimenRoot.add(tsMarker);
 
-    // Kinetic reaction molecules crossing or bouncing off the barrier
     const moleculeCount = 26;
     const molGroup = new THREE.Group();
-    scene.add(molGroup);
+    specimenRoot.add(molGroup);
     const molGeo = new THREE.SphereGeometry(0.11, 14, 14);
     const mols: {
       mesh: THREE.Mesh;
@@ -211,13 +255,18 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
       });
     }
 
-    const evalEnergy = (u: number, z: number, eaScale: number, dHScale: number, isCat: boolean) => {
-      // u in [-1, 1] maps reactant -> transition state -> product
+    const cLow = new THREE.Color(0x0284c7);
+    const cMid = new THREE.Color(0x10b981);
+    const cHigh = new THREE.Color(0xf43f5e);
+    const tmpColor = new THREE.Color();
+    const uncatPts: THREE.Vector3[] = Array.from({ length: 61 }, () => new THREE.Vector3());
+    const catPts: THREE.Vector3[] = Array.from({ length: 61 }, () => new THREE.Vector3());
+
+    const evalEnergy = (u: number, z: number, eaScale: number, dHScale: number) => {
       const reactantLevel = 1.15;
       const productLevel = Math.max(0.2, reactantLevel + dHScale);
       const baseline = reactantLevel + ((u + 1) * 0.5) * (productLevel - reactantLevel);
-      const saddleHeight = eaScale * (isCat ? 1 : 1.0);
-      const barrier = saddleHeight * Math.exp(-(u * u) / 0.16);
+      const barrier = eaScale * Math.exp(-(u * u) / 0.16);
       const valleyWall = z * z * 0.52;
       return baseline + barrier + valleyWall;
     };
@@ -230,48 +279,42 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
 
       const posAttr = surfaceGeo.getAttribute('position') as THREE.BufferAttribute;
       const colAttr = surfaceGeo.getAttribute('color') as THREE.BufferAttribute;
-      const cLow = new THREE.Color(0x0284c7);
-      const cMid = new THREE.Color(0x10b981);
-      const cHigh = new THREE.Color(0xf43f5e);
-      const tmp = new THREE.Color();
 
       for (let i = 0; i < posAttr.count; i++) {
         const vx = posAttr.getX(i);
         const vz = posAttr.getZ(i);
         const u = vx / 4.2;
         const activeBarrier = showCat ? eaCatNorm : eaUncatNorm;
-        const y = evalEnergy(u, vz, activeBarrier, dHNorm, showCat);
+        const y = evalEnergy(u, vz, activeBarrier, dHNorm);
         posAttr.setY(i, y);
 
         const t = Math.min(1, Math.max(0, (y - 0.3) / 3.0));
-        if (t < 0.5) tmp.lerpColors(cLow, cMid, t * 2);
-        else tmp.lerpColors(cMid, cHigh, (t - 0.5) * 2);
-        colAttr.setXYZ(i, tmp.r, tmp.g, tmp.b);
+        if (t < 0.5) tmpColor.lerpColors(cLow, cMid, t * 2);
+        else tmpColor.lerpColors(cMid, cHigh, (t - 0.5) * 2);
+        colAttr.setXYZ(i, tmpColor.r, tmpColor.g, tmpColor.b);
       }
       posAttr.needsUpdate = true;
       colAttr.needsUpdate = true;
       surfaceGeo.computeVertexNormals();
 
-      // Update ridge & catalyst path curves along z = 0
-      const uncatPts: THREE.Vector3[] = [];
-      const catPts: THREE.Vector3[] = [];
       for (let k = 0; k <= 60; k++) {
         const u = -1 + (k / 60) * 2;
         const x = u * 4.2;
-        uncatPts.push(new THREE.Vector3(x, evalEnergy(u, 0, eaUncatNorm, dHNorm, false) + 0.06, 0));
-        catPts.push(new THREE.Vector3(x, evalEnergy(u, 0, eaCatNorm, dHNorm, true) + 0.08, 0));
+        uncatPts[k].set(x, evalEnergy(u, 0, eaUncatNorm, dHNorm) + 0.06, 0);
+        catPts[k].set(x, evalEnergy(u, 0, eaCatNorm, dHNorm) + 0.08, 0);
       }
       uncatCurveGeo.setFromPoints(uncatPts);
       catCurveGeo.setFromPoints(catPts);
       catLine.visible = showCat;
 
-      const tsY = evalEnergy(0, 0, showCat ? eaCatNorm : eaUncatNorm, dHNorm, showCat);
+      const tsY = evalEnergy(0, 0, showCat ? eaCatNorm : eaUncatNorm, dHNorm);
       tsMarker.position.set(0, tsY + 0.2, 0);
     };
 
     updateSurfaceGeometry();
 
-    let rafId = 0;
+    let cancelNextFrame = () => {};
+    let disposed = false;
     let last = performance.now();
     let prevSignature = '';
 
@@ -287,7 +330,7 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
     ro.observe(container);
 
     const animate = (now: number) => {
-      rafId = requestAnimationFrame(animate);
+      if (disposed) return;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
 
@@ -304,7 +347,8 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
         const eaNorm = cur.effectiveEa / 40;
         const dHNorm = cur.deltaHKj / 80;
 
-        mols.forEach((m) => {
+        for (let i = 0; i < mols.length; i++) {
+          const m = mols[i];
           const speedBoost = 0.25 + 0.45 * tempScale;
           m.xNorm += dt * cur.speed * speedBoost * m.dir;
 
@@ -318,12 +362,7 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
             m.mat.color.setHex(0x10b981);
           }
 
-          if (m.xNorm > 1) {
-            m.xNorm = 0;
-            m.dir = 1;
-            m.energyFrac = Math.random();
-            m.mat.color.setHex(0x38bdf8);
-          } else if (m.xNorm < 0) {
+          if (m.xNorm > 1 || m.xNorm < 0) {
             m.xNorm = 0;
             m.dir = 1;
             m.energyFrac = Math.random();
@@ -333,19 +372,27 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
           const u = m.xNorm * 2 - 1;
           const x = u * 4.0;
           const z = m.zNorm * 1.8;
-          const surfY = evalEnergy(u, z, eaNorm, dHNorm, cur.showCatalystCurve);
+          const surfY = evalEnergy(u, z, eaNorm, dHNorm);
           m.mesh.position.set(x, surfY + 0.14, z);
-        });
+        }
       }
 
       controls.update();
       renderer.render(scene, camera);
+      if (!disposed) {
+        scheduleSyncedGlFrame(renderer, isSoftwareGl, animate, (c) => {
+          cancelNextFrame = c;
+        });
+      }
     };
 
-    rafId = requestAnimationFrame(animate);
+    scheduleSyncedGlFrame(renderer, isSoftwareGl, animate, (c) => {
+      cancelNextFrame = c;
+    });
 
     return () => {
-      cancelAnimationFrame(rafId);
+      disposed = true;
+      cancelNextFrame();
       ro.disconnect();
       controls.dispose();
       surfaceGeo.dispose();
@@ -355,12 +402,56 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
       catCurveMat.dispose();
       uncatCurveGeo.dispose();
       uncatCurveMat.dispose();
+      tsGeo.dispose();
+      tsMat.dispose();
       molGeo.dispose();
       mols.forEach((m) => m.mat.dispose());
       envRT.dispose();
       renderer.dispose();
+      cameraRef.current = null;
+      controlsRef.current = null;
+      specimenRef.current = null;
     };
   }, [isSoftwareGl]);
+
+  const applyCameraPreset = (preset: QuickCamPreset) => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    if (preset === 'iso') cam.position.set(...DEFAULT_CAM_POS);
+    else if (preset === 'top') cam.position.set(0.01, 10.2, 0.01);
+    else cam.position.set(0, 2.2, 8.8);
+    ctrl.target.set(...DEFAULT_CAM_TARGET);
+    ctrl.update();
+  };
+
+  const resetCamera = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    cam.position.set(...DEFAULT_CAM_POS);
+    ctrl.target.set(...DEFAULT_CAM_TARGET);
+    ctrl.update();
+  };
+
+  const handleSaveBookmark = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    setBookmark({
+      pos: [cam.position.x, cam.position.y, cam.position.z],
+      target: [ctrl.target.x, ctrl.target.y, ctrl.target.z]
+    });
+  };
+
+  const handleRecallBookmark = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl || !bookmark) return;
+    cam.position.set(...bookmark.pos);
+    ctrl.target.set(...bookmark.target);
+    ctrl.update();
+  };
 
   const handleReset = () => {
     setTempK(360);
@@ -370,11 +461,12 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
     setShowCatalystCurve(true);
     setSpeed(1.0);
     setIsPaused(false);
+    setSliceEnabled(false);
+    resetCamera();
   };
 
   return (
     <div className="space-y-4">
-      {/* Control & 3D Viewport Stage */}
       <div className="rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-lg">
         <div className="px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-900/90">
           <div className="flex items-center gap-2">
@@ -425,30 +517,56 @@ export const ChemReaction3DLab: React.FC<ChemReaction3DLabProps> = ({ onEarnXP }
               type="button"
               onClick={handleReset}
               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap shrink-0"
+              title={isEn ? 'Reset Lab' : 'Đặt lại'}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
+        <Pre3DProControlsBar
+          isEn={isEn}
+          sliceEnabled={sliceEnabled}
+          onToggleSlice={() => setSliceEnabled((v) => !v)}
+          sliceAxis={sliceAxis}
+          onChangeSliceAxis={setSliceAxis}
+          sliceOffset={sliceOffset}
+          onChangeSliceOffset={setSliceOffset}
+          sliceMin={-3.5}
+          sliceMax={3.5}
+          showTelemetry={showTelemetry}
+          onToggleTelemetry={() => setShowTelemetry((v) => !v)}
+          hasBookmark={Boolean(bookmark)}
+          onSaveBookmark={handleSaveBookmark}
+          onRecallBookmark={handleRecallBookmark}
+          onCameraPreset={applyCameraPreset}
+          onResetCamera={resetCamera}
+        />
+
         <div className="relative h-[420px] sm:h-[480px] w-full bg-[#07101e]">
-          {isSoftwareGl ? (
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-300 space-y-2">
-              <Flame className="w-8 h-8 text-emerald-400" />
-              <p className="text-sm font-bold text-white">
-                {isEn ? 'WebGL Hardware Acceleration Unavailable' : 'Chế độ tương thích phần mềm (Software WebGL)'}
-              </p>
-              <p className="text-xs max-w-md text-slate-400">
-                k = A·exp(-Ea/RT) · Ea = {effectiveEa} kJ/mol · T = {tempK} K · Tăng tốc xúc tác {kinetics.speedup.toFixed(1)}×
-              </p>
-            </div>
-          ) : (
-            <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
-          )}
+          <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
         </div>
 
-        {/* Sliders & Live Readouts */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/90 space-y-4">
+          {showTelemetry && (
+            <MiniTelemetryChart
+              title={isEn ? 'Arrhenius Kinetics Telemetry' : 'Dao động ký Động học Arrhenius'}
+              darkSurface
+              onExportCsv={() =>
+                exportRowsToCsv(
+                  'chem-reaction-kinetics.csv',
+                  ['Time', 'log10(k_cat)', 'BoltzmannYield_%', 'EffectiveEa_kJ_mol'],
+                  telemetryRows.map((r) => [r.t, r.kCat, r.yieldPct, r.ea])
+                )
+              }
+              series={[
+                { id: 'ea', label: 'Ea (kJ)', color: '#f59e0b', values: telemetryRows.map((r) => r.ea) },
+                { id: 'kcat', label: 'log10(k)', color: '#10b981', values: telemetryRows.map((r) => r.kCat) },
+                { id: 'yield', label: 'Yield %', color: '#38bdf8', values: telemetryRows.map((r) => r.yieldPct) }
+              ]}
+            />
+          )}
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
             <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-3">
               <div className="text-slate-400 text-[11px]">{isEn ? 'Effective Ea' : 'Năng lượng hoạt hóa Ea'}</div>

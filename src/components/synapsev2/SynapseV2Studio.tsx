@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Atom,
   Award,
+  Bookmark,
   Camera,
   CheckCircle2,
   ChevronDown,
@@ -279,6 +280,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     : 'dyson') as MonumentId;
 
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'pinned' | MonumentCategory>('all');
+  const [subjectZoneFilter, setSubjectZoneFilter] = useState<'all' | 'physics' | 'bio_chem' | 'math' | 'cs'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [pinnedWonders, setPinnedWonders] = useState<MonumentId[]>(() => {
     try {
@@ -320,6 +322,11 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const [isAdvancedDockOpen, setIsAdvancedDockOpen] = useState<boolean>(true);
   const [isWonderStripOpen, setIsWonderStripOpen] = useState<boolean>(false);
   const [isCameraMenuOpen, setIsCameraMenuOpen] = useState<boolean>(false);
+  const [cameraBookmark, setCameraBookmark] = useState<{
+    pos: [number, number, number];
+    target: [number, number, number];
+    fov: number;
+  } | null>(null);
   const [isPerfMenuOpen, setIsPerfMenuOpen] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [contextLost, setContextLost] = useState<boolean>(false);
@@ -383,6 +390,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     const onSynapseReset = () => {
       setIsFullscreen(false);
       setCategoryFilter('all');
+      setSubjectZoneFilter('all');
       setSearchQuery('');
     };
     window.addEventListener('educlassroom:synapse-reset', onSynapseReset);
@@ -402,6 +410,11 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const filteredCatalog = useMemo(() => {
     const kw = searchQuery.trim().toLowerCase();
     return MONUMENT_CATALOG.filter((m) => {
+      if (subjectZoneFilter === 'bio_chem') {
+        if (m.relatedSubject !== 'chemistry' && m.relatedSubject !== 'biology') return false;
+      } else if (subjectZoneFilter !== 'all' && m.relatedSubject !== subjectZoneFilter) {
+        return false;
+      }
       if (categoryFilter === 'pinned') {
         if (!pinnedWonders.includes(m.id)) return false;
       } else if (categoryFilter !== 'all' && m.category !== categoryFilter) {
@@ -414,7 +427,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       }
       return true;
     });
-  }, [categoryFilter, searchQuery, pinnedWonders]);
+  }, [categoryFilter, subjectZoneFilter, searchQuery, pinnedWonders]);
 
   const handleSelectMonument = (nextId: MonumentId, openStage = false) => {
     const def = MONUMENT_CATALOG.find((m) => m.id === nextId) || MONUMENT_CATALOG[0];
@@ -488,6 +501,26 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     cameraLerpingRef.current = true;
   };
 
+  const saveCameraBookmark = () => {
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (!cam || !ctrl) return;
+    setCameraBookmark({
+      pos: [cam.position.x, cam.position.y, cam.position.z],
+      target: [ctrl.target.x, ctrl.target.y, ctrl.target.z],
+      fov: cameraFov
+    });
+  };
+
+  const recallCameraBookmark = () => {
+    if (!cameraBookmark) return;
+    setAutoOrbitEnabled(false);
+    setCameraFov(cameraBookmark.fov);
+    desiredCamPosRef.current.set(...cameraBookmark.pos);
+    desiredTargetRef.current.set(...cameraBookmark.target);
+    cameraLerpingRef.current = true;
+  };
+
   const resetCurrentMonument = useCallback(() => {
     setPrimaryParam(activeDef.primaryRange[2]);
     setSecondaryParam(activeDef.secondaryRange[2]);
@@ -536,6 +569,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
   const citadelGroupRef = useRef<THREE.Group | null>(null);
   const lightsRef = useRef<{
     hemi: THREE.HemisphereLight;
@@ -635,6 +669,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     cameraRef.current = camera;
 
     const controls = new OrbitControls(camera, renderer.domElement);
+    controlsRef.current = controls;
     controls.enableDamping = !isSoftwareGl;
     controls.dampingFactor = 0.055;
     controls.minDistance = 3.2;
@@ -966,6 +1001,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       measureGroupRef.current = null;
       rendererRef.current = null;
       cameraRef.current = null;
+      controlsRef.current = null;
       citadelGroupRef.current = null;
       lightsRef.current = null;
       sceneRef.current = null;
@@ -1600,8 +1636,40 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
               </div>
             </div>
 
+            {/* Subject Zone Partition Filter Bar */}
+            <div className="relative z-10 mt-6 pt-5 border-t border-sky-400/20 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-sky-300/80 mr-1">
+                {isEn ? 'Subject Zone:' : 'Khu Môn học:'}
+              </span>
+              {(
+                [
+                  { id: 'all', vi: 'Tất cả 5 Môn', en: 'All 5 Subjects' },
+                  { id: 'physics', vi: 'Vật lí & Vũ trụ', en: 'Physics & Cosmos' },
+                  { id: 'bio_chem', vi: 'Hóa & Sinh Y sinh', en: 'Chem & Bio Labs' },
+                  { id: 'math', vi: 'Toán học 4D', en: '4D Mathematics' },
+                  { id: 'cs', vi: 'Tin học & AI', en: 'CS & AI Systems' }
+                ] as const
+              ).map((z) => {
+                const activeZone = subjectZoneFilter === z.id;
+                return (
+                  <button
+                    key={z.id}
+                    type="button"
+                    onClick={() => setSubjectZoneFilter(z.id)}
+                    className={`px-3 py-1.5 rounded-md text-[11px] font-bold whitespace-nowrap cursor-pointer border transition-all ${
+                      activeZone
+                        ? 'bg-emerald-400 text-slate-950 border-emerald-200 shadow-sm'
+                        : 'bg-slate-950/55 text-slate-200 border-white/15 hover:border-emerald-400/60 hover:text-white'
+                    }`}
+                  >
+                    {isEn ? z.en : z.vi}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Filter & Search Toolbar */}
-            <div className="relative z-10 mt-6 pt-5 border-t border-sky-400/20 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="relative z-10 mt-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 {categories.map((cat) => {
                   const selected = categoryFilter === cat.id;
@@ -2164,7 +2232,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   <ChevronDown className="w-3 h-3 text-slate-400" />
                 </button>
                 {isCameraMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 z-50 w-40 max-w-[calc(100vw-24px)] rounded-lg bg-slate-950/98 border border-white/20 p-1.5 shadow-2xl space-y-0.5">
+                  <div className="absolute right-0 top-full mt-1.5 z-50 w-48 max-w-[calc(100vw-24px)] rounded-lg bg-slate-950/98 border border-white/20 p-1.5 shadow-2xl space-y-0.5">
                     {(Object.keys(CAMERA_PRESETS) as CameraPresetId[]).map((pid) => (
                       <button
                         key={pid}
@@ -2183,6 +2251,32 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                         <span>{isEn ? CAMERA_PRESETS[pid].labelEn : CAMERA_PRESETS[pid].labelVi}</span>
                       </button>
                     ))}
+                    <div className="pt-1 mt-1 border-t border-white/15 space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          saveCameraBookmark();
+                          setIsCameraMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-xs font-semibold text-left text-emerald-300 hover:bg-emerald-500/15 cursor-pointer"
+                      >
+                        <Bookmark className="w-3 h-3 shrink-0" />
+                        <span>{isEn ? 'Save View' : 'Lưu Góc nhìn'}</span>
+                      </button>
+                      {cameraBookmark && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            recallCameraBookmark();
+                            setIsCameraMenuOpen(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-xs font-bold text-left bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 cursor-pointer"
+                        >
+                          <Camera className="w-3 h-3 shrink-0" />
+                          <span>{isEn ? 'Recall Saved View' : 'Mở Góc đã Lưu'}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

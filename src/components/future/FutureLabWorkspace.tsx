@@ -25,7 +25,7 @@ import { useNavigation } from '../../context/NavigationContext';
 import { useRemoteController } from '../../context/RemoteControllerContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 import { FutureLabTabId, SubjectType } from '../../types';
-import { PRE_SIDEBAR_GROUPS, PRE_STUDIOS, PRE_SUBJECT_ZONES, PreSidebarGroupId, PreSubjectZoneId } from '../../data/preLabsData';
+import { PRE_SANDBOX_DIVISIONS, PRE_SIDEBAR_GROUPS, PRE_STUDIOS, PRE_SUBJECT_ZONES, PreSandboxDivisionId, PreSidebarGroupId, PreSubjectZoneId } from '../../data/preLabsData';
 import { RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
 import { SynapseV2Studio } from '../synapsev2/SynapseV2Studio';
 import { NeuralGalaxyTwin3D } from './NeuralGalaxyTwin3D';
@@ -76,6 +76,15 @@ const BioCellAtlas3DLab = lazy(() =>
 const BioDnaCrispr3DLab = lazy(() =>
   import('./BioDnaCrispr3DLab').then((m) => ({ default: m.BioDnaCrispr3DLab }))
 );
+const ChemistrySandboxes = lazy(() =>
+  import('../chemistry/ChemistrySandboxes').then((m) => ({ default: m.ChemistrySandboxes }))
+);
+const BiologySandboxes = lazy(() =>
+  import('../biology/BiologySandboxes').then((m) => ({ default: m.BiologySandboxes }))
+);
+const MathSandboxSuite = lazy(() =>
+  import('./MathSandboxSuite').then((m) => ({ default: m.MathSandboxSuite }))
+);
 
 interface FutureLabWorkspaceProps {
   onBack?: () => void;
@@ -103,10 +112,15 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
 
   const [isStudioFullscreen, setIsStudioFullscreen] = useState<boolean>(false);
   const [showStudioIntro, setShowStudioIntro] = useState(true);
+  const [activeZoneTab, setActiveZoneTab] = useState<PreSubjectZoneId>(() => {
+    const found = PRE_STUDIOS.find((s) => s.id === activeView);
+    return found?.subjectZone || 'physics';
+  });
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [switcherQuery, setSwitcherQuery] = useState('');
   const [switcherGroup, setSwitcherGroup] = useState<'all' | 'pinned' | PreSidebarGroupId>('all');
   const [switcherSubject, setSwitcherSubject] = useState<'all' | PreSubjectZoneId>('all');
+  const [switcherSandboxDiv, setSwitcherSandboxDiv] = useState<'all' | PreSandboxDivisionId>('all');
   const [pinnedStudios, setPinnedStudios] = useState<FutureLabTabId[]>(() => {
     try {
       const raw = localStorage.getItem('synapse_pre_pinned_v1');
@@ -255,6 +269,32 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
   const currentStudioIndex = PRE_STUDIOS.findIndex((s) => s.id === activeView);
   const currentStudio =
     currentStudioIndex >= 0 ? PRE_STUDIOS[currentStudioIndex] : PRE_STUDIOS[0];
+
+  useEffect(() => {
+    if (currentStudio?.subjectZone) {
+      setActiveZoneTab(currentStudio.subjectZone);
+    }
+  }, [currentStudio?.subjectZone]);
+
+  const activeZoneMeta = useMemo(
+    () => PRE_SUBJECT_ZONES.find((z) => z.id === activeZoneTab) || PRE_SUBJECT_ZONES[0],
+    [activeZoneTab]
+  );
+
+  const openSubjectStandardHub = (zoneId: PreSubjectZoneId) => {
+    setIsStudioFullscreen(false);
+    if (zoneId === 'physics') {
+      navigate({ subject: 'physics_sims', physicsView: 'sim3d_hub', tutorOpen: false });
+    } else if (zoneId === 'chemistry') {
+      navigate({ subject: 'chemistry_sims', chemistryView: 'sandbox', tutorOpen: false });
+    } else if (zoneId === 'biology') {
+      navigate({ subject: 'biology_sims', biologyView: 'sandbox', tutorOpen: false });
+    } else if (zoneId === 'math') {
+      navigate({ subject: 'math_sims', mathTab: 'math3d', tutorOpen: false });
+    } else {
+      navigate({ subject: 'cs_sims', csViewMode: 'visualizer', csSimTab: 'viz3d', tutorOpen: false });
+    }
+  };
   const prevStudio =
     currentStudioIndex > 0
       ? PRE_STUDIOS[currentStudioIndex - 1]
@@ -576,6 +616,165 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
         </div>
       </div>
 
+      {/* Per-Subject Partition Bar: Toán · Vật lí · Hóa học · Sinh học · Tin học × Phòng Lab / Mô phỏng / Sandboxes */}
+      {!isStudioFullscreen && (
+        <section className={`rounded-2xl border ${glassSurfaceClass} border-slate-200/90 dark:border-slate-800/90 p-3 sm:p-4 space-y-3`}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {PRE_SUBJECT_ZONES.map((zone) => {
+                const ZoneIcon = zone.icon;
+                const isZoneSelected = activeZoneTab === zone.id;
+                const zoneCount = PRE_STUDIOS.filter((s) => s.subjectZone === zone.id).length;
+                return (
+                  <button
+                    key={zone.id}
+                    type="button"
+                    data-ripple="true"
+                    onClick={() => setActiveZoneTab(zone.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer whitespace-nowrap ${
+                      isZoneSelected
+                        ? `${zone.pillClass} shadow-xs`
+                        : 'bg-white/80 dark:bg-slate-900/75 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-sky-400/60'
+                    }`}
+                  >
+                    <ZoneIcon className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isEn ? zone.labelEn : zone.labelVi}</span>
+                    <span className="font-mono text-[10px] opacity-80 tabular-nums">({zoneCount})</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => openSubjectStandardHub(activeZoneTab)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-sky-600 hover:opacity-95 text-white text-xs font-bold cursor-pointer whitespace-nowrap"
+            >
+              <Compass className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                {isEn
+                  ? `Open ${activeZoneMeta.labelEn} 2D/3D & Sandbox Hub`
+                  : `Mở Kho 2D/3D & Sandbox ${activeZoneMeta.labelVi}`}
+              </span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+            {PRE_SIDEBAR_GROUPS.map((grp) => {
+              const items = PRE_STUDIOS.filter(
+                (s) => s.subjectZone === activeZoneTab && s.sidebarGroup === grp.id
+              );
+              return (
+                <div
+                  key={grp.id}
+                  className="rounded-xl border border-slate-200/85 dark:border-slate-800/90 bg-slate-50/75 dark:bg-slate-950/60 p-2.5 space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2 px-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                      {isEn ? grp.labelEn : grp.labelVi}
+                    </span>
+                    <span className="font-mono text-[10px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">
+                      {items.length}
+                    </span>
+                  </div>
+
+                  {items.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {items.map((lab) => {
+                        const LabIcon = lab.icon;
+                        const active = lab.id === activeView;
+                        return (
+                          <button
+                            key={lab.id}
+                            type="button"
+                            onClick={() => openModulePage(lab.id)}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition cursor-pointer ${
+                              active
+                                ? 'bg-sky-600 border-sky-500 text-white shadow-xs'
+                                : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-cyan-400/70'
+                            }`}
+                          >
+                            <LabIcon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-white' : lab.accentTextClass}`} />
+                            <span className="truncate max-w-[165px]">
+                              {isEn ? lab.shortEn : lab.shortVi}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openSubjectStandardHub(activeZoneTab)}
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-300 cursor-pointer"
+                    >
+                      {isEn
+                        ? `Use ${activeZoneMeta.labelEn} 2D/3D Hub →`
+                        : `Dùng trực tiếp tại Kho ${activeZoneMeta.labelVi} 2D/3D →`}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 2-Part Premium Sandbox Division: Sandbox KHTN (Lí - Hóa - Sinh) & Sandbox KHKT (Toán - Tin) */}
+          <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+            {PRE_SANDBOX_DIVISIONS.map((div) => {
+              const divSandboxes = PRE_STUDIOS.filter(
+                (s) => s.sidebarGroup === 'sandboxes' && s.sandboxDivision === div.id
+              );
+              return (
+                <div
+                  key={div.id}
+                  className={`rounded-xl border p-4 sm:p-5 space-y-3 ${div.surfaceClass}`}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-[11px] font-extrabold tracking-wide ${div.badgeClass}`}
+                      >
+                        <Sparkles className="w-3 h-3 shrink-0" />
+                        {isEn ? div.labelEn : div.labelVi}
+                      </span>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
+                        {isEn ? div.descEn : div.descVi}
+                      </p>
+                    </div>
+                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 tabular-nums">
+                      {divSandboxes.length} {isEn ? 'sandboxes' : 'sandbox'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {divSandboxes.map((lab) => {
+                      const LabIcon = lab.icon;
+                      const active = lab.id === activeView;
+                      return (
+                        <button
+                          key={lab.id}
+                          type="button"
+                          onClick={() => openModulePage(lab.id)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                            active
+                              ? 'bg-sky-600 border-sky-400 text-white shadow-sm'
+                              : 'bg-white/95 dark:bg-slate-900/95 border-slate-200/90 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 hover:border-cyan-400'
+                          }`}
+                        >
+                          <LabIcon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-white' : lab.accentTextClass}`} />
+                          <span>{isEn ? lab.shortEn : lab.shortVi}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Unified Room Intro, Features & Quick Guide Panel (Top of Every Synapse Pre Room) */}
       {currentStudio && !isStudioFullscreen && (
         <section
@@ -832,12 +1031,45 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             <BioDnaCrispr3DLab onEarnXP={onEarnXP} />
           </Suspense>
         )}
+        {activeView === 'chem_sandbox_suite' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-emerald-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-emerald-300">
+                {isEn ? 'Initializing Chemistry Sandbox Suite...' : 'Đang khởi tạo Sandbox Hóa Học KHTN...'}
+              </div>
+            }
+          >
+            <ChemistrySandboxes isEn={isEn} />
+          </Suspense>
+        )}
+        {activeView === 'bio_sandbox_suite' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-teal-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-teal-300">
+                {isEn ? 'Initializing Biology Sandbox Suite...' : 'Đang khởi tạo Sandbox Sinh Học KHTN...'}
+              </div>
+            }
+          >
+            <BiologySandboxes isEn={isEn} />
+          </Suspense>
+        )}
+        {activeView === 'math_sandbox_suite' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-indigo-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-indigo-300">
+                {isEn ? 'Initializing Math 2D/3D Sandbox...' : 'Đang khởi tạo Sandbox Toán Học KHKT...'}
+              </div>
+            }
+          >
+            <MathSandboxSuite isEn={isEn} />
+          </Suspense>
+        )}
       </div>
 
       {/* Quick Studio Switcher Spotlight Modal (Ctrl+K) */}
       {quickSwitcherOpen && (
         <div
-          className="fixed inset-0 z-[180] bg-slate-950/80 backdrop-blur-md flex items-start justify-center p-3 sm:p-8 pt-10 sm:pt-16"
+          className="fixed inset-0 z-[180] bg-slate-950/92 flex items-start justify-center p-3 sm:p-8 pt-10 sm:pt-16"
           onClick={() => setQuickSwitcherOpen(false)}
         >
           <div
@@ -882,7 +1114,10 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                   <button
                     key={tab.id}
                     type="button"
-                    onClick={() => setSwitcherGroup(tab.id)}
+                    onClick={() => {
+                      setSwitcherGroup(tab.id);
+                      if (tab.id !== 'sandboxes') setSwitcherSandboxDiv('all');
+                    }}
                     className={`px-2.5 py-1 rounded-md text-xs font-bold cursor-pointer whitespace-nowrap transition-colors ${
                       switcherGroup === tab.id
                         ? 'bg-cyan-500 text-slate-950'
@@ -893,6 +1128,35 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                   </button>
                 ))}
               </div>
+              {switcherGroup === 'sandboxes' && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSwitcherSandboxDiv('all')}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer whitespace-nowrap border ${
+                      switcherSandboxDiv === 'all'
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    {isEn ? 'All Sandboxes' : 'Tất cả Sandbox'}
+                  </button>
+                  {PRE_SANDBOX_DIVISIONS.map((div) => (
+                    <button
+                      key={div.id}
+                      type="button"
+                      onClick={() => setSwitcherSandboxDiv(div.id)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer whitespace-nowrap border transition-colors ${
+                        switcherSandboxDiv === div.id
+                          ? div.badgeClass
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      {isEn ? div.labelEn : div.labelVi}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
@@ -926,6 +1190,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               {PRE_STUDIOS.filter((st) => {
                 if (switcherGroup === 'pinned' && !pinnedStudios.includes(st.id)) return false;
                 if (switcherGroup !== 'all' && switcherGroup !== 'pinned' && st.sidebarGroup !== switcherGroup) return false;
+                if (switcherGroup === 'sandboxes' && switcherSandboxDiv !== 'all' && st.sandboxDivision !== switcherSandboxDiv) return false;
                 if (switcherSubject !== 'all' && st.subjectZone !== switcherSubject) return false;
                 const q = switcherQuery.trim().toLowerCase();
                 if (!q) return true;

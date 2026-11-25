@@ -339,7 +339,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
 
   const topBarRef = useRef<HTMLDivElement | null>(null);
   const rightScrollRef = useRef<HTMLDivElement | null>(null);
-  const [drawerTopPx, setDrawerTopPx] = useState(74);
+  const [drawerTopPx, setDrawerTopPx] = useState(68);
   const [inspectorHighlight, setInspectorHighlight] = useState(false);
 
   // Inline Ask AI state scoped to active part inspector (works cleanly in normal & fullscreen)
@@ -350,6 +350,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
     answer: string;
     formula?: string;
   } | null>(null);
+  const partAiSectionRef = useRef<HTMLDivElement | null>(null);
 
   const { timeLeft: focusTimeLeft, isRunning: focusRunning } = useFocusTimer();
   const formatFocusClock = (secs: number) => {
@@ -363,7 +364,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
     if (!el) return;
     const updateTop = () => {
       const h = el.getBoundingClientRect().height;
-      setDrawerTopPx(Math.max(66, Math.round(h + 18)));
+      setDrawerTopPx(Math.max(58, Math.round(h + 12)));
     };
     updateTop();
     if (typeof ResizeObserver !== 'undefined') {
@@ -373,7 +374,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
     }
     window.addEventListener('resize', updateTop);
     return () => window.removeEventListener('resize', updateTop);
-  }, []);
+  }, [isFullscreen]);
 
   useEffect(() => {
     if (!partSelectSeq) return;
@@ -586,10 +587,10 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
       {/* TOP BAR: LEFT BRAND BADGE & RIGHT BIO-LAB HUD CLUSTER */}
       <div
         ref={topBarRef}
-        className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 flex flex-wrap items-start justify-between gap-1.5 sm:gap-2"
+        className="absolute top-2 left-2.5 right-2.5 flex flex-wrap xl:flex-nowrap items-center justify-between gap-1.5"
       >
         {/* Top-Left Holographic Title Card */}
-        <div className="pointer-events-auto flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 rounded-xl border border-cyan-500/30 bg-[#050d1c]/94 px-2.5 sm:px-3.5 py-1.5 sm:py-2 shadow-[0_8px_30px_rgba(0,0,0,0.6)] max-w-full">
+        <div className="pointer-events-auto flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-xl border border-cyan-500/30 bg-[#050d1c]/94 px-2.5 py-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.6)] max-w-full min-w-0">
           <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg border border-cyan-400/45 bg-cyan-500/15 text-cyan-300">
             <Crosshair className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
@@ -885,7 +886,7 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
       {toolsDrawerOpen && (
         <div
           style={{ top: `${drawerTopPx}px` }}
-          className="pointer-events-auto absolute right-2.5 sm:right-3 z-40 w-[min(392px,calc(100vw-20px))] max-h-[calc(100vh-175px)] flex flex-col rounded-2xl border border-cyan-400/45 bg-[#050d1c]/96 shadow-[0_20px_60px_rgba(0,0,0,0.85)] overflow-hidden"
+          className="pointer-events-auto absolute right-2.5 sm:right-3 z-40 w-[min(392px,calc(100vw-20px))] max-h-[calc(100dvh-146px)] flex flex-col rounded-2xl border border-cyan-400/45 bg-[#050d1c]/96 shadow-[0_20px_60px_rgba(0,0,0,0.85)] overflow-hidden"
         >
           <div className="flex items-center justify-between gap-2 border-b border-slate-800 px-3.5 py-2.5 bg-[#040a16]">
             <div className="flex items-center gap-2">
@@ -1425,8 +1426,11 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
       {/* LEFT FLOATING CONTROL PANEL (EXACT BIO-LAB HOLOGRAPHIC STYLE FROM SCREENSHOT) */}
       {leftOpen && (
         <aside
-          style={{ top: `${leftOpen && typeof window !== 'undefined' && window.innerWidth < 1024 ? drawerTopPx + 36 : drawerTopPx}px` }}
-          className="pointer-events-auto absolute bottom-[88px] left-3 w-[274px] sm:w-[292px] flex flex-col rounded-2xl border border-cyan-500/25 bg-[#050c19]/92 shadow-[0_16px_50px_rgba(0,0,0,0.75)] overflow-hidden"
+          style={{
+            top: `${leftOpen && typeof window !== 'undefined' && window.innerWidth < 1024 ? drawerTopPx + 36 : drawerTopPx}px`,
+            bottom: isFullscreen ? '72px' : '82px'
+          }}
+          className="pointer-events-auto absolute left-2.5 sm:left-3 w-[270px] sm:w-[288px] flex flex-col rounded-2xl border border-cyan-500/25 bg-[#050c19]/92 shadow-[0_16px_50px_rgba(0,0,0,0.75)] overflow-hidden"
         >
           <div className="flex-1 overflow-y-auto p-3.5 space-y-4 scrollbar-thin">
             {/* Search Input */}
@@ -1842,14 +1846,17 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
       {/* RIGHT FLOATING PART INSPECTOR & INLINE ASK AI (WORKS CLEANLY IN NORMAL & FULLSCREEN) */}
       {rightOpen && (
         <aside
-          style={{ top: `${drawerTopPx}px` }}
-          className={`pointer-events-auto absolute bottom-[88px] right-3 w-[294px] sm:w-[328px] flex flex-col rounded-2xl border bg-[#050c19]/94 shadow-[0_16px_50px_rgba(0,0,0,0.75)] overflow-hidden transition-colors ${
+          style={{
+            top: `${drawerTopPx}px`,
+            bottom: isFullscreen ? '72px' : '82px'
+          }}
+          className={`pointer-events-auto absolute right-2.5 sm:right-3 w-[294px] sm:w-[332px] flex flex-col rounded-2xl border bg-[#050c19]/94 shadow-[0_16px_50px_rgba(0,0,0,0.75)] overflow-hidden transition-colors ${
             inspectorHighlight ? 'border-cyan-300 ring-2 ring-cyan-400/60' : 'border-cyan-500/25'
           }`}
         >
           {inspectedPart ? (
             <>
-              <div ref={rightScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3.5 scrollbar-thin">
+              <div ref={rightScrollRef} className="flex-1 overflow-y-auto p-3.5 space-y-3 scrollbar-thin">
                 {/* Category Pill + Close Button */}
                 <div className="flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-400/40 bg-rose-500/10 px-2.5 py-1 text-[11px] font-bold text-rose-200">
@@ -1882,16 +1889,16 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
                   </div>
                 </div>
 
-                {/* Cận cảnh & Cô lập Side-by-Side Buttons (Exact Match to Screenshot) */}
-                <div className="grid grid-cols-2 gap-2">
+                {/* Cận cảnh, Cô lập & Hỏi AI Nhanh (Luôn hiện ngay khi chọn bộ phận ở Fullscreen) */}
+                <div className="grid grid-cols-3 gap-1.5">
                   <button
                     type="button"
                     onClick={() =>
                       currentSelectedIdx !== null && onFocusPart(currentSelectedIdx)
                     }
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-cyan-400/50 bg-cyan-500/15 px-3 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-500/25 cursor-pointer"
+                    className="flex items-center justify-center gap-1 rounded-xl border border-cyan-400/50 bg-cyan-500/15 px-2 py-2 text-[11px] font-bold text-cyan-200 hover:bg-cyan-500/25 cursor-pointer"
                   >
-                    <Focus className="h-3.5 w-3.5" />
+                    <Focus className="h-3.5 w-3.5 shrink-0" />
                     <span>{isEn ? 'Focus' : 'Cận cảnh'}</span>
                   </button>
                   <button
@@ -1902,22 +1909,32 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
                         isolatedPartIdx === currentSelectedIdx ? null : currentSelectedIdx
                       );
                     }}
-                    className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-colors cursor-pointer ${
+                    className={`flex items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[11px] font-bold transition-colors cursor-pointer ${
                       isolatedPartIdx === currentSelectedIdx
                         ? 'border-amber-400 bg-amber-500/20 text-amber-200'
                         : 'border-slate-700 bg-[#081325] text-slate-200 hover:border-cyan-400/60'
                     }`}
                   >
-                    <Eye className="h-3.5 w-3.5" />
+                    <Eye className="h-3.5 w-3.5 shrink-0" />
                     <span>
                       {isolatedPartIdx === currentSelectedIdx
                         ? isEn
-                          ? 'Full Model'
+                          ? 'Unisolate'
                           : 'Bỏ cô lập'
                         : isEn
                         ? 'Isolate'
                         : 'Cô lập'}
                     </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      partAiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className="flex items-center justify-center gap-1 rounded-xl border border-amber-400/55 bg-amber-500/15 px-2 py-2 text-[11px] font-bold text-amber-200 hover:bg-amber-500/25 cursor-pointer"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" />
+                    <span>{isEn ? 'Ask AI' : 'Hỏi AI'}</span>
                   </button>
                 </div>
 
@@ -2024,8 +2041,8 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
                   </div>
                 )}
 
-                {/* Card 3: INLINE ASK AI ABOUT SELECTED PART (Always visible in Normal & Fullscreen) */}
-                <div className="rounded-xl border border-cyan-500/35 bg-[#061124] p-3 space-y-2.5">
+                {/* Card 3: INLINE ASK AI ABOUT SELECTED PART (Always reachable & pinned in Normal & Fullscreen) */}
+                <div ref={partAiSectionRef} className="rounded-xl border border-cyan-500/35 bg-[#061124] p-3 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="flex items-center gap-1.5 text-[10px] font-mono font-extrabold tracking-wider text-cyan-300 uppercase">
                       <Sparkles className="h-3.5 w-3.5 text-amber-300 shrink-0" />
@@ -2133,8 +2150,44 @@ export const HoloAtlasOverlay: React.FC<HoloAtlasOverlayProps> = ({
                 </div>
               </div>
 
+              {/* Pinned Always-Visible Inline Ask AI Quick Bar + Pagination Footer (Never scrolled off in Fullscreen) */}
+              <div className="border-t border-slate-800/90 bg-[#050f20] px-3 py-2 space-y-1.5">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    partAiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    void handleAskSelectedPartAi();
+                  }}
+                  className="flex items-center gap-1.5"
+                >
+                  <input
+                    type="text"
+                    value={partAiQuestion}
+                    onChange={(e) => setPartAiQuestion(e.target.value)}
+                    placeholder={
+                      isEn
+                        ? `Ask AI about ${inspectedPart.nameEn}...`
+                        : `Hỏi AI về ${inspectedPart.nameVi}...`
+                    }
+                    className="flex-1 min-w-0 rounded-lg border border-cyan-500/35 bg-[#08152b] px-2.5 py-1.5 text-[11px] text-slate-100 placeholder-slate-400 focus:border-cyan-400 focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={partAiLoading || !partAiQuestion.trim()}
+                    className="flex items-center gap-1 rounded-lg bg-gradient-to-r from-cyan-400 to-sky-400 px-2.5 py-1.5 text-[11px] font-extrabold text-slate-950 disabled:opacity-45 cursor-pointer shrink-0"
+                  >
+                    {partAiLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    <span>{isEn ? 'Ask' : 'Hỏi AI'}</span>
+                  </button>
+                </form>
+              </div>
+
               {/* Bottom Pagination Footer (Matches screenshot: ← Bộ phận trước | 54 / 58 | Tiếp theo →) */}
-              <div className="flex items-center justify-between gap-2 border-t border-slate-800/90 bg-[#040a16] px-3.5 py-2.5">
+              <div className="flex items-center justify-between gap-2 border-t border-slate-800/90 bg-[#040a16] px-3.5 py-2">
                 <button
                   type="button"
                   onClick={() => handleStepPart(-1)}

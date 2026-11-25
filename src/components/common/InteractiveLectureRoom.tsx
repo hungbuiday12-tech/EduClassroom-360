@@ -40,6 +40,8 @@ import {
 } from 'lucide-react';
 import {
   AITutorMode,
+  BiologyLesson,
+  ChemistryLesson,
   LectureStep,
   LectureStepAiMessage,
   LectureStepEvaluation,
@@ -50,6 +52,8 @@ import {
 } from '../../types';
 import { PhysicsInline2DSim } from '../physics/PhysicsInline2DSim';
 import { PhysicsInline3DSim } from '../physics/PhysicsInline3DSim';
+import { ChemistryInlineStepSim } from '../chemistry/ChemistryInlineStepSim';
+import { BiologyInlineStepSim } from '../biology/BiologyInlineStepSim';
 import { FormattedText, MathFormula } from './MathRenderer';
 import { MonokaiCodeBlock } from '../cs/SublimeEditor';
 import { safeFetchJson, streamTutorChat } from '../../lib/apiClient';
@@ -86,6 +90,8 @@ interface InteractiveLectureRoomProps {
   lessonKey: string;
   subject?: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   physicsLesson?: PhysicsLesson;
+  chemistryLesson?: ChemistryLesson;
+  biologyLesson?: BiologyLesson;
   grade?: string;
   subjectAccent: 'indigo' | 'blue' | 'emerald' | 'amber';
   kicker: string;
@@ -117,6 +123,8 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
   lessonKey,
   subject = 'math',
   physicsLesson,
+  chemistryLesson,
+  biologyLesson,
   grade = '',
   subjectAccent,
   kicker,
@@ -1770,6 +1778,116 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
                   onOpenSim3D={onOpenSim3D}
                 />
               )}
+            </div>
+          );
+        })()}
+
+        {/* ============================================================== */}
+        {/* INLINE 2D + 3D CHEMISTRY SIMULATIONS                           */}
+        {/* ============================================================== */}
+        {subject === 'chemistry' && chemistryLesson && (() => {
+          const simView = inlineSimViewByStep[idx] || 'both';
+          return (
+            <div className="space-y-3">
+              <div className="chem-zone-frame flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-50/70 dark:bg-slate-900 border border-emerald-200/90 dark:border-emerald-900/60">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+                  <Compass className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Phòng Thí Nghiệm Hóa Học 2D &amp; 3D (Phần {idx + 1})</span>
+                </div>
+                <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px]">
+                  {(
+                    [
+                      { id: 'both', label: '2D + 3D' },
+                      { id: '2d', label: 'Chỉ 2D' },
+                      { id: '3d', label: 'Chỉ 3D' }
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      data-ripple="true"
+                      onClick={() =>
+                        setInlineSimViewByStep((prev) => ({ ...prev, [idx]: opt.id }))
+                      }
+                      className={`sim-btn-chem px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                        simView === opt.id
+                          ? 'bg-emerald-600 text-white'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <ChemistryInlineStepSim
+                lesson={chemistryLesson}
+                stepIndex={idx}
+                totalSteps={steps.length}
+                stepTitle={step.stepTitle}
+                stepConcept={step.conceptSection}
+                viewMode={simView}
+                isWebGLActive={viewLayout === 'slides' || simView === '3d' || activeFull3DStep === idx}
+                onActivateWebGL={() => setActiveFull3DStep(idx)}
+                onOpenSim2D={onOpenSim2D}
+                onOpenSim3D={onOpenSim3D}
+              />
+            </div>
+          );
+        })()}
+
+        {/* ============================================================== */}
+        {/* INLINE 2D + 3D BIOLOGY SIMULATIONS                             */}
+        {/* ============================================================== */}
+        {subject === 'biology' && biologyLesson && (() => {
+          const simView = inlineSimViewByStep[idx] || 'both';
+          return (
+            <div className="space-y-3">
+              <div className="bio-zone-frame flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-teal-50/70 dark:bg-slate-900 border border-teal-200/90 dark:border-teal-900/60">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+                  <Compass className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                  <span>Phòng Thí Nghiệm Sinh Học 2D &amp; 3D (Phần {idx + 1})</span>
+                </div>
+                <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px]">
+                  {(
+                    [
+                      { id: 'both', label: '2D + 3D' },
+                      { id: '2d', label: 'Chỉ 2D' },
+                      { id: '3d', label: 'Chỉ 3D' }
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      data-ripple="true"
+                      onClick={() =>
+                        setInlineSimViewByStep((prev) => ({ ...prev, [idx]: opt.id }))
+                      }
+                      className={`sim-btn-bio px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                        simView === opt.id
+                          ? 'bg-teal-600 text-white'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <BiologyInlineStepSim
+                lesson={biologyLesson}
+                stepIndex={idx}
+                totalSteps={steps.length}
+                stepTitle={step.stepTitle}
+                stepConcept={step.conceptSection}
+                viewMode={simView}
+                isWebGLActive={viewLayout === 'slides' || simView === '3d' || activeFull3DStep === idx}
+                onActivateWebGL={() => setActiveFull3DStep(idx)}
+                onOpenSim2D={onOpenSim2D}
+                onOpenSim3D={onOpenSim3D}
+              />
             </div>
           );
         })()}

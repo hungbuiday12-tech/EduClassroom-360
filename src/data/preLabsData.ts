@@ -28,42 +28,87 @@ import { FutureLabTabId } from '../types';
 export type PreCategoryId = 'all' | 'future_2030' | 'aerospace_physics' | 'math_4d' | 'ai_code_sensor';
 export type PreSidebarGroupId = 'labs' | 'simulations' | 'sandboxes';
 export type PreSubjectZoneId = 'physics' | 'chemistry' | 'biology' | 'math' | 'cs';
+export type PreSandboxDivisionId = 'khtn' | 'khkt';
+
+export const PRE_SANDBOX_DIVISIONS: {
+  id: PreSandboxDivisionId;
+  labelVi: string;
+  labelEn: string;
+  descVi: string;
+  descEn: string;
+  subjectZones: PreSubjectZoneId[];
+  badgeClass: string;
+  surfaceClass: string;
+}[] = [
+  {
+    id: 'khtn',
+    labelVi: 'Sandbox KHTN (Lí – Hóa – Sinh)',
+    labelEn: 'Natural Sciences Sandbox (Physics · Chem · Bio)',
+    descVi: 'Vũ trụ Định luật Vật lí, Trường Hạt 2 Tay, Phản ứng & Bảng Tuần Hoàn Hóa, Di truyền – Enzyme Sinh.',
+    descEn: 'What-If Physics, Dual-Hand Particle Fields, Chemistry Titration/Periodic Lab & Biology DNA/Enzyme.',
+    subjectZones: ['physics', 'chemistry', 'biology'],
+    badgeClass: 'bg-emerald-500/15 border-emerald-400/55 text-emerald-700 dark:text-emerald-300',
+    surfaceClass: 'border-emerald-300/80 dark:border-emerald-500/35 bg-emerald-50/55 dark:bg-emerald-950/20',
+  },
+  {
+    id: 'khkt',
+    labelVi: 'Sandbox KHKT (Toán – Tin)',
+    labelEn: 'Math & Tech Sandbox (Math · CS)',
+    descVi: 'Đồ thị & Oxyz 3D, Giấy Nháp Vision, Thành Phố Thuật Toán AlgoCity 3D & Đấu trường Gõ Parroto.',
+    descEn: '2D/3D Grapher & Oxyz, Paper-to-Sim Vision, 3D AlgoCity & Parroto Coding Speed Arena.',
+    subjectZones: ['math', 'cs'],
+    badgeClass: 'bg-indigo-500/15 border-indigo-400/55 text-indigo-700 dark:text-indigo-300',
+    surfaceClass: 'border-indigo-300/80 dark:border-indigo-500/35 bg-indigo-50/55 dark:bg-indigo-950/20',
+  },
+];
 
 export const PRE_SUBJECT_ZONES: {
   id: PreSubjectZoneId;
   labelVi: string;
   labelEn: string;
   badgeClass: string;
+  pillClass: string;
+  icon: React.FC<{ className?: string }>;
 }[] = [
   {
     id: 'physics',
     labelVi: 'Khu Vật lí & Vũ trụ',
     labelEn: 'Physics & Aerospace Zone',
     badgeClass: 'bg-sky-500/15 border-sky-400/50 text-sky-700 dark:text-sky-300',
+    pillClass: 'bg-sky-600 border-sky-400 text-white',
+    icon: Atom,
   },
   {
     id: 'chemistry',
     labelVi: 'Khu Hóa học Lượng tử',
     labelEn: 'Chemistry Zone',
     badgeClass: 'bg-amber-500/15 border-amber-400/50 text-amber-700 dark:text-amber-300',
+    pillClass: 'bg-amber-600 border-amber-400 text-white',
+    icon: FlaskConical,
   },
   {
     id: 'biology',
     labelVi: 'Khu Sinh học Phân tử',
     labelEn: 'Biology Zone',
     badgeClass: 'bg-emerald-500/15 border-emerald-400/50 text-emerald-700 dark:text-emerald-300',
+    pillClass: 'bg-emerald-600 border-emerald-400 text-white',
+    icon: Dna,
   },
   {
     id: 'math',
     labelVi: 'Khu Toán học & 4D',
     labelEn: 'Math & 4D Zone',
     badgeClass: 'bg-indigo-500/15 border-indigo-400/50 text-indigo-700 dark:text-indigo-300',
+    pillClass: 'bg-indigo-600 border-indigo-400 text-white',
+    icon: Box,
   },
   {
     id: 'cs',
     labelVi: 'Khu Tin học, AI & Phần cứng',
     labelEn: 'CS, AI & Hardware Zone',
     badgeClass: 'bg-violet-500/15 border-violet-400/50 text-violet-700 dark:text-violet-300',
+    pillClass: 'bg-violet-600 border-violet-400 text-white',
+    icon: Cpu,
   },
 ];
 
@@ -72,6 +117,7 @@ export interface PreStudioItem {
   category: Exclude<PreCategoryId, 'all'>;
   subjectZone: PreSubjectZoneId;
   sidebarGroup: PreSidebarGroupId;
+  sandboxDivision?: PreSandboxDivisionId;
   indexLabel: string;
   titleVi: string;
   titleEn: string;
@@ -138,6 +184,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
     category: 'future_2030',
     subjectZone: 'physics',
     sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khtn',
     indexLabel: 'NEW 01',
     titleVi: 'Vũ Trụ "Nếu Định Luật Vật Lí Thay Đổi" 3D',
     titleEn: 'What-If Physics Sandbox 3D',
@@ -164,6 +211,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
     category: 'ai_code_sensor',
     subjectZone: 'cs',
     sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khkt',
     indexLabel: 'NEW 02',
     titleVi: 'Thành Phố Thuật Toán 3D — AlgoCity',
     titleEn: '3D Algorithm Architecture City',
@@ -216,6 +264,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
     category: 'future_2030',
     subjectZone: 'physics',
     sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khtn',
     indexLabel: '02',
     titleVi: 'Universe Forge — Lò Rèn Vũ Trụ & Tương Đối 3D',
     titleEn: 'Universe Forge — Relativity & Gravity 3D',
@@ -580,6 +629,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
     category: 'ai_code_sensor',
     subjectZone: 'physics',
     sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khtn',
     indexLabel: '14',
     titleVi: 'Sinh Mô Phỏng 3D AI',
     titleEn: 'Text → 3D Simulation Studio',
@@ -606,6 +656,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
     category: 'ai_code_sensor',
     subjectZone: 'math',
     sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khkt',
     indexLabel: '15',
     titleVi: 'Giấy Nháp → 3D Sim Vision',
     titleEn: 'Paper → 3D Sim Vision',
@@ -710,6 +761,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
     category: 'ai_code_sensor',
     subjectZone: 'physics',
     sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khtn',
     indexLabel: '19',
     titleVi: 'Trường Hạt GPU 3D 2 Tay',
     titleEn: 'Dual-Hand 3D 28K GPU Field',
@@ -736,6 +788,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
     category: 'ai_code_sensor',
     subjectZone: 'cs',
     sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khkt',
     indexLabel: 'NEW 05',
     titleVi: 'Đấu Trường Luyện Gõ Parroto & Bàn Phím Trực Tiếp',
     titleEn: 'Parroto Speed-Typing Sandbox & Live Keyboard',
@@ -860,5 +913,86 @@ export const PRE_STUDIOS: PreStudioItem[] = [
     iconBgClass: 'bg-cyan-500/15 border-cyan-500/40 text-cyan-600 dark:text-cyan-300',
     btnGradientClass: 'from-cyan-500 via-sky-500 to-violet-500 text-white',
     icon: Dna,
+  },
+  {
+    id: 'chem_sandbox_suite',
+    category: 'ai_code_sensor',
+    subjectZone: 'chemistry',
+    sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khtn',
+    indexLabel: 'NEW 10',
+    titleVi: 'Sandbox Hóa Học (Tuần Hoàn · Chuẩn Độ · Cân Bằng PTHH)',
+    titleEn: 'Chemistry Interactive Sandbox Suite',
+    shortVi: 'Sandbox Hóa Học KHTN',
+    shortEn: 'Chemistry Sandbox',
+    metaVi: 'Bảng Tuần Hoàn 36 Nguyên Tố · Cân Bằng PTHH Ma Trận · Chuẩn Độ pH & Mol',
+    metaEn: 'Interactive Periodic Table · Equation Balancer · pH Titration & Stoichiometry',
+    descVi:
+      'Không gian thực nghiệm Hóa học tích hợp 4 phòng Sandbox: Bảng tuần hoàn 36 nguyên tố tương tác độ âm điện/bán kính, cân bằng PTHH tự động xuất CSV, chuẩn độ Acid–Base vẽ đường cong pH trực tiếp và tính hiệu suất phản ứng.',
+    descEn:
+      '4-in-1 Chemistry sandbox: 36-element interactive periodic inspector, automated equation matrix balancer with CSV export, live acid-base titration pH curve plotter, and yield calculator.',
+    specsVi: '4 Phòng Sandbox Hóa · Đường cong chuẩn độ pH · Xuất báo cáo CSV',
+    specsEn: '4 Chemistry Sandboxes · Live pH Titration Curve · CSV Data Export',
+    keywords: 'sandbox hoa hoc khtn bang tuan hoan chuan do ph can bang pthh mol hieu suat',
+    accentHex: '#10b981',
+    secondaryHex: '#f59e0b',
+    accentTextClass: 'text-emerald-600 dark:text-emerald-300',
+    iconBgClass: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-300',
+    btnGradientClass: 'from-emerald-500 via-teal-500 to-amber-500 text-white',
+    icon: FlaskConical,
+  },
+  {
+    id: 'bio_sandbox_suite',
+    category: 'ai_code_sensor',
+    subjectZone: 'biology',
+    sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khtn',
+    indexLabel: 'NEW 11',
+    titleVi: 'Sandbox Sinh Học (Dịch Mã · Hardy-Weinberg · Enzyme)',
+    titleEn: 'Biology Interactive Sandbox Suite',
+    shortVi: 'Sandbox Sinh Học KHTN',
+    shortEn: 'Biology Sandbox',
+    metaVi: 'Dịch Mã DNA → mRNA · Cân Bằng Quần Thể · Động Học Enzyme & Tháp Năng Lượng',
+    metaEn: 'DNA → mRNA Codon Translator · Hardy-Weinberg · Enzyme Kinetics & Trophic Pyramid',
+    descVi:
+      '4 phòng Sandbox Sinh học tương tác: giải mã trình tự DNA–mRNA–Axit amin xuất FASTA/TXT, tính tần số alen Hardy–Weinberg, khảo sát đường cong Michaelis–Menten ức chế Enzyme và mô phỏng tháp năng lượng sinh thái 10%.',
+    descEn:
+      '4-in-1 Biology sandbox: DNA/mRNA/amino acid codon translator with FASTA export, Hardy-Weinberg population calculator, Michaelis-Menten enzyme inhibition curves, and 10% trophic energy pyramid.',
+    specsVi: '4 Phòng Sandbox Sinh · Xuất FASTA/TXT · Mô hình Enzyme & Sinh thái',
+    specsEn: '4 Biology Sandboxes · FASTA/TXT Export · Enzyme & Ecosystem Curves',
+    keywords: 'sandbox sinh hoc khtn adn mrna axit amin hardy weinberg enzyme thap sinh thai',
+    accentHex: '#14b8a6',
+    secondaryHex: '#06b6d4',
+    accentTextClass: 'text-teal-600 dark:text-teal-300',
+    iconBgClass: 'bg-teal-500/15 border-teal-500/40 text-teal-600 dark:text-teal-300',
+    btnGradientClass: 'from-teal-500 via-emerald-500 to-cyan-500 text-white',
+    icon: Dna,
+  },
+  {
+    id: 'math_sandbox_suite',
+    category: 'math_4d',
+    subjectZone: 'math',
+    sidebarGroup: 'sandboxes',
+    sandboxDivision: 'khkt',
+    indexLabel: 'NEW 12',
+    titleVi: 'Sandbox Toán Học (Đồ Thị · Hình Phẳng 2D · Oxyz 3D)',
+    titleEn: 'Mathematics Interactive Sandbox (2D/3D)',
+    shortVi: 'Sandbox Toán Học KHKT',
+    shortEn: 'Math 2D/3D Sandbox',
+    metaVi: 'Khảo Sát Hàm Số & Tích Phân · Dựng Hình Euclid Compa · Không Gian Oxyz 3D',
+    metaEn: 'Function Grapher & Calculus · Dynamic Euclidean Geometry · 3D Oxyz Studio',
+    descVi:
+      'Phòng Sandbox Toán học KHKT tích hợp trọn bộ 3 công cụ tự do: nhập biểu thức hàm số bất kỳ khảo sát đạo hàm – tích phân, xưởng vẽ hình phẳng với compa/thước thẳng thời gian thực và 11 mô hình không gian Oxyz 3D.',
+    descEn:
+      'Complete KHKT Math sandbox combining interactive calculus graphing, Euclidean compass-straightedge geometry construction, and 11 interactive 3D Oxyz spatial models.',
+    specsVi: 'Đồ thị & Tích phân 2D · Dựng hình Compa 2D · 11 Cảnh Oxyz 3D',
+    specsEn: '2D Calculus Grapher · Euclidean Geometry Draw · 11 Oxyz 3D Scenes',
+    keywords: 'sandbox toan hoc khkt do thi ham so tich phan hinh hoc phang compa oxyz 3d',
+    accentHex: '#6366f1',
+    secondaryHex: '#3b82f6',
+    accentTextClass: 'text-indigo-600 dark:text-indigo-300',
+    iconBgClass: 'bg-indigo-500/15 border-indigo-500/40 text-indigo-600 dark:text-indigo-300',
+    btnGradientClass: 'from-indigo-500 via-blue-500 to-cyan-500 text-white',
+    icon: Box,
   },
 ];

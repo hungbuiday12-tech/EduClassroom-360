@@ -177,17 +177,17 @@ function makeTable(headers: string[], rows: string[][]): Table {
   });
 }
 
-async function generateFallbackDocxBlob(): Promise<Blob> {
+export function buildSynapsePresentationDocument(): Document {
   const phyCounts = getPhysicsSimCounts();
   const chemTotalSims = CHEMISTRY_2D_SIMS.length + CHEMISTRY_3D_SIMS.length;
   const bioTotalSims = BIOLOGY_2D_SIMS.length + BIOLOGY_3D_SIMS.length;
   const preTotal = PRE_STUDIOS.length;
-  const preLabsCount = PRE_STUDIOS.filter((s) => s.group === 'labs').length;
-  const preSimsCount = PRE_STUDIOS.filter((s) => s.group === 'simulations').length;
-  const preSandboxesCount = PRE_STUDIOS.filter((s) => s.group === 'sandboxes').length;
+  const preLabsCount = PRE_STUDIOS.filter((s) => s.sidebarGroup === 'labs').length;
+  const preSimsCount = PRE_STUDIOS.filter((s) => s.sidebarGroup === 'simulations').length;
+  const preSandboxesCount = PRE_STUDIOS.filter((s) => s.sidebarGroup === 'sandboxes').length;
   const totalLessons = CURRICULUM_COUNTS.totalLessons;
   const totalExams = CURRICULUM_COUNTS.totalExams;
-  const doc = new Document({
+  return new Document({
     creator: 'Synapse STEM Academy',
     title: 'Thuyết Minh Sản Phẩm Synapse',
     sections: [
@@ -222,7 +222,7 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
           }),
           heading1('I. TỔNG QUAN SẢN PHẨM (SYNAPSE STEM · synapse-stem.is-a.dev)'),
           bodyPara(
-            `Synapse tích hợp ${totalLessons} bài giảng chuyên sâu (GDPT 2018 & GDPT 2006 + Lộ trình Chuyên) cho 5 môn Toán học, Vật lí, Hóa học, Sinh học và Tin học; chia tách rành mạch từng khu vực Phòng Lab, Mô phỏng 2D/3D và Sandbox riêng cho từng môn. Phiên bản Synapse Pre mở khóa ${preTotal} Studio 3D/4D (${preLabsCount} Phòng Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes), gồm 30 Đại công trình, Lò Phản Ứng Hóa 3D, Atlas Orbital VSEPR 3D, Atlas Tế Bào 3D, CRISPR-Cas9 3D, QR Cảm biến Điện thoại & Hộp cát Hạt Lực Trường GPU 28.000 hạt; kết hợp Syn Meet & 3D WebRTC, IDE Sublime Text 4 chấm code C++/Python (Trace 1-1 & Replay Tư Duy), Ngân hàng ${totalExams} Đề thi xuất DOCX và Hệ thống 5 AI Chuyên Môn (Syn Math, Syn Physics, Syn Chem, Syn Bio, Syn Code) + Syn AI Pro.`
+            `Synapse tích hợp ${totalLessons} bài giảng chuyên sâu (GDPT 2018 & GDPT 2006 + Lộ trình Chuyên) cho 5 môn Toán học, Vật lí, Hóa học, Sinh học và Tin học; chia tách rành mạch từng khu vực Phòng Lab, Mô phỏng 2D/3D và Sandbox riêng cho từng môn. Phiên bản Synapse Pre mở khóa ${preTotal} Studio 3D/4D (${preLabsCount} Phòng Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes chia làm 2 khu: Sandbox KHTN (Lí – Hóa – Sinh) và Sandbox KHKT (Toán – Tin)), gồm 30 Đại công trình, Lò Phản Ứng Hóa 3D, Atlas Orbital VSEPR 3D, Atlas Tế Bào 3D, CRISPR-Cas9 3D, QR Cảm biến Điện thoại & Hộp cát Hạt Lực Trường GPU 28.000 hạt; kết hợp Syn Meet & 3D WebRTC, IDE Sublime Text 4 chấm code C++/Python (Trace 1-1 & Replay Tư Duy), Ngân hàng ${totalExams} Đề thi xuất DOCX và Hệ thống 5 AI Chuyên Môn (Syn Math, Syn Physics, Syn Chem, Syn Bio, Syn Code) + Syn AI Pro.`
           ),
           heading1('II. TOÀN BỘ TÍNH NĂNG CỐT LÕI & CÁC HỆ THỐNG CHUYÊN BIỆT THEO TỪNG MÔN'),
           heading2('1. Hệ 5 AI Mắt Thần Live Co-Pilot (Voice Barge-in) & Syn AI Pro'),
@@ -233,7 +233,7 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
           bulletItem(`Sinh học (${CURRICULUM_COUNTS.biologyLessons} bài · ${bioTotalSims} Lab 2D/3D & 4 Sandbox)`, `Đầy đủ GDPT 2018, GDPT 2006 & Chuyên; ${BIOLOGY_2D_SIMS.length} mô phỏng 2D (Nguyên phân/Giảm phân, Nhân đôi DNA, Phiên mã/Dịch mã, Operon Lac, Tim & Tuần hoàn, Lưới thức ăn...) + ${BIOLOGY_3D_SIMS.length} Lab 3D (Tế bào nhân thực, Xoắn kép DNA, Ribosome, Thụ thể Synap, Tim 4 ngăn) + 4 Sandbox riêng (Lai Menđen F1-F2, Hệ gen & Đột biến CRISPR, Sinh trưởng Quần thể, Chuỗi chuyển hóa Quang hợp-Hô hấp).`),
           bulletItem(`Vật lí (${CURRICULUM_COUNTS.physicsLessons} bài · ${phyCounts.total} Lab 2D/3D) & Toán học (${CURRICULUM_COUNTS.mathLectures} bài · 2D/Oxyz 3D)`, `Vật lí tách ${phyCounts.domainCount} lĩnh vực (${phyCounts.count2D} Lab 2D + ${phyCounts.count3D} Lab 3D chuẩn GDPT 2018 & 2006); Toán học tích hợp Máy vẽ hàm 2D, Xưởng Đường tròn 2D & 11 cảnh Không gian Oxyz 3D.`),
           bulletItem(`Tin học (${CURRICULUM_COUNTS.csLessons} bài · 5 Lộ trình Quốc tế)`, 'VNOI, C++ Institute (OpenEDG), Roadmap.sh, LearnCpp & GitHub Track kèm IDE Sublime Text 4, Live Code Trace 1-1, Replay Tư Duy WA → AC & 16 đồ thị thuật toán.'),
-          heading2(`3. Synapse Pre (${preTotal} Studio 3D/4D: ${preLabsCount} Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes) & Holo Atlas 3D`),
+          heading2(`3. Synapse Pre (${preTotal} Studio 3D/4D: ${preLabsCount} Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes KHTN/KHKT) & Holo Atlas 3D`),
           bulletItem('Đại công trình & Chế độ Pro', `Cung cấp thanh Phân tích Pro (CSV/Snapshot/Video WebM), Lắp Ráp Cơ Khí 3D, Tên Lửa Đa Tầng, Động Cơ Phản Lực, Lò Phản Ứng Hóa 3D, Orbital VSEPR 3D, Atlas Tế Bào 3D, DNA CRISPR-Cas9 3D, QR Cảm Biến Điện Thoại, Hộp cát Hạt GPU 28.000 hạt và Holo Atlas 3D 58 bộ phận WebAR 10 ngón tay.`),
           heading2(`4. Ngân Hàng ${totalExams} Đề Thi DOCX (5 Môn) & Syn Meet 3D WebRTC`),
           bulletItem(`Kho ${totalExams} Đề Thi (${CURRICULUM_COUNTS.chuyenExams} Chuyên · ${CURRICULUM_COUNTS.standardExams} Không chuyên)`, 'Mỗi môn Toán, Vật lí, Hóa học, Sinh học và Tin học có đúng 350 đề (175 Chuyên + 175 THPT), cho phép up ảnh/Ctrl+V/giọng nói, chấm bài viết tay 0–10 & tải DOCX sạch đáp án.'),
@@ -251,8 +251,10 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
       }
     ]
   });
+}
 
-  return Packer.toBlob(doc);
+async function generateFallbackDocxBlob(): Promise<Blob> {
+  return Packer.toBlob(buildSynapsePresentationDocument());
 }
 
 /**

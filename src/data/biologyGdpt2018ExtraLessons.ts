@@ -1,0 +1,430 @@
+import { Biology3DMode, BiologyLesson, BiologySimType } from '../types';
+import { makeBioLesson } from './biologyGdpt2018Lessons';
+
+type Bio2018Spec = [
+  id: string,
+  grade: BiologyLesson['grade'],
+  stageLabel: string,
+  sourceTag: string,
+  lessonNumber: number,
+  title: string,
+  subtitle: string,
+  theory1: string,
+  theory2: string,
+  formula: string,
+  sim2d: BiologySimType,
+  sim3d: Biology3DMode,
+  q: string,
+  opts: [string, string, string, string],
+  ans: number,
+  exp: string,
+  essayQ: string,
+  essayA: string
+];
+
+const SPECS: Bio2018Spec[] = [
+  // ==================== KHTN 9 GDPT 2018 ====================
+  [
+    'bio-9-4', 'Lớp 9', 'GDPT 2018 · KHTN 9 (Sinh học)', 'KHTN 9 · Tái bản DNA & Mã Di truyền', 4,
+    'Cơ chế Tái bản DNA, Phiên mã mRNA & Dịch mã Tổng hợp Protein (KHTN 9)',
+    'Nguyên tắc bổ sung, nguyên tắc bán bảo toàn và đọc bảng mã di truyền bộ ba',
+    'Quá trình tái bản DNA tạo 2 phân tử DNA con giống hệt nhau và giống DNA mẹ (mỗi con giữ 1 mạch cũ, 1 mạch mới).',
+    'Phiên mã tạo mRNA ($A-U, T-A, G-C$); dịch mã trên ribosome lắp các axit amin theo trình tự bộ ba codon.',
+    'N_{\\text{nu môi trường}} = N_{\\text{gen}}(2^k - 1)',
+    'dna_replication_2d', 'dna_double_helix_3d',
+    'Một gen dài $3060\\text{ Å}$ nhân đôi liên tiếp $3$ lần. Tổng số phân tử DNA con được tạo ra là:',
+    ['A. 6', 'B. 8', 'C. 16', 'D. 32'], 1,
+    'Sau $k = 3$ lần tái bản, số phân tử DNA con là $2^3 = 8$.',
+    'Phân biệt cặp bazơ bổ sung trong phân tử DNA với quá trình phiên mã tạo mRNA.', 'DNA: A–T, G–C; Phiên mã: A_gốc–U_mRNA, T_gốc–A_mRNA, G–C.'
+  ],
+  [
+    'bio-9-5', 'Lớp 9', 'GDPT 2018 · KHTN 9 (Sinh học)', 'KHTN 9 · Di truyền Người & Phả hệ', 5,
+    'Di truyền Học Người, Phả hệ Gia đình & Bệnh Di truyền Phổ biến',
+    'Phân tích bệnh bạch tạng, máu khó đông, mù màu và ứng dụng tư vấn di truyền tiền hôn nhân',
+    'Bệnh bạch tạng do gen lặn trên NST thường; bệnh máu khó đông và mù màu đỏ–lục do gen lặn nằm trên vùng không tương đồng của NST giới tính $X$.',
+    'Liệu pháp gen và sàng lọc trước sinh (chọc ối, sinh thiết gai nhau, NIPT) giúp phát hiện sớm dị tật thai nhi.',
+    'X^a Y \\text{ (Nam bị bệnh mù màu/máu khó đông)}',
+    'blood_typing_2d', 'chromosome_mitosis_3d',
+    'Bố có kiểu gen bình thường ($X^H Y$) và mẹ dị hợp mang gen bệnh máu khó đông ($X^H X^h$). Xác suất sinh con trai đầu lòng mắc bệnh máu khó đông là:',
+    ['A. 50% tổng số con', 'B. 25% tổng số con (50% số con trai)', 'C. 100% số con trai', 'D. 0%'], 1,
+    'Tỉ lệ $X^h Y$ trong tất cả các con là $1/4 = 25\\%$.',
+    'Tại sao bệnh mù màu đỏ–lục biểu hiện ở nam giới nhiều hơn hẳn ở nữ giới?', 'Nam chỉ cần 1 alen lặn trên X (XᵃY) đã biểu hiện bệnh; nữ cần đồng hợp lặn XᵃXᵃ.'
+  ],
+  [
+    'bio-9-6', 'Lớp 9', 'GDPT 2018 · KHTN 9 (Sinh học)', 'KHTN 9 · Tiến hóa', 6,
+    'Bằng chứng Tiến hóa, Thuyết Darwin & Tiến hóa Tổng hợp Hiện đại (KHTN 9)',
+    'Cơ quan tương đồng vs tương tự, chọn lọc tự nhiên giữ lại biến dị có lợi và hình thành loài mới',
+    'Bằng chứng giải phẫu so sánh: cơ quan **tương đồng** (cùng nguồn gốc, ví dụ tay người – cánh dơi – vây cá voi) phản ánh tiến hóa phân li.',
+    'Theo Darwin, động lực của chọn lọc tự nhiên là đấu tranh sinh tồn giúp cá thể thích nghi sống sót và sinh sản ưu thế.',
+    '\\text{Biến dị di truyền} + \\text{CLTN} \\to \\text{Thích nghi & Loài mới}',
+    'natural_selection_2d', 'ecosystem_biome_3d',
+    'Cánh chim và cánh bướm (côn trùng) có cấu tạo giải phẫu khác hẳn nhau nhưng đều dùng để bay là ví dụ của:',
+    ['A. Cơ quan tương đồng', 'B. Cơ quan tương tự (tiến hóa hội tụ)', 'C. Cơ quan thoái hóa', 'D. Bằng chứng sinh học phân tử'], 1,
+    'Khác nguồn gốc nhưng cùng chức năng do thích nghi môi trường sống giống nhau gọi là cơ quan tương tự.',
+    'Giải thích cơ chế xuất hiện vi khuẩn kháng kháng sinh khi bệnh nhân tự ý ngưng thuốc giữa chừng.', 'CLTN giữ lại và nhân nhanh các chủng vi khuẩn mang đột biến kháng thuốc sẵn có.'
+  ],
+  [
+    'bio-9-7', 'Lớp 9', 'GDPT 2018 · KHTN 9 (Sinh học)', 'KHTN 9 · Công nghệ Di truyền', 7,
+    'Công nghệ Gen, Sinh vật Biến đổi Gen (GMO) & Nhân bản Vô tính (KHTN 9)',
+    'Tạo E. coli sản xuất insulin người, gạo vàng giàu β-carotene và cừu Dolly',
+    'Kỹ thuật chuyển gen dùng enzyme cắt giới hạn (restrictase) và enzyme nối (ligase) ghép gen mong muốn vào thể truyền plasmid rồi đưa vào tế bào nhận.',
+    'Nhân bản vô tính chuyển nhân tế bào xôma $2n$ vào tế bào trứng đã bỏ nhân (cừu Dolly mang toàn bộ đặc điểm di truyền của cá thể cho nhân).',
+    '\\text{Gen đích} + \\text{Plasmid} \\xrightarrow{\\text{Restrictase + Ligase}} \\text{DNA tái tổ hợp}',
+    'crispr_editing_2d', 'dna_double_helix_3d',
+    'Enzyme nào đóng vai trò "kéo phân tử" cắt đoạn DNA đích và mở vòng plasmid tại vị trí đặc hiệu?',
+    ['A. DNA polymerase', 'B. Restrictase (Enzyme cắt giới hạn)', 'C. RNA polymerase', 'D. Amylase'], 1,
+    'Restrictase cắt tạo đầu dính bổ sung để Ligase nối đoạn gen vào plasmid.',
+    'Nêu 2 thành tựu ứng dụng công nghệ DNA tái tổ hợp trong y học và nông nghiệp.', 'Sản xuất insulin người, hormone tăng trưởng; giống lúa Golden Rice giàu tiền vitamin A.'
+  ],
+
+  // ==================== SINH HỌC 10 GDPT 2018 ====================
+  [
+    'bio-10-8', 'Lớp 10', 'GDPT 2018 · Sinh học 10', 'SGK Sinh 10 · Phần 1', 8,
+    'Giới thiệu Sinh học, Phương pháp Nghiên cứu & Các Cấp độ Tổ chức Sống',
+    'Cấu trúc thứ bậc mở, tự điều chỉnh, tiến hóa liên tục từ phân tử → tế bào → sinh quyển',
+    'Cấp độ tổ chức sống cơ bản là **tế bào** — đơn vị nhỏ nhất có đầy đủ các đặc tính sống (trao đổi chất, sinh trưởng, cảm ứng, sinh sản).',
+    'Hệ sống là hệ thống mở (trao đổi vật chất và năng lượng với môi trường) có khả năng tự điều chỉnh cân bằng nội môi.',
+    '\\text{Phân tử} \\to \\text{Bào quan} \\to \\text{Tế bào} \\to \\text{Mô/Cơ quan} \\to \\text{Cơ thể} \\to \\text{Sinh quyển}',
+    'cell_organelles_2d', 'eukaryotic_cell_3d',
+    'Cấp độ tổ chức sống cơ bản nhỏ nhất biểu hiện đầy đủ mọi đặc trưng của sự sống là:',
+    ['A. Phân tử DNA', 'B. Bào quan Ti thể', 'C. Tế bào', 'D. Quần thể'], 2,
+    'Theo học thuyết tế bào, tế bào là đơn vị cấu trúc và chức năng cơ bản của mọi sinh vật sống.',
+    'Nêu 4 bước cơ bản của tiến trình nghiên cứu khoa học trong Sinh học.', 'Quan sát đặt câu hỏi → Hình thành giả thuyết → Thiết kế thí nghiệm kiểm chứng → Kết luận.'
+  ],
+  [
+    'bio-10-9', 'Lớp 10', 'GDPT 2018 · Sinh học 10', 'SGK Sinh 10 · Phần 2', 9,
+    'Thành phần Hóa học Tế bào: Nước, Carbohydrate, Lipid, Protein & Nucleic Acid',
+    'Tính phân cực của nước, 4 bậc cấu trúc không gian của Protein và cấu tạo đa phân DNA/RNA',
+    'Phân tử nước có tính phân cực tạo mạng liên kết hydrogen giúp nước có nhiệt dung riêng cao (điều hòa nhiệt) và là dung môi vạn năng.',
+    'Protein có 4 bậc cấu trúc; cấu trúc bậc 3/4 quyết định chức năng sinh học — khi mất cấu trúc không gian (biến tính) protein mất hoạt tính.',
+    '\\text{Cấu trúc bậc 1 (trình tự aa)} \\implies \\text{Bậc 3/4 (chức năng sinh học)}',
+    'enzyme_kinetics_2d', 'enzyme_substrate_3d',
+    'Loại phân tử sinh học nào cấu tạo màng sinh chất theo mô hình lớp kép lưỡng cực?',
+    ['A. Tinh bột', 'B. Phospholipid', 'C. Xenlulozơ', 'D. DNA'], 1,
+    'Phospholipid gồm đầu photphat ưa nước và 2 đuôi axit béo kị nước tự xếp thành lớp kép.',
+    'Giải thích vì sao không nên cho rau xanh vào ngăn đá tủ lạnh nếu muốn ăn sống giòn ngon.', 'Nước trong tế bào đóng băng tăng thể tích làm rách thành và màng tế bào.'
+  ],
+  [
+    'bio-10-10', 'Lớp 10', 'GDPT 2018 · Sinh học 10', 'SGK Sinh 10 · Phần 2', 10,
+    'Tế bào Nhân sơ (Vi khuẩn) vs Tế bào Nhân thực (Động vật – Thực vật)',
+    'Kích thước nhỏ S/V lớn ở vi khuẩn, màng nhân và hệ thống bào quan có màng ở nhân thực',
+    'Tế bào nhân sơ chưa có nhân hoàn chỉnh (vùng nhân chứa DNA vòng trần), không có bào quan có màng, ribosome 70S; tỉ lệ $S/V$ lớn giúp trao đổi chất – sinh sản cực nhanh.',
+    'Tế bào thực vật khác tế bào động vật ở thành xenlulozơ, lục lạp, không bào trung tâm lớn và không có trung thể.',
+    '\\frac{S}{V} = \\frac{3}{R} \\quad (\\text{Tế bào càng nhỏ, } S/V \\text{ càng lớn})',
+    'cell_organelles_2d', 'eukaryotic_cell_3d',
+    'Tế bào vi khuẩn ($1\\text{--}5\\ \\mu\\text{m}$) sinh sản rất nhanh nhờ ưu thế hình học nào?',
+    ['A. Có nhiều nhân', 'B. Tỉ lệ diện tích bề mặt trên thể tích (S/V) rất lớn', 'C. Có thành kitin', 'D. Có lục lạp lớn'], 1,
+    'Kích thước nhỏ tạo $S/V$ lớn giúp hấp thu dinh dưỡng và khuếch tán nội bào cực nhanh.',
+    'Nêu 3 điểm khác biệt chính giữa tế bào nhân sơ và tế bào nhân thực.', 'Màng nhân, hệ thống bào quan có màng (ti thể, RER, Golgi), kích thước & ribosome 70S/80S.'
+  ],
+  [
+    'bio-10-11', 'Lớp 10', 'GDPT 2018 · Sinh học 10', 'SGK Sinh 10 · Phần 2', 11,
+    'Truyền tin Tế bào (Cell Signaling) & Con đường Dẫn truyền Tín hiệu',
+    '3 giai đoạn: Tiếp nhận (Receptor) → Truyền tin (Second Messenger cAMP/Ca²⁺) → Đáp ứng',
+    'Tín hiệu hòa tan trong lipid (hormone steroid) đi xuyên màng gắn thụ thể nội bào; tín hiệu tan trong nước (adrenalin, insulin) gắn thụ thể màng.',
+    'Khuếch đại tín hiệu qua chuỗi phosphoryl hóa kinase giúp chỉ vài phân tử hormone tạo đáp ứng tế bào mạnh mẽ.',
+    '\\text{Ligand} + \\text{Receptor} \\to \\text{cAMP/Kinase} \\to \\text{Đáp ứng gen/enzyme}',
+    'glucose_insulin_2d', 'phospholipid_bilayer_3d',
+    'Hormone insulin điều hòa đường huyết thuộc kiểu truyền tin tế bào nào?',
+    ['A. Nội tiết (Endocrine qua đường máu)', 'B. Cận tiết (Paracrine)', 'C. Xinap thần kinh', 'D. Tiếp xúc trực tiếp'], 0,
+    'Tuyến tụy tiết insulin vào máu tác động lên tế bào gan và cơ ở xa.',
+    'Kể tên 3 giai đoạn của quá trình truyền tin trong tế bào.', '1. Tiếp nhận tín hiệu; 2. Truyền tin nội bào (cAMP/phosphoryl hóa); 3. Đáp ứng tế bào.'
+  ],
+  [
+    'bio-10-12', 'Lớp 10', 'GDPT 2018 · Sinh học 10', 'SGK Sinh 10 · Phần 2', 12,
+    'Công nghệ Tế bào Thực vật (Nuôi cấy Mô) & Tế bào Gốc Động vật',
+    'Tính toàn năng của tế bào thực vật, hormone Auxin/Cytokinin tạo rễ/chồi và Tế bào gốc iPS',
+    'Tỉ lệ $\\text{Auxin} / \\text{Cytokinin}$ cao kích thích mô sẹo ra rễ; tỉ lệ thấp kích thích ra chồi.',
+    'Tế bào gốc vạn năng cảm ứng (iPSC) có thể biệt hóa thành nhiều mô chuyên hóa phục vụ y học tái tạo.',
+    '\\text{Auxin cao} \\to \\text{Ra rễ};\\quad \\text{Cytokinin cao} \\to \\text{Ra chồi}',
+    'phytohormone_tropism_2d', 'plant_vascular_3d',
+    'Ưu điểm vượt trội của phương pháp nhân giống cây trồng bằng nuôi cấy mô tế bào (invitro) là:',
+    ['A. Tạo ra nhiều biến dị xấu', 'B. Nhân nhanh số lượng lớn cây sạch bệnh, đồng nhất kiểu gen', 'C. Chỉ làm được với cây 1 năm', 'D. Không cần môi trường dinh dưỡng'], 1,
+    'Nuôi cấy đỉnh sinh trưởng vô trùng tạo hàng vạn cây con sạch virus giữ nguyên kiểu gen mẹ.',
+    'Phân biệt tế bào gốc toàn năng (totipotent) và tế bào gốc đa năng (pluripotent).', 'Toàn năng tạo được cả cơ thể + nhau thai (hợp tử); đa năng tạo mọi mô cơ thể trừ nhau thai.'
+  ],
+  [
+    'bio-10-13', 'Lớp 10', 'GDPT 2018 · Sinh học 10', 'SGK Sinh 10 · Phần 3', 13,
+    'Vi sinh vật: Sinh trưởng Quần thể Vi khuẩn & Các Pha Nuôi cấy Không liên tục',
+    '4 pha: Tiềm phát (Lag) – Lũy thừa (Log) – Cân bằng – Suy vong và công thức $N = N_0 \\cdot 2^n$',
+    'Ở pha lũy thừa (Log), vi khuẩn phân chia với tốc độ không đổi $g$ (thời gian thế hệ): $n = \\frac{t}{g}$, $N_t = N_0 \\cdot 2^n$.',
+    'Để thu sinh khối ổn định lâu dài trong công nghiệp, dùng hệ thống **nuôi cấy liên tục** bổ sung dinh dưỡng và rút dịch liên tục.',
+    'N_t = N_0 \\cdot 2^{t/g}',
+    'logistic_population_2d', 'virus_bacteriophage_3d',
+    'Vi khuẩn E. coli có thời gian thế hệ $g = 20\\text{ phút}$. Từ $10^3$ tế bào ban đầu, sau $2\\text{ giờ}$ ($6$ lần phân chia) trong pha lũy thừa thu được:',
+    ['A. 6.000 tế bào', 'B. 32.000 tế bào', 'C. 64.000 tế bào', 'D. 128.000 tế bào'], 2,
+    '$N = 10^3 \\times 2^6 = 64\\,000$ tế bào.',
+    'Muốn thu nhận lượng lớn sinh khối vi khuẩn hoặc kháng sinh, nên thu hoạch ở cuối pha nào trong nuôi cấy không liên tục?', 'Cuối pha lũy thừa (sinh khối) hoặc pha cân bằng (sản phẩm trao đổi chất thứ cấp).'
+  ],
+  [
+    'bio-10-14', 'Lớp 10', 'GDPT 2018 · Sinh học 10', 'Chuyên đề Học tập Sinh 10', 14,
+    'Chuyên đề 10: Công nghệ Enzyme & Công nghệ Vi sinh Xử lí Môi trường',
+    'Enzyme cố định trên chất mang, sản xuất bột giặt sinh học và xử lí nước thải bằng bùn hoạt tính',
+    'Enzyme cố định giữ hoạt tính ổn định lâu dài, dễ tách thu hồi khỏi sản phẩm để tái sử dụng nhiều chu kì công nghiệp.',
+    'Vi khuẩn hiếu khí/kỵ khí trong hầm Biogas phân hủy chất thải hữu cơ tạo khí metan sạch và giảm chỉ số BOD/COD.',
+    'V_{\\text{enzyme cố định}} \\text{ bền nhiệt & tái sử dụng nhiều chu kì}',
+    'enzyme_kinetics_2d', 'enzyme_substrate_3d',
+    'Bột giặt sinh học đánh bay hiệu quả vết máu, trứng, dầu mỡ ngay ở nước ấm nhờ bổ sung nhóm chất nào?',
+    ['A. Axit sunfuric đặc', 'B. Hỗn hợp enzyme Protease và Lipase bền kiềm', 'C. Muối đồng sunfat', 'D. Kháng sinh Penicillin'], 1,
+    'Protease thủy phân vết protein (máu, trứng) và Lipase phân giải vết dầu mỡ.',
+    'Tại sao không nên ngâm bột giặt sinh học chứa enzyme vào nước sôi $100^\\circ\\text{C}$?', 'Nhiệt độ cao làm biến tính cấu trúc không gian của enzyme gây mất hoàn toàn hoạt tính.'
+  ],
+
+  // ==================== SINH HỌC 11 GDPT 2018 ====================
+  [
+    'bio-11-9', 'Lớp 11', 'GDPT 2018 · Sinh học 11', 'SGK Sinh 11 · Chương 1', 9,
+    'Dinh dưỡng Khoáng & Đồng hóa Nitơ ở Thực vật (Cố định Đạm $N_2$)',
+    'Vai trò nguyên tố đại lượng N–P–K, cơ chế khử $NO_3^-$ thành $NH_4^+$ và vi khuẩn Rhizobium nốt sần',
+    'Rễ cây chỉ hấp thụ nitơ dưới dạng khoáng hòa tan $NH_4^+$ và $NO_3^-$.',
+    'Vi khuẩn cộng sinh *Rhizobium* trong nốt sần rễ cây họ Đậu chứa enzyme **Nitrogenase** khử $N_2$ khí quyển thành $NH_4^+$ ở điều kiện thường.',
+    'N_2 + 8H^+ + 8e^- + 16\\text{ATP} \\xrightarrow{\\text{Nitrogenase}} 2NH_3 + H_2 + 16\\text{ADP} + 16P_i',
+    'carbon_nitrogen_cycle_2d', 'plant_vascular_3d',
+    'Cây trồng hấp thụ được nguyên tố Nitơ từ dung dịch đất chủ yếu dưới hai dạng ion nào?',
+    ['A. N₂ và NO₂', 'B. NH₄⁺ và NO₃⁻', 'C. Axit amin và Ure', 'D. N₂O và NH₃'], 1,
+    'Thực vật tự dưỡng hấp thụ dạng khoáng vô cơ $NH_4^+$ và $NO_3^-$.',
+    'Vì sao nông dân hay trồng xen canh cây họ Đậu (lạc, đậu tương) để cải tạo đất bạc màu?', 'Vi khuẩn Rhizobium cộng sinh ở nốt sần cố định N₂ không khí thành đạm amoni bổ sung cho đất.'
+  ],
+  [
+    'bio-11-10', 'Lớp 11', 'GDPT 2018 · Sinh học 11', 'SGK Sinh 11 · Chương 1', 10,
+    'Hô hấp ở Thực vật & Bảo quản Nông sản (Hạt, Rau Quả Tươi)',
+    'Phương trình hô hấp, hệ số hô hấp RQ và 3 nguyên tắc bảo quản (Khô – Lạnh – CO₂ cao)',
+    'Bảo quản nông sản bằng cách hạ cường độ hô hấp về mức tối thiểu (phơi khô hạt xuống độ ẩm 10–13%, bảo quản lạnh hoặc tăng nồng độ $CO_2$).',
+    'Không được đưa rau tươi vào tủ cấp đông $-20^\\circ\\text{C}$ vì tinh thể đá phá vỡ tế bào làm rau nhũn nát khi rã đông.',
+    'RQ = \\frac{V_{\\text{CO}_2\\text{ thải ra}}}{V_{\\text{O}_2\\text{ hấp thụ}}}',
+    'cellular_respiration_2d', 'mitochondria_atp_3d',
+    'Biện pháp nào hiệu quả nhất để bảo quản các loại hạt ngũ cốc (thóc, ngô, đậu) lâu dài mà vẫn giữ khả năng nảy mầm?',
+    ['A. Cấp đông ở -20°C', 'B. Phơi sấy khô giảm độ ẩm xuống khoảng 10–13% và cất nơi thoáng mát kín', 'C. Ngâm trong nước muối', 'D. Chiếu sáng đèn liên tục'], 1,
+    'Độ ẩm thấp ức chế enzyme hô hấp của hạt về trạng thái ngủ nghỉ an toàn.',
+    'Tính hệ số hô hấp RQ khi nguyên liệu hô hấp hiếu khí là glucozơ $C_6H_{12}O_6$.', '6CO₂ / 6O₂ = 1,0.'
+  ],
+  [
+    'bio-11-11', 'Lớp 11', 'GDPT 2018 · Sinh học 11', 'SGK Sinh 11 · Chương 1', 11,
+    'Dinh dưỡng & Tiêu hóa ở Động vật (Từ Nội bào đến Ống Tiêu hóa Người)',
+    'Tiêu hóa cơ học và hóa học trong khoang miệng – dạ dày – ruột non; bề mặt hấp thụ nhung mao',
+    'Ruột non là nơi tiêu hóa hóa học triệt để và hấp thụ dinh dưỡng chủ yếu nhờ cấu trúc nếp gấp – lông ruột (nhung mao) tăng diện tích lên ~300 m².',
+    'Động vật ăn cỏ nhai lại (trâu, bò) có dạ dày 4 ngăn (dạ cỏ chứa vi sinh vật cộng sinh tiết cellulase tiêu hóa xenlulozơ).',
+    '\\text{Tinh bột} \\xrightarrow{\\text{Amylase}} \\text{Maltose} \\xrightarrow{\\text{Maltase}} \\text{Glucose}',
+    'enzyme_kinetics_2d', 'eukaryotic_cell_3d',
+    'Tại ống tiêu hóa người, giai đoạn tiêu hóa hóa học và hấp thụ chất dinh dưỡng diễn ra hoàn chỉnh và mạnh mẽ nhất ở:',
+    ['A. Thực quản', 'B. Dạ dày', 'C. Ruột non', 'D. Ruột già'], 2,
+    'Ruột non hội tụ dịch tụy, dịch mật, dịch ruột với hàng triệu nhung mao hấp thụ.',
+    'Vai trò của dịch mật (do gan tiết) trong tiêu hóa lipid tại tá tràng là gì?', 'Muối mật nhũ tương hóa giọt mỡ lớn thành giọt nhỏ tăng diện tích tác dụng cho enzyme Lipase.'
+  ],
+  [
+    'bio-11-12', 'Lớp 11', 'GDPT 2018 · Sinh học 11', 'SGK Sinh 11 · Chương 1', 12,
+    'Miễn dịch Không đặc hiệu, Miễn dịch Đặc hiệu & Nguyên lí Tiêm chủng Vaccine',
+    'Miễn dịch dịch thể (Tế bào B → Kháng thể Ig) vs Miễn dịch tế bào (Tế bào T độc) và trí nhớ miễn dịch',
+    'Khi gặp kháng nguyên lần đầu, cơ thể đáp ứng chậm; nhờ **tế bào B/T nhớ**, lần tái nhiễm hoặc tiêm nhắc lại vaccine tạo lượng kháng thể tăng vọt gấp nhiều lần.',
+    'Vaccine đưa kháng nguyên đã làm suy yếu/bất hoạt vào cơ thể để chủ động tạo trí nhớ miễn dịch an toàn.',
+    '\\text{Kháng nguyên} \\to \\text{B/T nhớ} \\implies \\text{Đáp ứng thứ phát cực nhanh}',
+    'immune_antibody_2d', 'antibody_antigen_3d',
+    'Loại tế bào miễn dịch nào trực tiếp biệt hóa thành tương bào (Plasma cell) tiết ra kháng thể lưu hành trong máu?',
+    ['A. Hồng cầu', 'B. Tế bào Lympho B', 'C. Tiểu cầu', 'D. Bạch cầu ưa axit'], 1,
+    'Lympho B biệt hóa thành tương bào sản xuất kháng thể (miễn dịch dịch thể).',
+    'Phân biệt miễn dịch chủ động (tiêm vaccine) và miễn dịch thụ động (tiêm huyết thanh kháng độc tố).', 'Vaccine kích thích cơ thể tự tạo kháng thể + tế bào nhớ bền lâu; huyết thanh cung cấp kháng thể sẵn có tác dụng tức thì nhưng ngắn hạn.'
+  ],
+  [
+    'bio-11-13', 'Lớp 11', 'GDPT 2018 · Sinh học 11', 'SGK Sinh 11 · Chương 2', 13,
+    'Cảm ứng ở Thực vật: Hướng động (Auxin) & Ứng động (Khép lá Trinh nữ)',
+    'Phân bố lại Auxin gây hướng sáng dương ở thân – hướng trọng lực dương ở rễ và đóng mở khí khổng',
+    'Auxin (IAA) tích tụ ở phía tối của chồi thân kích thích tế bào kéo dài nhanh hơn → thân uốn cong về phía ánh sáng; ở rễ nồng độ cao lại ức chế làm rễ quay xuống đất.',
+    'Ứng động không sinh trưởng (khép lá cây trinh nữ, bắt mồi cây nắp ấm) do biến đổi sức trương nước đột ngột.',
+    '\\text{Thân: Auxin kích thích} \\mid \\text{Rễ: Auxin cao ức chế}',
+    'phytohormone_tropism_2d', 'plant_vascular_3d',
+    'Hiện tượng thân cây đặt bên cửa sổ mọc uốn cong hướng ra ngoài ánh sáng là do:',
+    ['A. Ánh sáng đẩy rễ cây lên cao', 'B. Auxin dồn sang phía tối kích thích tế bào phía tối dãn dài nhanh hơn phía sáng', 'C. Diệp lục chỉ có ở phía tối', 'D. Áp suất rễ đẩy lệch thân'], 1,
+    'Sự chênh lệch tốc độ dãn dài hai phía làm thân uốn cong về phía nguồn sáng.',
+    'Phân biệt hướng động và ứng động ở thực vật.', 'Hướng động phụ thuộc hướng tác nhân kích thích; ứng động không phụ thuộc hướng tác nhân.'
+  ],
+  [
+    'bio-11-14', 'Lớp 11', 'GDPT 2018 · Sinh học 11', 'SGK Sinh 11 · Chương 2', 14,
+    'Cung Phản xạ Thần kinh & Các Giác quan Thị giác – Thính giác ở Người',
+    '5 bộ phận cung phản xạ, phân biệt phản xạ không điều kiện vs có điều kiện và thùy vỏ não',
+    'Cung phản xạ gồm 5 khâu: Thụ thể tiếp nhận → Neuron hướng tâm → Trung ương thần kinh (tủy sống/não) → Neuron li tâm → Cơ quan đáp ứng.',
+    'Phản xạ có điều kiện hình thành trong đời sống (liên kết thần kinh tạm thời ở vỏ não), dễ mất đi nếu không củng cố.',
+    '\\text{Thụ thể} \\to \\text{Hướng tâm} \\to \\text{Trung ương} \\to \\text{Li tâm} \\to \\text{Đáp ứng}',
+    'action_potential_2d', 'neuron_synapse_3d',
+    'Bộ phận nào trực tiếp tiếp nhận kích thích từ môi trường ngoài hoặc trong cơ thể để khởi phát xung thần kinh?',
+    ['A. Cơ quan đáp ứng (cơ, tuyến)', 'B. Thụ thể cảm giác', 'C. Bao myelin', 'D. Neuron trung gian'], 1,
+    'Thụ thể biến đổi năng lượng kích thích thành điện thế hoạt động truyền về trung ương.',
+    'Cho ví dụ 1 phản xạ không điều kiện và 1 phản xạ có điều kiện ở người.', 'Không ĐK: chạm tay vật nóng rụt tay lại; Có ĐK: dừng xe khi thấy đèn đỏ.'
+  ],
+  [
+    'bio-11-15', 'Lớp 11', 'GDPT 2018 · Sinh học 11', 'SGK Sinh 11 · Chương 3–4', 15,
+    'Sinh trưởng – Phát triển Thực vật & Quang Chu kì – Xuân hóa (Verbalization)',
+    '5 nhóm phytohormone (Auxin, Gibberellin, Cytokinin, ABA, Ethylene) và cây ngày ngắn vs ngày dài',
+    'Cây ngày ngắn (thanh long, cúc) ra hoa khi độ dài đêm tối liên tục vượt quá đêm tới hạn; ngắt đêm bằng ánh sáng đỏ 660 nm ức chế ra hoa cây ngày ngắn.',
+    'Chiếu đèn ban đêm cho vườn thanh long trái vụ giúp cây ngày dài giả lập ra hoa quanh năm.',
+    '\\text{Cây ngày ngắn cần } T_{\\text{tối liên tục}} \\ge T_{\\text{tới hạn}}',
+    'phytohormone_tropism_2d', 'chloroplast_thylakoid_3d',
+    'Chính vì sao nông dân Bình Thuận thường thắp đèn điện ban đêm cho vườn thanh long vào mùa đông?',
+    ['A. Để sưởi ấm cành thanh long', 'B. Ngắt đêm dài thành hai đêm ngắn kích thích cây ngày dài (thanh long) ra hoa trái vụ', 'C. Để đuổi côn trùng ăn lá', 'D. Tăng thoát hơi nước ban đêm'], 1,
+    'Thanh long là cây ngày dài, thắp đèn ban đêm ngắt quãng đêm tối dài kích thích phân hóa mầm hoa.',
+    'Phân biệt vai trò hormone Gibberellin (GA) và Axit Abxixic (ABA) trong nảy mầm hạt.', 'GA phá ngủ kích thích nảy mầm; ABA ức chế sinh trưởng, duy trì trạng thái ngủ của hạt.'
+  ],
+  [
+    'bio-11-16', 'Lớp 11', 'GDPT 2018 · Sinh học 11', 'SGK Sinh 11 · Chương 4', 16,
+    'Sinh trưởng, Phát triển Động vật & Trục Điều hòa Nội tiết Sinh sản (GnRH–FSH–LH)',
+    'Hormone tuyến yên (GH, TSH, FSH, LH), cơ chế điều hòa ngược sinh tinh/trứng và biện pháp tránh thai',
+    'Vùng dưới đồi tiết GnRH kích thích tuyến yên tiết FSH và LH điều hòa tuyến sinh dục sản sinh giao tử và hormone giới tính (Testosterone, Estrogen, Progesterone).',
+    'Khi Estrogen và Progesterone tăng cao (như khi mang thai hoặc uống thuốc tránh thai), chúng ức chế ngược lên vùng dưới đồi – tuyến yên ngăn rụng trứng mới.',
+    '\\text{Dưới đồi (GnRH)} \\to \\text{Tuyến yên (FSH, LH)} \\to \\text{Tuyến sinh dục}',
+    'glucose_insulin_2d', 'human_heart_3d',
+    'Hormone nào gây hiện tượng rụng trứng ở phụ nữ khi đạt đỉnh nồng độ vào giữa chu kì kinh nguyệt (khoảng ngày 14)?',
+    ['A. Insulin', 'B. Đỉnh LH của tuyến yên', 'C. Thyroxin', 'D. Adrenalin'], 1,
+    'Nồng độ Estrogen tăng cao gây phản hồi dương làm tuyến yên giải phóng đỉnh LH kích thích nang trứng chín vỡ ra (rụng trứng).',
+    'Trình bày cơ chế điều hòa ngược âm tính của Testosterone ở nam giới.', 'Testosterone cao ức chế vùng dưới đồi và tuyến yên giảm tiết GnRH và LH.'
+  ],
+  [
+    'bio-11-17', 'Lớp 11', 'GDPT 2018 · Sinh học 11', 'Chuyên đề Học tập Sinh 11', 17,
+    'Chuyên đề 11: Dinh dưỡng Khoáng – Thủy canh – Khí canh & Phòng trừ Sinh học',
+    'Pha dung dịch thủy canh chuẩn pH/EC, kiểm soát sâu bệnh bằng thiên địch thay thuốc trừ sâu hóa học',
+    'Trồng cây thủy canh (Hydroponics) và khí canh (Aeroponics) cung cấp trực tiếp ion khoáng hòa tan tối ưu cùng sục khí $O_2$ cho rễ hô hấp mạnh.',
+    'Biện pháp sinh học dùng ong mắt đỏ ký sinh trứng sâu đục thân hoặc chế phẩm vi khuẩn *Bt* bảo vệ hệ sinh thái bền vững.',
+    '\\text{EC tối ưu thủy canh} \\approx 1{,}2\\text{--}2{,}2\\text{ mS/cm},\\quad \\text{pH } 5{,}5\\text{--}6{,}5',
+    'plant_transpiration_2d', 'plant_vascular_3d',
+    'Trong hệ thống trồng rau thủy canh hồi lưu, vì sao cần máy bơm sục khí liên tục hoặc để rễ tiếp xúc một phần không khí?',
+    ['A. Làm mát nước', 'B. Cung cấp O₂ cho rễ hô hấp hiếu khí tạo ATP hút khoáng chủ động', 'C. Tăng độ pH dung dịch', 'D. Giảm cường độ quang hợp'], 1,
+    'Thiếu $O_2$ làm rễ hô hấp kị khí sinh độc tố và thiếu ATP cho bơm ion khoáng.',
+    'Nêu 2 ưu điểm của sử dụng thiên địch (bọ rùa, ong mắt đỏ) so với phun thuốc trừ sâu hóa học.', 'Không gây tồn dư độc hại trên nông sản, không gây kháng thuốc nhanh và bảo vệ đa dạng sinh học.'
+  ],
+
+  // ==================== SINH HỌC 12 GDPT 2018 ====================
+  [
+    'bio-12-7', 'Lớp 12', 'GDPT 2018 · Sinh học 12', 'SGK Sinh 12 · Chương 1', 7,
+    'Điều hòa Biểu hiện Gen (Operon Lac) & Đột biến Gen Điểm (Mất – Thêm – Thay thế)',
+    'Chế độ Tắt/Bật Operon Lac của vi khuẩn E. coli khi có/không Lactose và hậu quả dịch khung',
+    'Khi môi trường **có Lactose**: allolactose bám vào protein ức chế làm nó biến đổi cấu hình, không bám vào vùng vận hành $O$, RNA polymerase phiên mã các gen cấu trúc $Z, Y, A$.',
+    'Đột biến thêm hoặc mất 1 cặp nucleotit gây **dịch khung đọc (frameshift)** làm thay đổi toàn bộ chuỗi axit amin từ điểm đột biến trở về sau.',
+    '\\text{Operon Lac} = P \\text{ (Khởi động)} + O \\text{ (Vận hành)} + lacZ, lacY, lacA',
+    'lac_operon_2d', 'dna_double_helix_3d',
+    'Trong mô hình Operon Lac ở *E. coli*, khi môi trường **không có lactose**, trạng thái nào xảy ra?',
+    ['A. Protein ức chế bám vào vùng vận hành O ngăn cản phiên mã', 'B. Gen cấu trúc phiên mã liên tục', 'C. Gen điều hòa lacI ngừng hoạt động', 'D. Lactose gắn vào RNA polymerase'], 0,
+    'Protein ức chế do gen điều hòa tổng hợp luôn ở dạng hoạt động khi không có lactose, bám chặt vào vùng $O$.',
+    'Tại sao đột biến thay thế 1 cặp nucleotit đôi khi không làm thay đổi chuỗi polypeptide (đột biến đồng nghĩa)?', 'Do tính thoái hóa của mã di truyền (nhiều bộ ba cùng mã hóa một loại axit amin).'
+  ],
+  [
+    'bio-12-8', 'Lớp 12', 'GDPT 2018 · Sinh học 12', 'SGK Sinh 12 · Chương 1', 8,
+    'Nhiễm sắc thể Siêu xoắn, Đột biến Cấu trúc & Đột biến Số lượng NST (2n±1, 3n, 4n)',
+    'Cơ chế mất đoạn, lặp đoạn, đảo đoạn, chuyển đoạn NST và ứng dụng tạo giống cây tam bội không hạt',
+    'Cấu trúc siêu xoắn NST: DNA (2 nm) + 8 protein histone $\\to$ Nucleosome (11 nm) $\\to$ Sợi nhiễm sắc (30 nm) $\\to$ Vùng xếp cuộn (300 nm) $\\to$ Chromatid (700 nm).',
+    'Đột biến **mất đoạn** làm giảm số lượng gen thường gây chết hoặc bệnh hiểm nghèo (mất đoạn NST số 5 gây hội chứng tiếng mèo kêu).',
+    '2n \\text{ (Lưỡng bội)} \\xrightarrow{\\text{Đa bội hóa}} 4n \\text{ (Tứ bội)} \\times 2n \\to 3n \\text{ (Tam bội không hạt)}',
+    'mitosis_meiosis_2d', 'chromosome_mitosis_3d',
+    'Dạng đột biến cấu trúc NST nào thường được ứng dụng để loại bỏ gen xấu ra khỏi NST hoặc lập bản đồ gen mất chức năng?',
+    ['A. Lặp đoạn lớn', 'B. Mất đoạn nhỏ', 'C. Đảo đoạn', 'D. Chuyển đoạn tương hỗ'], 1,
+    'Mất đoạn nhỏ không gây chết có thể loại bỏ gen có hại trên NST.',
+    'Một loài có bộ NST $2n = 24$. Số lượng NST trong tế bào sinh dưỡng của thể ba nhiễm ($2n+1$) và thể tứ bội ($4n$) lần lượt là bao nhiêu?', 'Thể ba: 25 NST; Thể tứ bội: 48 NST.'
+  ],
+  [
+    'bio-12-9', 'Lớp 12', 'GDPT 2018 · Sinh học 12', 'SGK Sinh 12 · Chương 2', 9,
+    'Mở rộng Học thuyết Mendel: Tương tác Gen (Bổ sung, Cộng gộp) & Di truyền Ngoài Nhân',
+    'Tỉ lệ 9:7, 9:6:1, 9:3:3:1 (tương tác), tính trạng đa gen (chiều cao, màu da) và di truyền theo dòng mẹ',
+    'Tương tác bổ sung kiểu 2 cặp gen quy định 1 tính trạng: lai $AaBb \\times AaBb$ thu $9:7$ hoặc $9:6:1$ (mỗi kiểu hình gồm nhiều kiểu gen cộng tác).',
+    'Di truyền ngoài nhân (DNA ti thể, lục lạp) phân chia không đều khi phân bào nên kết quả lai thuận ≠ lai nghịch, con luôn giống **mẹ**.',
+    '\\text{Tương tác cộng gộp } n \\text{ cặp gen} \\implies \\text{Phân bố chuẩn (chiều cao, màu da)}',
+    'mendel_punnett_2d', 'eukaryotic_cell_3d',
+    'Đặc điểm nhận biết chắc chắn một tính trạng do gen nằm trong tế bào chất (ti thể/lục lạp) quy định là:',
+    ['A. Tỉ lệ kiểu hình F₂ luôn là 3:1', 'B. Kết quả phép lai thuận và lai nghịch khác nhau, đời con luôn mang kiểu hình của mẹ', 'C. Chỉ biểu hiện ở giới đực', 'D. Tuân theo quy luật hoán vị gen'], 1,
+    'Hợp tử nhận gần như toàn bộ tế bào chất từ tế bào trứng của mẹ.',
+    'Cho cây hoa trắng thuần chủng $AAbb$ lai với cây hoa trắng thuần chủng $aaBB$ được $F_1$ $100\\%$ hoa đỏ. Tự thụ $F_1$ thu được $F_2$ tỉ lệ $9\\text{ đỏ} : 7\\text{ trắng}$. Hãy giải thích.', 'Tương tác bổ sung: phải có đồng thời cả A và B (A-B-) mới tạo sắc tố đỏ (9/16).'
+  ],
+  [
+    'bio-12-10', 'Lớp 12', 'GDPT 2018 · Sinh học 12', 'SGK Sinh 12 · Chương 3', 10,
+    'Tiến hóa Nhỏ, Các Nhân tố Tiến hóa & Quá trình Hình thành Loài Mới',
+    '5 nhân tố tiến hóa (Đột biến, Di-nhập gen, CLTN, Phiêu bạt di truyền, Giao phối không ngẫu nhiên)',
+    'Chỉ có **Chọn lọc tự nhiên** định hướng tiến hóa theo hướng thích nghi; **Phiêu bạt di truyền** (yếu tố ngẫu nhiên) có thể làm biến mất cả alen có lợi ở quần thể kích thước nhỏ.',
+    'Cách li sinh sản (trước hợp tử và sau hợp tử) là tiêu chuẩn đánh dấu sự hình thành loài mới hoàn tất.',
+    '\\text{Cách li địa lí} \\xrightarrow{\\text{Đột biến + CLTN}} \\text{Cách li sinh sản} \\implies \\text{Loài mới}',
+    'natural_selection_2d', 'ecosystem_biome_3d',
+    'Nhân tố tiến hóa nào làm thay đổi tần số alen một cách **vô hướng** và có thể loại bỏ hoàn toàn một alen bất kì, đặc biệt mạnh ở quần thể nhỏ?',
+    ['A. Chọn lọc tự nhiên', 'B. Giao phối ngẫu nhiên', 'C. Phiêu bạt di truyền (Các yếu tố ngẫu nhiên)', 'D. Thường biến'], 2,
+    'Thiên tai, dịch bệnh hoặc hiệu ứng kẻ sáng lập làm thay đổi tần số alen đột ngột không theo hướng xác định.',
+    'Tại sao giao phối không ngẫu nhiên (tự thụ phấn, giao phối gần) KHÔNG làm thay đổi tần số alen nhưng vẫn được coi là nhân tố tiến hóa?', 'Vì làm thay đổi thành phần kiểu gen theo hướng tăng đồng hợp tử và giảm dị hợp tử.'
+  ],
+  [
+    'bio-12-11', 'Lớp 12', 'GDPT 2018 · Sinh học 12', 'SGK Sinh 12 · Chương 4', 11,
+    'Môi trường Sống, Nhân tố Sinh thái & Quần thể Sinh vật (Logistic $dN/dt$)',
+    'Giới hạn sinh thái, 6 đặc trưng quần thể (tỉ lệ giới tính, tháp tuổi, mật độ, sức chứa $K$)',
+    'Quần thể tăng trưởng theo hàm mũ hình chữ J khi nguồn sống vô hạn; trong thực tế tăng trưởng theo đường **logistic hình chữ S** tiệm cận sức chứa $K$.',
+    'Tốc độ tăng trưởng quần thể $\\frac{dN}{dt} = rN\\left(1 - \\frac{N}{K}\\right)$ đạt cực đại tại $N = K/2$ (mức khai thác bền vững tối ưu).',
+    '\\frac{dN}{dt} = rN\\left(1 - \\frac{N}{K}\\right),\\quad \\text{Cực đại tại } N = \\frac{K}{2}',
+    'logistic_population_2d', 'ecosystem_biome_3d',
+    'Trong mô hình tăng trưởng logistic với sức chứa môi trường $K = 1000$ cá thể, tốc độ gia tăng quần thể ($dN/dt$) đạt cực đại khi kích thước quần thể $N$ bằng:',
+    ['A. 100', 'B. 500', 'C. 1000', 'D. 250'], 1,
+    'Hàm bậc hai $N(1 - N/K)$ đạt giá trị cực đại tại $N = K/2 = 500$.',
+    'Phân biệt 3 dạng tháp tuổi quần thể: Đang phát triển, Ổn định và Suy vong.', 'Đang phát triển có đáy rộng (nhiều cá thể trước sinh sản); ổn định đồng đều; suy vong đáy hẹp.'
+  ],
+  [
+    'bio-12-12', 'Lớp 12', 'GDPT 2018 · Sinh học 12', 'SGK Sinh 12 · Chương 4', 12,
+    'Quần xã Sinh vật, Ổ Sinh thái, Diễn thế Sinh thái & Sinh quyển Bền vững',
+    'Cạnh tranh loại trừ Gause, phân li ổ sinh thái, diễn thế nguyên sinh/thứ sinh và tháp sinh thái',
+    'Hai loài có ổ sinh thái trùng nhau hoàn toàn không thể cùng tồn tại lâu dài (Nguyên lí loại trừ cạnh tranh Gause) → phân li ổ sinh thái để giảm cạnh tranh.',
+    'Hiệu suất sinh thái truyền năng lượng qua mỗi bậc dinh dưỡng chỉ đạt khoảng $10\\%$ ($90\\%$ thất thoát qua hô hấp, nhiệt và chất thải).',
+    'E_{n} = E_1 \\cdot 0{,}1^{n-1}',
+    'trophic_pyramid_2d', 'ecosystem_biome_3d',
+    'Vì sao chuỗi thức ăn trên cạn thường ít khi vượt quá 4–5 bậc dinh dưỡng?',
+    ['A. Động vật ăn thịt không thích ăn thịt nhau', 'B. Năng lượng mất đi ~90% qua mỗi bậc nên năng lượng lên bậc cao quá ít không đủ nuôi sống quần thể', 'C. Thực vật không quang hợp đủ', 'D. Do thiếu khí CO₂'], 1,
+    'Quy luật 10% làm năng lượng cạn kiệt nhanh qua các bậc dinh dưỡng.',
+    'Một hệ sinh thái có sinh vật sản xuất tích lũy $100{,}000\\text{ kcal}$. Nếu hiệu suất mỗi bậc là $10\\%$, sinh vật tiêu thụ bậc 3 nhận được bao nhiêu kcal?', '100.000 → 10.000 (bậc 1) → 1.000 (bậc 2) → 100 kcal (bậc 3).'
+  ],
+  [
+    'bio-12-13', 'Lớp 12', 'GDPT 2018 · Sinh học 12', 'Chuyên đề Học tập Sinh 12', 13,
+    'Chuyên đề 12: Sinh học Phân tử Ứng dụng (PCR, Giải trình tự Gen & CRISPR-Cas9)',
+    'Phân biệt PCR vs RT-PCR (chẩn đoán virus RNA), điện di DNA và chỉnh sửa bộ gen chính xác CRISPR',
+    'CRISPR-Cas9 sử dụng đoạn RNA dẫn đường (**sgRNA**) bắt cặp đặc hiệu trình tự đích để enzyme **Cas9** cắt đứt sợi kép DNA tại vị trí PAM mong muốn.',
+    'Kỹ thuật **PCR** khuếch đại hàng tỉ bản sao đoạn DNA qua 3 bước nhiệt ($94^\\circ\\text{C} \\to 55^\\circ\\text{C} \\to 72^\\circ\\text{C}$) nhờ enzyme *Taq polymerase* chịu nhiệt.',
+    'N_{\\text{bản sao PCR}} = N_0 \\cdot 2^n',
+    'pcr_electrophoresis_2d', 'dna_double_helix_3d',
+    'Thành phần nào quyết định vị trí chính xác mà phức hợp CRISPR-Cas9 sẽ cắt trên hệ gen?',
+    ['A. Enzyme DNA ligase', 'B. Trình tự đặc hiệu của đoạn RNA dẫn đường (sgRNA) + vùng PAM', 'C. Ribosome 80S', 'D. Đường lactose'], 1,
+    'sgRNA bắt cặp bổ sung với trình tự DNA mục tiêu để định hướng Cas9 cắt đúng vị trí.',
+    'Trong phản ứng PCR, vì sao phải dùng enzyme *Taq polymerase* tách từ vi khuẩn suối nước nóng thay vì DNA polymerase của *E. coli*?', 'Taq polymerase chịu được bước biến tính 94–95°C mà không bị biến tính mất hoạt tính.'
+  ]
+];
+
+export const BIOLOGY_GDPT_2018_EXTRA_LESSONS: BiologyLesson[] = SPECS.map((s) =>
+  makeBioLesson({
+    id: s[0],
+    track: 'khong_chuyen',
+    grade: s[1],
+    stageLabel: s[2],
+    sourceTag: s[3],
+    lessonNumber: s[4],
+    title: s[5],
+    subtitle: s[6],
+    description: s[7],
+    theory1Heading: '1. Kiến thức cốt lõi & Bản chất sinh học',
+    theory1: s[7],
+    theory2Heading: '2. Quy luật – Hệ thức & Ứng dụng Thực tiễn',
+    theory2: `${s[8]}\n• Công thức / Sơ đồ trọng tâm: $$${s[9]}$$`,
+    keyFormulas: [s[9]],
+    sim2d: s[10],
+    sim3d: s[11],
+    mcq1: {
+      source: s[3],
+      question: s[12],
+      options: s[13],
+      correctIndex: s[14],
+      explanation: s[15]
+    },
+    mcq2: {
+      source: s[3],
+      question: `Trong chủ đề "${s[5]}", biểu thức hoặc nguyên lí nào dưới đây là ĐÚNG?`,
+      options: [
+        `A. $${s[9]}$`,
+        'B. Năng lượng sinh thái tăng gấp 10 lần qua mỗi bậc dinh dưỡng',
+        'C. Quá trình tái bản DNA tạo ra các phân tử hoàn toàn mới 100%',
+        'D. Không chịu sự điều hòa của gen và môi trường'
+      ],
+      correctIndex: 0,
+      explanation: `${s[7]} ${s[8]}`
+    },
+    essay: {
+      source: s[3],
+      question: s[16],
+      solutionSteps: [s[17]],
+      finalAnswer: s[17]
+    }
+  })
+);

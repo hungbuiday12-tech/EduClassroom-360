@@ -1355,7 +1355,10 @@ export type FutureLabTabId =
   | 'chem_reaction_3d'
   | 'chem_orbital_vsepr_3d'
   | 'bio_cell_atlas_3d'
-  | 'bio_dna_crispr_3d';
+  | 'bio_dna_crispr_3d'
+  | 'chem_sandbox_suite'
+  | 'bio_sandbox_suite'
+  | 'math_sandbox_suite';
 
 export type PaperSimKind =
   | 'parabola'

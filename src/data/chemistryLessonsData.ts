@@ -1,7 +1,11 @@
 import { Chemistry3DMode, ChemistryLesson, ChemistrySimType } from '../types';
 import { CHEMISTRY_GDPT_2018_LESSONS, makeChemLesson } from './chemistryGdpt2018Lessons';
+import { CHEMISTRY_GDPT_2018_EXTRA_LESSONS } from './chemistryGdpt2018ExtraLessons';
 import { CHEMISTRY_GDPT_2006_LESSONS } from './chemistryGdpt2006Lessons';
+import { CHEMISTRY_GDPT_2006_EXTRA_LESSONS } from './chemistryGdpt2006ExtraLessons';
 import { CHEMISTRY_CHUYEN_LESSONS } from './chemistryChuyenLessons';
+import { CHEMISTRY_CHUYEN_EXTRA_LESSONS } from './chemistryChuyenExtraLessons';
+import { CHEMISTRY_SYLLABUS_MODULES } from './chemistrySyllabusModules';
 
 interface ChemSupplementarySpec {
   id: string;
@@ -13,6 +17,7 @@ interface ChemSupplementarySpec {
   lessonNumber: number;
   title: string;
   subtitle: string;
+  description?: string;
   concept: string;
   formula: string;
   sim2d: ChemistrySimType;
@@ -181,7 +186,7 @@ const BUILT_SUPPLEMENTARY: ChemistryLesson[] = CHEM_SUPPLEMENTARY_SPECS.map((s) 
     lessonNumber: s.lessonNumber,
     title: s.title,
     subtitle: s.subtitle,
-    description: s.concept,
+    description: s.description || s.concept,
     theory1Heading: '1. Kiến thức cốt lõi & Bản chất hóa học',
     theory1: s.concept,
     theory2Heading: '2. Biểu thức & Nguyên tắc vận dụng',
@@ -219,7 +224,11 @@ const BUILT_SUPPLEMENTARY: ChemistryLesson[] = CHEM_SUPPLEMENTARY_SPECS.map((s) 
 
 export const CHEMISTRY_LESSONS: ChemistryLesson[] = [
   ...CHEMISTRY_GDPT_2018_LESSONS,
+  ...CHEMISTRY_GDPT_2018_EXTRA_LESSONS,
   ...CHEMISTRY_GDPT_2006_LESSONS,
+  ...CHEMISTRY_GDPT_2006_EXTRA_LESSONS,
   ...CHEMISTRY_CHUYEN_LESSONS,
+  ...CHEMISTRY_CHUYEN_EXTRA_LESSONS,
+  ...CHEMISTRY_SYLLABUS_MODULES,
   ...BUILT_SUPPLEMENTARY
 ];

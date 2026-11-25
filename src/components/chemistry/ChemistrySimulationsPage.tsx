@@ -162,29 +162,35 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
   return (
     <div className="space-y-6 pb-12">
       {/* Subject-Separated Command Header */}
-      <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+      <section className="chem-zone-frame sci-frame rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 space-y-4 relative overflow-hidden">
+        <span className="chem-energy-sweep" aria-hidden="true" />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <button
                 type="button"
+                data-ripple="true"
                 onClick={onBack || goBack}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold cursor-pointer"
+                className="sim-btn-chem inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>{isEn ? 'Back' : 'Quay lại'}</span>
               </button>
-              <span>Khu Tách Riêng · Hóa học (Lớp 9 – 12)</span>
+              <span className="px-2 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold">
+                Khu Tách Riêng · Hóa học (Lớp 9 – 12)
+              </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Khu Mô Phỏng 2D, Phòng Lab 3D &amp; Sandbox Hóa Học
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <FlaskConical className="w-6 h-6 text-emerald-600 dark:text-emerald-400 icon-anim-flask shrink-0" />
+              <span>Khu Mô Phỏng 2D, Phòng Lab 3D &amp; Sandbox Hóa Học</span>
             </h1>
           </div>
 
           <button
             type="button"
+            data-ripple="true"
             onClick={() => navigate({ subject: 'chemistry', chemistryView: 'catalog' })}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
+            className="sim-btn-chem inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
           >
             <BookOpen className="w-4 h-4 text-emerald-600" />
             <span>Mở Kho Bài Giảng Hóa Học</span>
@@ -196,19 +202,21 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
           <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
               type="button"
+              data-ripple="true"
               onClick={() => selectZone('sim2d')}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-                zone === 'sim2d' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-300'
+              className={`sim-btn-chem inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                zone === 'sim2d' ? 'bg-sky-600 text-white chem-zone-active' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
-              <Zap className="w-3.5 h-3.5" />
+              <Zap className="w-3.5 h-3.5 icon-anim-zap" />
               <span>Mô phỏng 2D ({CHEMISTRY_2D_SIMS.length})</span>
             </button>
             <button
               type="button"
+              data-ripple="true"
               onClick={() => selectZone('sim3d')}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-                zone === 'sim3d' ? 'bg-amber-500 text-slate-950' : 'text-slate-600 dark:text-slate-300'
+              className={`sim-btn-chem inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                zone === 'sim3d' ? 'bg-amber-500 text-slate-950 chem-zone-active' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
               <Box className="w-3.5 h-3.5" />
@@ -216,12 +224,13 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
             </button>
             <button
               type="button"
+              data-ripple="true"
               onClick={() => selectZone('sandbox')}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-                zone === 'sandbox' ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-slate-300'
+              className={`sim-btn-chem inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                zone === 'sandbox' ? 'bg-emerald-600 text-white chem-zone-active' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
-              <FlaskConical className="w-3.5 h-3.5" />
+              <FlaskConical className="w-3.5 h-3.5 icon-anim-flask" />
               <span>Sandbox Hóa học (4 Phòng)</span>
             </button>
           </div>
@@ -244,8 +253,9 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
+              data-ripple="true"
               onClick={() => setDomainFilter('all')}
-              className={`px-3 py-1 rounded-md text-xs font-semibold cursor-pointer ${
+              className={`sim-btn-chem px-3 py-1 rounded-md text-xs font-semibold cursor-pointer ${
                 domainFilter === 'all'
                   ? 'bg-slate-900 dark:bg-emerald-600 text-white'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
@@ -257,8 +267,9 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
               <button
                 key={d.id}
                 type="button"
+                data-ripple="true"
                 onClick={() => setDomainFilter(d.id)}
-                className={`px-3 py-1 rounded-md text-xs font-semibold cursor-pointer ${
+                className={`sim-btn-chem px-3 py-1 rounded-md text-xs font-semibold cursor-pointer ${
                   domainFilter === d.id
                     ? d.bgActiveClass
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
@@ -279,10 +290,11 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
               <button
                 key={spec.id}
                 type="button"
+                data-ripple="true"
                 onClick={() => setActiveSimId(spec.id)}
-                className={`w-full text-left p-3 rounded-xl border cursor-pointer transition-colors ${
+                className={`chem-card-frame sim-btn-chem w-full text-left p-3.5 rounded-xl border cursor-pointer transition-colors relative ${
                   spec.id === active2DSpec.id
-                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    ? 'bg-emerald-600 text-white border-emerald-600 chem-zone-active'
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 hover:border-emerald-500'
                 }`}
               >

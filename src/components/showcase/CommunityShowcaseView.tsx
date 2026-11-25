@@ -7,8 +7,10 @@ import {
   Code2,
   Compass,
   Copy,
+  Dna,
   Download,
   Eye,
+  FlaskConical,
   Heart,
   Layers,
   PenTool,
@@ -194,7 +196,15 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
       authorName: user?.displayName || 'Thành viên Synapse',
       authorHandle: user?.username ? `@${user.username}` : '@synapse_creator',
       tags: [
-        pubSubject === 'math' ? 'Toán' : pubSubject === 'physics' ? 'Vật lí' : 'Tin học',
+        pubSubject === 'math'
+          ? 'Toán'
+          : pubSubject === 'physics'
+          ? 'Vật lí'
+          : pubSubject === 'chemistry'
+          ? 'Hóa học'
+          : pubSubject === 'biology'
+          ? 'Sinh học'
+          : 'Tin học',
         pubCategory === '3d_model' ? '3D CAD' : pubCategory === '2d_canvas' ? 'Tự do 2D' : 'Thuật toán'
       ],
       payload3dModel: pubCategory === '3d_model' ? picked3d || undefined : undefined,
@@ -285,6 +295,8 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
               <option value="all">Tất cả môn</option>
               <option value="math">Toán học</option>
               <option value="physics">Vật lí</option>
+              <option value="chemistry">Hóa học</option>
+              <option value="biology">Sinh học</option>
               <option value="cs">Tin học</option>
             </select>
 
@@ -369,7 +381,17 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
                   {item.category === '3d_model' ? '3D Assembly' : item.category === '2d_canvas' ? '2D Sketch' : 'Algorithm'}
                 </span>
                 <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-slate-900/90 border border-slate-700 text-[10px] font-mono text-slate-300">
-                  {item.subject === 'math' ? <Compass className="w-3 h-3 inline text-sky-400" /> : item.subject === 'physics' ? <Zap className="w-3 h-3 inline text-amber-400" /> : <Code2 className="w-3 h-3 inline text-emerald-400" />}
+                  {item.subject === 'math' ? (
+                    <Compass className="w-3 h-3 inline text-sky-400" />
+                  ) : item.subject === 'physics' ? (
+                    <Zap className="w-3 h-3 inline text-amber-400" />
+                  ) : item.subject === 'chemistry' ? (
+                    <FlaskConical className="w-3 h-3 inline text-violet-400" />
+                  ) : item.subject === 'biology' ? (
+                    <Dna className="w-3 h-3 inline text-teal-400" />
+                  ) : (
+                    <Code2 className="w-3 h-3 inline text-emerald-400" />
+                  )}
                 </span>
               </div>
 
@@ -576,6 +598,8 @@ export const CommunityShowcaseView: React.FC<CommunityShowcaseViewProps> = ({
               >
                 <option value="math">Toán học</option>
                 <option value="physics">Vật lí</option>
+                <option value="chemistry">Hóa học</option>
+                <option value="biology">Sinh học</option>
                 <option value="cs">Tin học</option>
               </select>
             </div>

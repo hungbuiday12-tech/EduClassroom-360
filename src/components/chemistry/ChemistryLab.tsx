@@ -6,10 +6,15 @@ import {
   Box,
   Camera,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  FileText,
   FlaskConical,
   GraduationCap,
+  Layers,
+  Lightbulb,
   Maximize2,
   Minimize2,
   Pause,
@@ -30,12 +35,14 @@ import {
 import { CHEMISTRY_LESSONS } from '../../data/chemistryLessonsData';
 import {
   CHEMISTRY_2D_SIMS,
-  CHEMISTRY_3D_SIMS
+  CHEMISTRY_3D_SIMS,
+  CHEMISTRY_DOMAINS
 } from '../../data/chemistryDomainsData';
 import { renderChemistry2DSim, ChemSimTelemetry } from './chemistry2DEngine';
 import { Chemistry3DView } from './Chemistry3DView';
 import { FormattedText, MathFormula } from '../common/MathRenderer';
 import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
+import { LectureThumbnail } from '../common/LectureThumbnail';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { LabDataLoggerPanel } from '../common/LabDataLoggerPanel';
 import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
@@ -146,10 +153,16 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
   const [selectedTrack, setSelectedTrack] = useState<CurriculumTrack>('khong_chuyen');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedTier, setSelectedTier] = useState<'all' | SpecializedTier>('all');
+  const [selectedStage, setSelectedStage] = useState<string>('all');
+  const [showStudyPrinciples, setShowStudyPrinciples] = useState<boolean>(false);
 
   const isStandardTrack = selectedTrack === 'khong_chuyen' || selectedTrack === 'gdpt_2006';
 
-  const filteredLessons = useMemo(() => {
+  useEffect(() => {
+    setSelectedStage('all');
+  }, [selectedTrack, selectedGrade, selectedTier]);
+
+  const baseTrackLessons = useMemo(() => {
     return CHEMISTRY_LESSONS.filter((l) => {
       if (l.track !== selectedTrack) return false;
       if (isStandardTrack) {
@@ -158,6 +171,23 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
       return selectedTier === 'all' || l.tier === selectedTier;
     });
   }, [selectedTrack, selectedGrade, selectedTier, isStandardTrack]);
+
+  const availableStages = useMemo(() => {
+    const seen = new Set<string>();
+    const list: string[] = [];
+    for (const l of baseTrackLessons) {
+      if (l.stageLabel && !seen.has(l.stageLabel)) {
+        seen.add(l.stageLabel);
+        list.push(l.stageLabel);
+      }
+    }
+    return list;
+  }, [baseTrackLessons]);
+
+  const filteredLessons = useMemo(() => {
+    if (selectedStage === 'all') return baseTrackLessons;
+    return baseTrackLessons.filter((l) => l.stageLabel === selectedStage);
+  }, [baseTrackLessons, selectedStage]);
 
   const lesson = useMemo(() => {
     return (
@@ -286,179 +316,423 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
 
   if (activeView === 'catalog') {
     return (
-      <div className="space-y-6 pb-12">
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+      <div className="space-y-6 pb-12 overflow-x-hidden">
+        <div className="sci-frame sci-blueprint-bg bg-white/95 dark:bg-slate-900/95 rounded-xl p-5 sm:p-6 border border-slate-200/90 dark:border-slate-800/90 shadow-sm space-y-5">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <button
                   type="button"
+                  data-ripple="true"
                   onClick={onBack || goBack}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700"
+                  className="sim-btn-chem inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-semibold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>{isEn ? 'Back' : 'Quay lại'}</span>
                 </button>
-                <span>KHTN &amp; Hóa học THPT · {CHEMISTRY_LESSONS.length} bài giảng chuẩn 2D/3D</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                  Hóa Học 9 – 12 &amp; Bồi Dưỡng Chuyên
+                </span>
+                <span aria-hidden="true">·</span>
+                <span>{CHEMISTRY_LESSONS.length} bài giảng chuẩn 2D/3D</span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                {isEn ? 'Chemistry Lecture & Lab Classroom' : 'Khu Bài Giảng & Thí Nghiệm Hóa Học (Lớp 9 – 12)'}
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <FlaskConical className="w-6 h-6 text-emerald-600 dark:text-emerald-400 icon-anim-flask shrink-0" />
+                <span>{isEn ? 'Chemistry Lecture & Lab Classroom' : 'Hệ Thống Bài Giảng & Phòng Thí Nghiệm Hóa Học'}</span>
               </h1>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                Chọn khung chương trình bên dưới rồi mở bài giảng, Mô phỏng 2D hoặc Mô phỏng 3D tương tác theo thời gian thực.
+              </p>
             </div>
 
+            <div className="flex flex-wrap items-center gap-2 shrink-0 self-start lg:self-center">
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => navigate({ subject: 'chemistry_sims', chemistryView: 'sim2d_hub' })}
+                className="group sim-btn-chem sim-btn-hero sim-btn-active flex items-center gap-2 px-4 py-2.5 rounded-[3px] border border-emerald-400/70 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm whitespace-nowrap cursor-pointer"
+              >
+                <span className="sim-led-square text-emerald-100" />
+                <Zap className="w-4 h-4 icon-anim-zap" />
+                <span>Mô phỏng 2D ({CHEMISTRY_DOMAINS.length} Lĩnh Vực · {CHEMISTRY_2D_SIMS.length} Lab)</span>
+              </button>
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => navigate({ subject: 'chemistry_sims', chemistryView: 'sim3d_hub' })}
+                className="group sim-btn-chem sim-btn-hero sim-btn-active flex items-center gap-2 px-4 py-2.5 rounded-[3px] border border-amber-300/80 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap cursor-pointer"
+              >
+                <span className="sim-led-square text-slate-900" />
+                <Box className="w-4 h-4 icon-anim-3d-cube" />
+                <span>Mô phỏng 3D ({CHEMISTRY_DOMAINS.length} Lĩnh Vực · {CHEMISTRY_3D_SIMS.length} Lab)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Dedicated Chemistry Simulation & Sandbox Hub Banner */}
+          <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+                <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Trang Mô Phỏng &amp; Sandbox Hóa Học Tách Riêng Theo {CHEMISTRY_DOMAINS.length} Lĩnh Vực (Lớp 9 – 12)</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {CHEMISTRY_DOMAINS.map((d) => d.shortName).join(' · ')} — kèm Bảng tuần hoàn tương tác, Chuẩn độ pH &amp; Mô hình VSEPR 3D
+              </p>
+            </div>
             <button
               type="button"
+              data-ripple="true"
               onClick={() => navigate({ subject: 'chemistry_sims' })}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
+              className="sim-btn-chem flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-slate-900 dark:bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500 text-white transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
-              <FlaskConical className="w-4 h-4" />
+              <FlaskConical className="w-4 h-4 icon-anim-flask shrink-0" />
               <span>{isEn ? 'Open Chemistry Lab & Sandbox Hub' : 'Mở Khu Lab, Mô phỏng & Sandbox Hóa'}</span>
             </button>
           </div>
 
-          {/* 3 Track Cards: GDPT 2018, GDPT 2006, Khu Chuyên Hóa */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          {/* 3 Separate 2-Layer Animated Framed Track Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(
               [
                 {
                   id: 'khong_chuyen' as CurriculumTrack,
                   title: 'Khu GDPT 2018 (Lớp 9 – 12)',
-                  sub: `KHTN 9 & Hóa 10–12 + Chuyên đề (${CHEMISTRY_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài)`,
-                  activeCls: 'bg-sky-600 text-white border-sky-600'
+                  sub: `KHTN 9 & Hóa 10–12 chuẩn mới · ${CHEMISTRY_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học`,
+                  accentHex: '#0284c7',
+                  secondaryHex: '#38bdf8',
+                  icon: FlaskConical,
+                  iconAnim: 'icon-anim-flask',
+                  activeWrapShadow: 'shadow-[0_14px_34px_-12px_rgba(2,132,199,0.4)]',
+                  activeBtnBg: 'bg-gradient-to-br from-blue-700 via-sky-600 to-cyan-600 text-white',
+                  activeIconBg: 'bg-white/20 text-white',
+                  idleIconBg: 'bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400',
+                  activeSubText: 'text-sky-100',
+                  idleCtaText: 'text-sky-600 dark:text-sky-400',
+                  activeCtaText: 'text-white'
                 },
                 {
                   id: 'gdpt_2006' as CurriculumTrack,
-                  title: 'Khu Chương trình GDPT 2006',
-                  sub: `Hóa học 9–12 SGK 2006 (${CHEMISTRY_LESSONS.filter((l) => l.track === 'gdpt_2006').length} bài)`,
-                  activeCls: 'bg-emerald-600 text-white border-emerald-600'
+                  title: 'Khu GDPT 2006 (Không chuyên)',
+                  sub: `Hóa học 9–12 chuẩn SGK 2006 · ${CHEMISTRY_LESSONS.filter((l) => l.track === 'gdpt_2006').length} bài kèm 2D & 3D`,
+                  accentHex: '#059669',
+                  secondaryHex: '#14b8a6',
+                  icon: BookOpen,
+                  iconAnim: 'icon-anim-book',
+                  activeWrapShadow: 'shadow-[0_14px_34px_-12px_rgba(5,150,105,0.42)]',
+                  activeBtnBg: 'bg-gradient-to-br from-emerald-700 via-teal-600 to-emerald-600 text-white',
+                  activeIconBg: 'bg-white/20 text-white',
+                  idleIconBg: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400',
+                  activeSubText: 'text-emerald-100',
+                  idleCtaText: 'text-emerald-700 dark:text-emerald-400',
+                  activeCtaText: 'text-white'
                 },
                 {
                   id: 'chuyen' as CurriculumTrack,
                   title: 'Khu Chuyên Hóa & HSG / IChO',
-                  sub: `Cơ bản → Nâng cao → Chuyên sâu (${CHEMISTRY_LESSONS.filter((l) => l.track === 'chuyen').length} chuyên đề)`,
-                  activeCls: 'bg-amber-500 text-slate-950 border-amber-500'
+                  sub: `Cơ bản → Nâng cao → Chuyên sâu · ${CHEMISTRY_LESSONS.filter((l) => l.track === 'chuyen').length} chuyên đề`,
+                  accentHex: '#d97706',
+                  secondaryHex: '#f97316',
+                  icon: Zap,
+                  iconAnim: 'icon-anim-zap',
+                  activeWrapShadow: 'shadow-[0_14px_34px_-12px_rgba(217,119,6,0.45)]',
+                  activeBtnBg: 'bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-slate-950',
+                  activeIconBg: 'bg-slate-950/15 text-slate-950',
+                  idleIconBg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400',
+                  activeSubText: 'text-slate-900/85 font-medium',
+                  idleCtaText: 'text-amber-600 dark:text-amber-400',
+                  activeCtaText: 'text-slate-950'
                 }
               ]
             ).map((tr) => {
               const active = selectedTrack === tr.id;
+              const TrackIcon = tr.icon;
               return (
-                <button
+                <div
                   key={tr.id}
-                  type="button"
-                  onClick={() => setSelectedTrack(tr.id)}
-                  className={`text-left p-4 rounded-xl border transition-colors cursor-pointer ${
-                    active
-                      ? tr.activeCls
-                      : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  style={
+                    {
+                      '--phy-accent': tr.accentHex,
+                      '--phy-secondary': tr.secondaryHex
+                    } as React.CSSProperties
+                  }
+                  className={`chem-orbit-wrapper chem-zone-frame group ${
+                    active ? `chem-zone-active ${tr.activeWrapShadow}` : 'shadow-xs'
                   }`}
                 >
-                  <div className="text-sm font-extrabold">{tr.title}</div>
-                  <div className={`text-xs mt-1 ${active ? 'opacity-90' : 'text-slate-500 dark:text-slate-400'}`}>
-                    {tr.sub}
-                  </div>
-                </button>
+                  <div aria-hidden="true" className="chem-orbit-ring" />
+                  <button
+                    type="button"
+                    data-ripple="true"
+                    onClick={() => setSelectedTrack(tr.id)}
+                    className={`relative z-10 w-full h-full text-left rounded-[0.5rem] p-4 sm:p-5 overflow-hidden transition-colors cursor-pointer flex items-center justify-between gap-4 ${
+                      active
+                        ? tr.activeBtnBg
+                        : 'bg-slate-50/95 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span aria-hidden="true" className="chem-energy-sweep" />
+                    <div className="relative z-10 flex items-start gap-3.5 min-w-0">
+                      <div
+                        className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
+                          active ? tr.activeIconBg : tr.idleIconBg
+                        }`}
+                      >
+                        <TrackIcon className={`w-6 h-6 ${tr.iconAnim}`} />
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="text-sm sm:text-base font-extrabold leading-snug">
+                          {tr.title}
+                        </div>
+                        <div
+                          className={`text-xs leading-relaxed ${
+                            active ? tr.activeSubText : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          {tr.sub}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative z-10 shrink-0 flex items-center gap-1.5 text-xs font-bold whitespace-nowrap">
+                      {active ? (
+                        <span className={`inline-flex items-center gap-1 ${tr.activeCtaText}`}>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Đang mở</span>
+                        </span>
+                      ) : (
+                        <span className={`${tr.idleCtaText} group-hover:translate-x-0.5 transition-transform`}>
+                          Chọn khu →
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                </div>
               );
             })}
           </div>
 
-          {/* Sub-filter */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+          {/* Sub-filter + Study Principles Toggle */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-200/70 dark:border-slate-800">
             {isStandardTrack ? (
-              (['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((grade) => {
-                const count =
-                  grade === 'all'
-                    ? CHEMISTRY_LESSONS.filter((l) => l.track === selectedTrack).length
-                    : CHEMISTRY_LESSONS.filter((l) => l.track === selectedTrack && l.grade === grade).length;
-                return (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-semibold text-slate-500 mr-1">Khối lớp:</span>
+                {(['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((grade) => {
+                  const count =
+                    grade === 'all'
+                      ? CHEMISTRY_LESSONS.filter((l) => l.track === selectedTrack).length
+                      : CHEMISTRY_LESSONS.filter((l) => l.track === selectedTrack && l.grade === grade).length;
+                  return (
+                    <button
+                      key={grade}
+                      type="button"
+                      data-ripple="true"
+                      onClick={() => setSelectedGrade(grade)}
+                      className={`sim-btn-chem px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap ${
+                        selectedGrade === grade
+                          ? selectedTrack === 'gdpt_2006'
+                            ? 'bg-emerald-700 text-white shadow-xs'
+                            : 'bg-sky-600 text-white shadow-xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {grade === 'all' ? `Tất cả (${count} bài)` : `${grade} (${count})`}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-semibold text-slate-500 mr-1">Trình độ Chuyên:</span>
+                {(['all', 'Cơ bản', 'Nâng cao', 'Chuyên / HSG'] as const).map((tier) => (
                   <button
-                    key={grade}
+                    key={tier}
                     type="button"
-                    onClick={() => setSelectedGrade(grade)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap ${
-                      selectedGrade === grade
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                    data-ripple="true"
+                    onClick={() => setSelectedTier(tier)}
+                    className={`sim-btn-chem px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap ${
+                      selectedTier === tier
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                   >
-                    {grade === 'all' ? `Tất cả (${count})` : `${grade} (${count})`}
+                    {tier === 'all' ? 'Tất cả lộ trình Chuyên' : tier}
                   </button>
-                );
-              })
-            ) : (
-              (['all', 'Cơ bản', 'Nâng cao', 'Chuyên / HSG'] as const).map((tier) => (
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowStudyPrinciples((v) => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors self-start sm:self-auto cursor-pointer"
+            >
+              <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
+              <span>Nguyên tắc tự học SGK &amp; Bảo toàn Mol</span>
+              {showStudyPrinciples ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          {availableStages.length > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/70">
+              <span className="text-[11px] font-semibold text-slate-500 mr-1">Chuyên mục / Phần:</span>
+              <button
+                type="button"
+                data-ripple="true"
+                onClick={() => setSelectedStage('all')}
+                className={`sim-btn-chem px-2.5 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap cursor-pointer ${
+                  selectedStage === 'all'
+                    ? 'bg-slate-900 dark:bg-emerald-500 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+              >
+                Tất cả phần
+              </button>
+              {availableStages.map((stg) => (
                 <button
-                  key={tier}
+                  key={stg}
                   type="button"
-                  onClick={() => setSelectedTier(tier)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap ${
-                    selectedTier === tier
-                      ? 'bg-amber-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                  data-ripple="true"
+                  onClick={() => setSelectedStage(stg)}
+                  className={`sim-btn-chem px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all text-left cursor-pointer ${
+                    selectedStage === stg
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  {tier === 'all' ? 'Tất cả bậc Chuyên' : tier}
+                  {stg}
                 </button>
-              ))
-            )}
-          </div>
-        </div>
+              ))}
+            </div>
+          )}
 
-        {/* Lesson cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredLessons.map((l) => (
-            <div
-              key={l.id}
-              onClick={() => handleOpenLesson(l, 'theory')}
-              className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 flex flex-col justify-between gap-4 cursor-pointer hover:border-emerald-500 transition-colors"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                    {l.track === 'chuyen'
-                      ? `Chuyên Hóa · ${l.tier || 'Chuyên sâu'}`
-                      : l.track === 'gdpt_2006'
-                      ? `${l.grade} · GDPT 2006 · Bài ${l.lessonNumber}`
-                      : `${l.grade} · Bài ${l.lessonNumber}`}
-                  </span>
-                  <span className="font-mono tabular-nums">{l.practiceExercises.length} TN + {l.essayExercises.length} TL</span>
+          {showStudyPrinciples && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+              <div className="space-y-1">
+                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                  Bản chất Phản ứng &amp; Kiểm chứng 2D/3D
                 </div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-                  <FormattedText text={translate(l.title)} />
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
-                  <FormattedText text={translate(l.description)} />
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Nắm rõ cấu trúc electron, hình học VSEPR 3D và cơ chế va chạm phân tử trước khi cân bằng phương trình hóa học hoặc chuẩn độ pH.
                 </p>
               </div>
-
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenLesson(l, 'simulation');
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 cursor-pointer"
-                  >
-                    <Zap className="w-3 h-3" />
-                    <span>Mô phỏng 2D</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenLesson(l, 'sim3d');
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-pointer"
-                  >
-                    <Box className="w-3 h-3" />
-                    <span>Mô phỏng 3D</span>
-                  </button>
+              <div className="space-y-1">
+                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-sky-500" />
+                  Ba Định Luật Bảo Toàn Cốt Lõi
                 </div>
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Vào bài →</span>
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Phối hợp linh hoạt Bảo toàn Khối lượng, Bảo toàn Nguyên tố và Bảo toàn Electron / Điện tích theo đơn vị mol, nồng độ M và ĐKC (24,79 L/mol).
+                </p>
               </div>
             </div>
-          ))}
+          )}
+        </div>
+
+        {/* 3-Column Animated Framed Chemistry Lesson Cards Catalog (Matched to Physics) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredLessons.map((l) => {
+            const isPro = l.track === 'chuyen';
+            const isGdpt2006 = l.track === 'gdpt_2006';
+            return (
+              <div
+                key={l.id}
+                style={
+                  {
+                    '--phy-accent': isPro ? '#f59e0b' : isGdpt2006 ? '#059669' : '#0ea5e9',
+                    '--phy-secondary': isPro ? '#ef4444' : isGdpt2006 ? '#14b8a6' : '#10b981'
+                  } as React.CSSProperties
+                }
+                className="chem-orbit-wrapper chem-card-frame group shadow-sm hover:shadow-[0_18px_40px_-14px_rgba(16,185,129,0.34)]"
+              >
+                <div aria-hidden="true" className="chem-orbit-ring" />
+                <div
+                  onClick={() => handleOpenLesson(l, 'theory')}
+                  className="relative z-10 h-full cursor-pointer bg-white/95 dark:bg-slate-900/95 rounded-[0.65rem] p-5 flex flex-col justify-between gap-4 overflow-hidden"
+                >
+                  <span aria-hidden="true" className="chem-energy-sweep" />
+                  <div className="relative z-10 space-y-2.5">
+                    <div className="flex items-start gap-3">
+                      <LectureThumbnail
+                        subject="chemistry"
+                        id={l.id}
+                        category={l.grade}
+                        simType={l.simulationType}
+                      />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                          <span
+                            className={`font-bold uppercase tracking-wider ${
+                              isPro
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : isGdpt2006
+                                ? 'text-emerald-700 dark:text-emerald-400'
+                                : 'text-sky-600 dark:text-sky-400'
+                            }`}
+                          >
+                            {isPro
+                              ? `Chuyên Hóa · ${l.tier || 'Nâng cao'}`
+                              : isGdpt2006
+                              ? `${l.grade} · 2006 · Bài ${l.lessonNumber}`
+                              : `${l.grade} · Bài ${l.lessonNumber}`}
+                          </span>
+                          <span className="font-mono shrink-0 tabular-nums">
+                            {l.practiceExercises.length} TN + {(l.essayExercises || []).length} TL
+                          </span>
+                        </div>
+
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-snug">
+                          <FormattedText text={translate(l.title)} />
+                        </h3>
+                        {l.stageLabel && (
+                          <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                            {l.stageLabel}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      <FormattedText text={translate(l.description)} />
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        data-ripple="true"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenLesson(l, 'simulation');
+                        }}
+                        className="sim-btn-chem inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/60 hover:bg-sky-600 hover:text-white dark:hover:bg-sky-600 dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+                      >
+                        <Zap className="w-3 h-3 icon-anim-zap" />
+                        <span>Mô phỏng 2D</span>
+                      </button>
+                      <button
+                        type="button"
+                        data-ripple="true"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenLesson(l, 'sim3d');
+                        }}
+                        className="sim-btn-chem sim-btn-3d inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/60 hover:bg-amber-500 hover:text-slate-950 dark:hover:bg-amber-500 dark:hover:text-slate-950 transition-colors whitespace-nowrap cursor-pointer"
+                      >
+                        <Box className="w-3 h-3 icon-anim-3d-cube" />
+                        <span>Mô phỏng 3D</span>
+                      </button>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform whitespace-nowrap">
+                      <span>Vào bài</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -514,8 +788,9 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
                 <button
                   key={tb.id}
                   type="button"
+                  data-ripple="true"
                   onClick={() => navigate({ chemistryTab: tb.id })}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap ${
+                  className={`sim-btn-chem inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap ${
                     active
                       ? 'bg-emerald-600 text-white'
                       : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
@@ -559,6 +834,7 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
         <InteractiveLectureRoom
           lessonKey={lesson.id}
           subject="chemistry"
+          chemistryLesson={lesson}
           grade={lesson.grade}
           subjectAccent={lesson.track === 'chuyen' ? 'amber' : 'emerald'}
           kicker={lesson.stageLabel || `${lesson.grade} · Hóa học`}

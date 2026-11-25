@@ -3066,6 +3066,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
           pg.dragPlane.setFromNormalAndCoplanarPoint(_camDir, firstHit.point);
           pg.lastHitPoint.copy(firstHit.point);
           setHighlightedPartIdx(matchedIdx);
+          setPartSelectSeq((s) => s + 1);
           const pInfo = runtime.model.explodables[matchedIdx].info;
           playSpatialSfx('grab', cfg.tactileSfxEnabled);
           renderer.domElement.style.cursor = 'grabbing';
@@ -3704,6 +3705,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
             } else {
               const pickIdx = highlightedPartIdxRef.current ?? 0;
               setHighlightedPartIdx(pickIdx);
+              setPartSelectSeq((s) => s + 1);
               setIsolatedPartIdx(pickIdx);
               setPartCardMinimized(false);
               showToast(`Xem chi tiết: ${modelPartsRef.current[pickIdx].nameVi}`);
@@ -3871,6 +3873,7 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
                     : highlightedPartIdxRef.current ?? 0;
                 if (runtime.model.explodables[pickIdx]) {
                   setHighlightedPartIdx(pickIdx);
+                  setPartSelectSeq((s) => s + 1);
                   setPartCardMinimized(false);
                   playSpatialSfx('grab', cfg.tactileSfxEnabled);
                   const pInfo = runtime.model.explodables[pickIdx].info;
@@ -5936,6 +5939,17 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
     return () => window.removeEventListener('keydown', onEsc);
   }, [fallbackPortalFullscreen]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.classList.toggle(
+      'spatial-fullscreen-active',
+      isFullscreen || fallbackPortalFullscreen
+    );
+    return () => {
+      document.documentElement.classList.remove('spatial-fullscreen-active');
+    };
+  }, [isFullscreen, fallbackPortalFullscreen]);
+
   const handleToggleFullscreen = useCallback(() => {
     if (!isFullscreen) {
       if (document.fullscreenElement) {
@@ -7268,8 +7282,8 @@ export const SpatialGesture3DLab: React.FC<SpatialGesture3DLabProps> = ({
 
       {/* Point & Ask AI Multimodal Panel in 3D Mode (centered floating card above viewport so left/right Atlas panels remain unobstructed) */}
       {!hudHidden && spaceMode === '3d' && pointAskActive && (
-        <div className="absolute top-[74px] left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-          <div className="spatial-hud-frame spatial-hud-zoom spatial-step-reveal pointer-events-auto w-[min(356px,calc(100vw-24px))] max-h-[calc(100vh-215px)] overflow-y-auto rounded-lg bg-[#050d1c]/95 border border-amber-400/65 shadow-2xl p-3 space-y-2.5">
+        <div className="absolute top-[68px] left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+          <div className="spatial-hud-frame spatial-hud-zoom spatial-step-reveal pointer-events-auto w-[min(368px,calc(100vw-24px))] max-h-[calc(100dvh-168px)] overflow-y-auto rounded-lg bg-[#050d1c]/95 border border-amber-400/65 shadow-2xl p-3 space-y-2.5">
             <div className="flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-400/15 border border-amber-400/45 text-[10px] font-mono font-bold text-amber-300">
                 <Crosshair className="w-3 h-3" />

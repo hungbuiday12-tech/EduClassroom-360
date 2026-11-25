@@ -87,12 +87,17 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
   }, [uid]);
 
   const { location } = useNavigation();
-  const isSpatial3DRoute = location.subject === 'spatial_3d';
+  const isSpatial3DRoute =
+    location.subject === 'spatial_3d' ||
+    ((location.subject === 'synapse_v2' || location.subject === 'future_lab') &&
+      location.futureTab === 'spatial_gesture_3d');
   const isMobileSimOrExamRoute =
-    ['math_sims', 'physics_sims', 'cs_sims', 'synapse_v2', 'future_lab', 'spatial_3d', 'exams', 'arena'].includes(
+    ['math_sims', 'physics_sims', 'chemistry_sims', 'biology_sims', 'cs_sims', 'synapse_v2', 'future_lab', 'spatial_3d', 'exams', 'arena'].includes(
       location.subject
     ) ||
     (location.subject === 'physics' && location.physicsView !== 'catalog') ||
+    (location.subject === 'chemistry' && location.physicsView !== 'catalog') ||
+    (location.subject === 'biology' && location.physicsView !== 'catalog') ||
     (location.subject === 'cs' && location.csViewMode === 'visualizer');
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -416,7 +421,7 @@ export const FloatingFocusTimer: React.FC<FloatingFocusTimerProps> = ({
             ? { left: `${position.x}px`, top: `${position.y}px` }
             : undefined
         }
-        className={`fixed z-[250] ${
+        className={`fixed z-[350] ${
           isSpatial3DRoute
             ? isWidgetOpen
               ? 'top-[68px] right-3 sm:right-4'

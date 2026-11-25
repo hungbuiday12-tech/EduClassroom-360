@@ -226,6 +226,9 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       if (loc.futureTab === 'chem_orbital_vsepr_3d') return isEn ? 'Synapse Pre · 3D Orbital & VSEPR Atlas' : 'Synapse Pre · Orbital & Phân Tử VSEPR 3D';
       if (loc.futureTab === 'bio_cell_atlas_3d') return isEn ? 'Synapse Pre · 3D Cell & Organelle Atlas' : 'Synapse Pre · Atlas Tế Bào & Bào Quan 3D';
       if (loc.futureTab === 'bio_dna_crispr_3d') return isEn ? 'Synapse Pre · DNA Helix & CRISPR-Cas9 3D' : 'Synapse Pre · DNA & Chỉnh Sửa Gen CRISPR 3D';
+      if (loc.futureTab === 'chem_sandbox_suite') return isEn ? 'Synapse Pre · Chemistry Sandbox KHTN' : 'Synapse Pre · Sandbox Hóa Học KHTN';
+      if (loc.futureTab === 'bio_sandbox_suite') return isEn ? 'Synapse Pre · Biology Sandbox KHTN' : 'Synapse Pre · Sandbox Sinh Học KHTN';
+      if (loc.futureTab === 'math_sandbox_suite') return isEn ? 'Synapse Pre · Math Sandbox KHKT' : 'Synapse Pre · Sandbox Toán Học KHKT';
       return loc.synapseMode === 'stage'
         ? isEn
           ? 'Synapse Pre · 3D Megastructure Stage'

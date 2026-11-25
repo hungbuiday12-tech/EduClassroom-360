@@ -161,29 +161,35 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
 
   return (
     <div className="space-y-6 pb-12">
-      <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
+      <section className="bio-zone-frame sci-frame rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 space-y-4 relative overflow-hidden">
+        <span className="bio-helix-sweep" aria-hidden="true" />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <button
                 type="button"
+                data-ripple="true"
                 onClick={onBack || goBack}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold cursor-pointer"
+                className="sim-btn-bio inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>{isEn ? 'Back' : 'Quay lại'}</span>
               </button>
-              <span>Khu Tách Riêng · Sinh học (Lớp 9 – 12)</span>
+              <span className="px-2 py-0.5 rounded-sm bg-teal-500/15 text-teal-700 dark:text-teal-300 font-bold">
+                Khu Tách Riêng · Sinh học (Lớp 9 – 12)
+              </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Khu Mô Phỏng 2D, Phòng Lab 3D &amp; Sandbox Sinh Học
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Dna className="w-6 h-6 text-teal-600 dark:text-teal-400 icon-anim-dna shrink-0" />
+              <span>Khu Mô Phỏng 2D, Phòng Lab 3D &amp; Sandbox Sinh Học</span>
             </h1>
           </div>
 
           <button
             type="button"
+            data-ripple="true"
             onClick={() => navigate({ subject: 'biology', biologyView: 'catalog' })}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
+            className="sim-btn-bio inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold cursor-pointer whitespace-nowrap shrink-0"
           >
             <BookOpen className="w-4 h-4 text-teal-600" />
             <span>Mở Kho Bài Giảng Sinh Học</span>
@@ -194,19 +200,21 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
           <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
               type="button"
+              data-ripple="true"
               onClick={() => selectZone('sim2d')}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-                zone === 'sim2d' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-300'
+              className={`sim-btn-bio inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                zone === 'sim2d' ? 'bg-sky-600 text-white bio-zone-active' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
-              <Zap className="w-3.5 h-3.5" />
+              <Zap className="w-3.5 h-3.5 icon-anim-zap" />
               <span>Mô phỏng 2D ({BIOLOGY_2D_SIMS.length})</span>
             </button>
             <button
               type="button"
+              data-ripple="true"
               onClick={() => selectZone('sim3d')}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-                zone === 'sim3d' ? 'bg-amber-500 text-slate-950' : 'text-slate-600 dark:text-slate-300'
+              className={`sim-btn-bio inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                zone === 'sim3d' ? 'bg-amber-500 text-slate-950 bio-zone-active' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
               <Box className="w-3.5 h-3.5" />
@@ -214,12 +222,13 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
             </button>
             <button
               type="button"
+              data-ripple="true"
               onClick={() => selectZone('sandbox')}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
-                zone === 'sandbox' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-300'
+              className={`sim-btn-bio inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                zone === 'sandbox' ? 'bg-teal-600 text-white bio-zone-active' : 'text-slate-600 dark:text-slate-300'
               }`}
             >
-              <Microscope className="w-3.5 h-3.5" />
+              <Microscope className="w-3.5 h-3.5 icon-anim-dna" />
               <span>Sandbox Sinh học (4 Phòng)</span>
             </button>
           </div>
@@ -242,8 +251,9 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
+              data-ripple="true"
               onClick={() => setDomainFilter('all')}
-              className={`px-3 py-1 rounded-md text-xs font-semibold cursor-pointer ${
+              className={`sim-btn-bio px-3 py-1 rounded-md text-xs font-semibold cursor-pointer ${
                 domainFilter === 'all'
                   ? 'bg-slate-900 dark:bg-teal-600 text-white'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
@@ -255,8 +265,9 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
               <button
                 key={d.id}
                 type="button"
+                data-ripple="true"
                 onClick={() => setDomainFilter(d.id)}
-                className={`px-3 py-1 rounded-md text-xs font-semibold cursor-pointer ${
+                className={`sim-btn-bio px-3 py-1 rounded-md text-xs font-semibold cursor-pointer ${
                   domainFilter === d.id
                     ? d.bgActiveClass
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
@@ -276,10 +287,11 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
               <button
                 key={spec.id}
                 type="button"
+                data-ripple="true"
                 onClick={() => setActiveSimId(spec.id)}
-                className={`w-full text-left p-3 rounded-xl border cursor-pointer transition-colors ${
+                className={`bio-card-frame sim-btn-bio w-full text-left p-3.5 rounded-xl border cursor-pointer transition-colors relative ${
                   spec.id === active2DSpec.id
-                    ? 'bg-teal-600 text-white border-teal-600'
+                    ? 'bg-teal-600 text-white border-teal-600 bio-zone-active'
                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 hover:border-teal-500'
                 }`}
               >

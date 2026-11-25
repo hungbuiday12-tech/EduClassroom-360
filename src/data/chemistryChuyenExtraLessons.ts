@@ -1,0 +1,308 @@
+import { Chemistry3DMode, ChemistryLesson, ChemistrySimType, SpecializedTier } from '../types';
+import { makeChemLesson } from './chemistryGdpt2018Lessons';
+
+type ChemChuyenSpec = [
+  id: string,
+  grade: ChemistryLesson['grade'],
+  tier: SpecializedTier,
+  stageLabel: string,
+  sourceTag: string,
+  lessonNumber: number,
+  title: string,
+  subtitle: string,
+  theory1: string,
+  theory2: string,
+  formula: string,
+  sim2d: ChemistrySimType,
+  sim3d: Chemistry3DMode,
+  q: string,
+  opts: [string, string, string, string],
+  ans: number,
+  exp: string,
+  essayQ: string,
+  essayA: string
+];
+
+const SPECS: ChemChuyenSpec[] = [
+  [
+    'chem-chuyen-9-2', 'Lớp 9', 'Cơ bản', 'Khu Chuyên Hóa · Bậc 1: Chuyên 9', 'Tuyển sinh Chuyên Hóa 10', 2,
+    'Bài toán Cho Từ từ Axit vào Muối Cacbonat ($CO_3^{2-}, HCO_3^-$) & Ngược lại',
+    'Phân biệt thứ tự phản ứng khi nhỏ từ từ H⁺ vào CO₃²⁻ (2 nấc) vs nhỏ muối vào lượng axit dư',
+    'Nhỏ từ từ $H^+$ vào $CO_3^{2-}$: đầu tiên $H^+ + CO_3^{2-} \\to HCO_3^-$ (chưa có khí); hết $CO_3^{2-}$ mới có $H^+ + HCO_3^- \\to CO_2\\uparrow + H_2O$.',
+    'Nhỏ từ từ hỗn hợp muối cacbonat vào axit dư: cả hai phản ứng xảy ra đồng thời theo đúng tỉ lệ số mol ban đầu.',
+    'n_{\\text{H}^+} = n_{\\text{CO}_3^{2-}} + n_{\\text{CO}_2\\uparrow}',
+    'acid_base_titration_2d', 'titration_bench_3d',
+    'Nhỏ từ từ đến hết $150\\text{ mL}$ HCl $1\\text{ M}$ vào $100\\text{ mL}$ $Na_2CO_3\\ 1\\text{ M}$. Số mol khí $CO_2$ bay ra là:',
+    ['A. 0,10 mol', 'B. 0,05 mol', 'C. 0,15 mol', 'D. 0,00 mol'], 1,
+    'Nấc 1 tốn $0{,}1\\text{ mol } H^+$; dư $0{,}05\\text{ mol } H^+$ tạo $0{,}05\\text{ mol } CO_2$.',
+    'So sánh lượng khí thu được khi làm ngược lại (nhỏ $Na_2CO_3$ vào HCl).', 'Nếu nhỏ Na₂CO₃ vào HCl, cả 0,15 mol H⁺ tạo 0,075 mol CO₂.'
+  ],
+  [
+    'chem-chuyen-9-3', 'Lớp 9', 'Cơ bản', 'Khu Chuyên Hóa · Bậc 1: Chuyên 9', 'Tuyển sinh Chuyên Hóa 10', 3,
+    'Độ Tan Chất rắn, Kết tinh Tinh thể Ngậm nước ($CuSO_4\\cdot 5H_2O$)',
+    'Tính khối lượng tinh thể tách ra khi hạ nhiệt độ dung dịch bão hòa ở $80^\\circ\\text{C} \\to 20^\\circ\\text{C}$',
+    'Độ tan $S$ là số gam chất tan trong $100\\text{ g}$ nước tạo dung dịch bão hòa: $C\\% = \\frac{S}{100+S}\\cdot 100\\%$.',
+    'Khi kết tinh tinh thể ngậm nước $M\\cdot kH_2O$, cả khối lượng muối khan và nước kết tinh đều rời khỏi dung dịch.',
+    '\\frac{m_{\\text{khan còn lại}}}{m_{\\text{nước còn lại}}} = \\frac{S(T_2)}{100}',
+    'colligative_boiling_2d', 'crystal_lattice_3d',
+    'Độ tan của muối X ở $20^\\circ\\text{C}$ là $25\\text{ g}$. Nồng độ phần trăm của dung dịch bão hòa ở $20^\\circ\\text{C}$ là:',
+    ['A. 25%', 'B. 20%', 'C. 15%', 'D. 33,3%'], 1,
+    '$C\\% = 25/(100+25) = 20\\%$.',
+    'Làm lạnh $600\\text{ g}$ dung dịch bão hòa ở $80^\\circ\\text{C}$ ($S=50\\text{ g}$) xuống $20^\\circ\\text{C}$ ($S=20\\text{ g}$). Tính khối lượng muối khan kết tinh.', 'm(muối)=200, m(H₂O)=400; tại 20°C hòa tan 80g -> kết tinh 120g'
+  ],
+  [
+    'chem-chuyen-9-4', 'Lớp 9', 'Cơ bản', 'Khu Chuyên Hóa · Bậc 1: Chuyên 9', 'Tuyển sinh Chuyên Hóa 10', 4,
+    'Kỹ thuật Đường chéo Pha trộn Dung dịch & Quy đổi Hỗn hợp Khí',
+    'Tìm nhanh tỉ lệ khối lượng 2 dung dịch hoặc tỉ lệ mol hỗn hợp 2 khí từ $\\overline{M}$',
+    'Quy tắc đường chéo dựa trên phương trình bảo toàn khối lượng chất tan khi pha trộn hai dung dịch cùng chất nồng độ $C_1 < C < C_2$.',
+    'Tỉ lệ $\\frac{m_1}{m_2} = \\frac{C_2 - C}{C - C_1}$ cho dung dịch và $\\frac{n_1}{n_2} = \\frac{M_2 - \\overline{M}}{\\overline{M} - M_1}$ cho khí.',
+    '\\frac{n_1}{n_2} = \\frac{M_2 - \\overline{M}}{\\overline{M} - M_1}',
+    'stoichiometry_gas_2d', 'equilibrium_piston_3d',
+    'Hỗn hợp khí gồm $CO_2$ ($M=44$) và $CO$ ($M=28$) có tỉ khối hơi so với $H_2$ là $18$ ($\\overline{M} = 36$). Phần trăm thể tích $CO_2$ là:',
+    ['A. 25%', 'B. 50%', 'C. 75%', 'D. 40%'], 1,
+    '36 là trung bình cộng của 44 và 28 nên tỉ lệ mol $1:1$ ($50\\%$).',
+    'Cần trộn $H_2SO_4\\ 10\\%$ và $H_2SO_4\\ 30\\%$ theo tỉ lệ khối lượng nào để thu được dung dịch $15\\%$?', 'Tỉ lệ m₁/m₂ = (30-15)/(15-10) = 3 : 1'
+  ],
+  [
+    'chem-chuyen-10-3', 'Lớp 10', 'Nâng cao', 'Khu Chuyên Hóa · Bậc 2: Chuyên 10', 'HSG Quốc gia Hóa 10', 4,
+    'Thuyết Orbital Phân tử (MO – Molecular Orbital) & Bậc Liên kết $N_2, O_2, O_2^-$',
+    'Giải thích tính thuận từ của phân tử $O_2$ (hai e độc thân $\\pi^*$) và độ bền $N_2$ (bậc 3)',
+    'Phân bố electron vào MO liên kết ($\\sigma, \\pi$) và phản liên kết ($\\sigma^*, \\pi^*$); bậc liên kết $N = \\frac{n - n^*}{2}$.',
+    'Phân tử $O_2$ có 2 electron độc thân trên hai orbital $\\pi_{2p}^*$ nên có tính **thuận từ** (bị nam châm hút).',
+    'N_{\\text{liên kết}} = \\frac{n_{\\text{MO lk}} - n_{\\text{MO phản lk}}}{2}',
+    'atomic_orbitals_2d', 'atomic_orbitals_3d',
+    'Theo thuyết MO, ion hoặc phân tử nào sau đây có bậc liên kết lớn nhất (bền nhất)?',
+    ['A. O₂²⁻', 'B. O₂⁻', 'C. O₂', 'D. O₂⁺'], 3,
+    'Bậc liên kết lần lượt là: $O_2^{2-} (1)$, $O_2^- (1{,}5)$, $O_2 (2)$, $O_2^+ (2{,}5)$.',
+    'Giải thích vì sao thuyết Lewis thất bại khi dự đoán từ tính của khí $O_2$, còn thuyết MO lại giải thích chính xác.', 'Lewis ghép đôi toàn bộ e cho nghịch từ, MO chỉ ra 2 e độc thân trên π* gây thuận từ.'
+  ],
+  [
+    'chem-chuyen-10-4', 'Lớp 10', 'Nâng cao', 'Khu Chuyên Hóa · Bậc 2: Chuyên 10', 'HSG Quốc gia Hóa 10', 5,
+    'Nhiệt động Hóa học: Entropy ($\\Delta S$), Năng lượng Tự do Gibbs ($\\Delta G = \\Delta H - T\\Delta S$)',
+    'Tiêu chuẩn tự diễn biến $\\Delta G < 0$, nhiệt độ đảo chiều phản ứng $T = \\Delta H / \\Delta S$',
+    'Entropy $S$ đo mức độ hỗn loạn của hệ ($S_{\\text{khí}} \\gg S_{\\text{lỏng}} > S_{\\text{rắn}}$).',
+    'Phản ứng tự xảy ra ở điều kiện đẳng nhiệt – đẳng áp khi $\\Delta_r G = \\Delta_r H - T\\Delta_r S < 0$.',
+    '\\Delta G^\\circ = \\Delta H^\\circ - T\\Delta S^\\circ = -RT\\ln K',
+    'enthalpy_hess_2d', 'activation_surface_3d',
+    'Một phản ứng thu nhiệt ($\\Delta H > 0$) chỉ có thể tự xảy ra ở nhiệt độ cao nếu có điều kiện nào kèm theo?',
+    ['A. ΔS < 0', 'B. ΔS > 0 (đủ lớn để TΔS > ΔH)', 'C. Áp suất cực đại', 'D. Không bao giờ xảy ra'], 1,
+    'Khi $\\Delta H > 0$ và $\\Delta S > 0$, ở $T > \\Delta H / \\Delta S$ thì $\\Delta G < 0$.',
+    'Cho $\\Delta H^\\circ = +178\\text{ kJ}$ và $\\Delta S^\\circ = +160\\text{ J/K}$. Tính nhiệt độ tối thiểu để $CaCO_3$ tự phân hủy ở $1\\text{ bar}$.', 'T > 178000 / 160 = 1112,5 K (839,5°C)'
+  ],
+  [
+    'chem-chuyen-10-5', 'Lớp 10', 'Nâng cao', 'Khu Chuyên Hóa · Bậc 2: Chuyên 10', 'HSG Hóa 10 · Động học', 6,
+    'Động học Bậc 0, Bậc 1 ($t_{1/2} = \\ln 2 / k$), Bậc 2 & Phương trình Arrhenius',
+    'Xác định bậc phản ứng từ thực nghiệm chu kì bán hủy và tính năng lượng hoạt hóa $E_a$',
+    'Phản ứng bậc 1: $\\ln\\frac{C_0}{C} = kt$, chu kì bán hủy $t_{1/2} = \\frac{\\ln 2}{k}$ độc lập nồng độ đầu.',
+    'Phương trình Arrhenius dạng hai nhiệt độ: $\\ln\\frac{k_2}{k_1} = \\frac{E_a}{R}\\left(\\frac{1}{T_1} - \\frac{1}{T_2}\\right)$.',
+    't_{1/2} = \\frac{\\ln 2}{k},\\quad \\ln\\frac{k_2}{k_1} = \\frac{E_a}{R}\\left(\\frac{1}{T_1} - \\frac{1}{T_2}\\right)',
+    'reaction_kinetics_2d', 'activation_surface_3d',
+    'Đặc điểm nhận dạng một phản ứng động học bậc nhất ($v = k[A]$) là:',
+    ['A. Chu kì bán hủy t₁/₂ không phụ thuộc vào nồng độ đầu [A]₀', 'B. t₁/₂ tỉ lệ thuận với [A]₀', 'C. Tốc độ không đổi theo thời gian', 'D. Luôn có đơn vị k là M·s⁻¹'], 0,
+    '$t_{1/2} = \\ln 2 / k$ là hằng số ở nhiệt độ xác định.',
+    'Một phản ứng bậc 1 có $k = 0{,}02\\text{ phút}^{-1}$. Sau bao lâu nồng độ chất đầu giảm còn $25\\%$?', '2 lần t₁/₂ = 2 × (0,693/0,02) = 69,3 phút'
+  ],
+  [
+    'chem-chuyen-10-6', 'Lớp 10', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: IChO', 'IChO Prep · Phóng xạ', 7,
+    'Chuỗi Phân rã Phóng xạ Liên tiếp & Cân bằng Thế kỉ ($\\lambda_1 N_1 = \\lambda_2 N_2$)',
+    'Tính hoạt độ phóng xạ $A = \\lambda N$ và cân bằng phóng xạ trong định tuổi khoáng vật U–Pb',
+    'Độ phóng xạ $A(t) = \\lambda N(t) = A_0 e^{-\\lambda t}$ đo bằng Becquerel (Bq).',
+    'Khi mẹ sống lâu hơn con nhiều ($T_1 \\gg T_2$), hệ đạt cân bằng thế kỉ với tỉ số nguyên tử $N_2/N_1 = T_2/T_1$.',
+    'A = \\lambda N = \\frac{\\ln 2}{T_{1/2}} N',
+    'atomic_orbitals_2d', 'atomic_orbitals_3d',
+    'Trong chuỗi phân rã $^{238}_{92}\\text{U} \\to ^{206}_{82}\\text{Pb} + x\\alpha + y\\beta^-$, tổng số hạt $\\alpha$ và $\\beta^-$ phát ra là:',
+    ['A. 8α và 6β⁻', 'B. 6α và 8β⁻', 'C. 8α và 4β⁻', 'D. 7α và 6β⁻'], 0,
+    '$x = (238-206)/4 = 8\\alpha$; $y = 2(8) - (92-82) = 6\\beta^-$.',
+    'Một mẫu đá chứa tỉ lệ mol $^{206}\\text{Pb} / ^{238}\\text{U} = 1$ ($T_{1/2} = 4{,}5\\times 10^9$ năm). Tính tuổi mẫu đá.', 'N(U) còn = 1/2 ban đầu -> tuổi đá = 4,5 tỉ năm'
+  ],
+  [
+    'chem-chuyen-11-3', 'Lớp 11', 'Nâng cao', 'Khu Chuyên Hóa · Bậc 2: Chuyên 11', 'HSG Quốc gia Hóa 11', 4,
+    'Cân bằng Ion Phức tạp, Hệ Đa Axit ($H_3PO_4$) & Phương pháp ĐKP (Bảo toàn Proton)',
+    'Tính chính xác pH của axit đa nấc, muối axit $NaHCO_3$ và hệ nhiều cân bằng đồng thời',
+    'Đối với dung dịch muối axit lưỡng tính $NaHA$ (khi nồng độ vừa đủ lớn): $\\text{pH} \\approx \\frac{\\text{p}K_{a1} + \\text{p}K_{a2}}{2}$.',
+    'Phương trình điều kiện proton (ĐKP): tổng nồng độ proton do mức không giải phóng bằng tổng proton nhận vào.',
+    '\\text{pH}(NaHA) \\approx \\frac{\\text{p}K_{a1} + \\text{p}K_{a2}}{2}',
+    'buffer_ph_2d', 'titration_bench_3d',
+    'Tính gần đúng pH của dung dịch $NaHCO_3\\ 0{,}1\\text{ M}$ biết $H_2CO_3$ có $\\text{p}K_{a1} = 6{,}35$ và $\\text{p}K_{a2} = 10{,}33$.',
+    ['A. 7,00', 'B. 8,34', 'C. 4,50', 'D. 10,33'], 1,
+    '$\\text{pH} = (6{,}35 + 10{,}33)/2 = 8{,}34$.',
+    'Viết phương trình ĐKP (mức không là $H_2O, NH_4^+$) cho dung dịch $NH_4Cl\\ 0{,}01\\text{ M}$.', '[H⁺] = [OH⁻] + [NH₃]'
+  ],
+  [
+    'chem-chuyen-11-4', 'Lớp 11', 'Nâng cao', 'Khu Chuyên Hóa · Bậc 2: Chuyên 11', 'HSG Quốc gia Hóa 11', 5,
+    'Tích số tan $K_{sp}$, Kết tủa Phân đoạn & Ảnh hưởng pH – Tạo phức lên Độ tan',
+    'Dự đoán kết tủa nào xuất hiện trước khi nhỏ Ag⁺ vào hỗn hợp Cl⁻ + I⁻ / CrO₄²⁻',
+    'Muối ít tan $A_mB_n(s) \\rightleftharpoons mA^{n+} + nB^{m-}$ có $K_{sp} = [A^{n+}]^m [B^{m-}]^n$; kết tủa xuất hiện khi tích số ion $Q > K_{sp}$.',
+    'Khi dùng $NH_3$ tạo phức $[Ag(NH_3)_2]^+$ làm giảm $[Ag^+]$ tự do, giúp hòa tan kết tủa $AgCl$ ($K_{sp}$ lớn hơn $AgI$).',
+    'Q > K_{sp} \\implies \\text{Xuất hiện kết tủa}',
+    'acid_base_titration_2d', 'crystal_lattice_3d',
+    'Nhỏ từ từ $AgNO_3$ vào dung dịch chứa $Cl^-\\ 0{,}1\\text{ M}$ ($K_{sp}(\\text{AgCl}) = 1{,}8\\times 10^{-10}$) và $I^-\\ 0{,}1\\text{ M}$ ($K_{sp}(\\text{AgI}) = 8{,}5\\times 10^{-17}$). Kết tủa nào xuất hiện trước?',
+    ['A. AgCl kết tủa trước', 'B. AgI kết tủa trước', 'C. Cả hai cùng lúc', 'D. Không kết tủa'], 1,
+    '$[Ag^+]$ cần để kết tủa $AgI$ là $8{,}5\\times 10^{-16}\\text{ M} \\ll 1{,}8\\times 10^{-9}\\text{ M}$ của $AgCl$.',
+    'Tính độ tan $s$ (mol/L) của $PbI_2$ trong nước nguyên chất biết $K_{sp} = 3{,}2\\times 10^{-8}$.', '4s³ = 3,2×10⁻⁸ -> s³ = 8×10⁻⁹ -> s = 2×10⁻³ M'
+  ],
+  [
+    'chem-chuyen-11-5', 'Lớp 11', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: Chuyên 11', 'HSG Quốc gia · Hữu cơ', 6,
+    'Hiệu ứng Cảm ứng ($-I/+I$), Hiệu ứng Liên hợp ($-C/+C$) & Lực Axit–Bazơ Hữu cơ',
+    'Giải thích quy luật biến đổi $pK_a$ axit thế halogen, axit benzoic thế và tính bazơ amin',
+    'Nhóm hút e ($-Cl, -NO_2, -CN$) làm tăng tính axit (giảm $pK_a$) do làm bền hóa anion cacboxylat $RCOO^-$.',
+    'Hiệu ứng liên hợp $C$ truyền qua hệ liên hợp dài không suy giảm nhiều như hiệu ứng cảm ứng $I$.',
+    '\\text{p}K_a(CCl_3COOH) < \\text{p}K_a(CH_2ClCOOH) < \\text{p}K_a(CH_3COOH)',
+    'benzene_substitution_2d', 'benzene_pi_3d',
+    'Axit nào có tính axit mạnh nhất ($pK_a$ nhỏ nhất)?',
+    ['A. CH₃COOH', 'B. CH₂FCOOH', 'C. CCl₃COOH', 'D. CH₃CH₂COOH'], 2,
+    'Ba nguyên tử Clo hút electron cảm ứng $-I$ mạnh nhất làm H nhóm $-COOH$ phân li rất dễ.',
+    'So sánh lực axit của phenol, $p$-nitrophenol và $p$-metylphenol.', 'p-metylphenol < phenol < p-nitrophenol'
+  ],
+  [
+    'chem-chuyen-11-6', 'Lớp 11', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: Chuyên 11', 'IChO · Hóa lập thể', 7,
+    'Hóa học Lập thể (Stereochemistry): Cacbon Bất đối $C^*$, Cấu hình Tuyệt đối R/S',
+    'Quy tắc ưu tiên Cahn–Ingold–Prelog (CIP), đồng phân quang học đối quang và hợp chất Meso',
+    'Nguyên tử C gắn 4 nhóm thế khác nhau gọi là tâm bất đối $C^*$; tối đa $2^n$ đồng phân quang học với $n$ tâm $C^*$ (nếu không có mặt phẳng đối xứng).',
+    'Hợp chất chứa tâm bất đối nhưng có mặt phẳng đối xứng nội phân tử gọi là dạng **Meso** (không hoạt động quang học).',
+    '\\text{Số đồng phân quang học tối đa} = 2^n',
+    'vsepr_bonding_2d', 'vsepr_geometry_3d',
+    'Phân tử nào sau đây có nguyên tử cacbon bất đối ($C^*$) và tồn tại cặp đối quang?',
+    ['A. Butan-1-ol', 'B. Butan-2-ol', 'C. Propan-2-ol', 'D. 2-metylpropan-2-ol'], 1,
+    '$C_2$ của butan-2-ol gắn 4 nhóm khác nhau: $-H, -OH, -CH_3, -C_2H_5$.',
+    'Phân biệt hỗn hợp racemic với hợp chất Meso.', 'Racemic là hỗn hợp 50:50 hai đối quang d/l; Meso là một đồng phân duy nhất có mặt phẳng đối xứng nội.'
+  ],
+  [
+    'chem-chuyen-11-7', 'Lớp 11', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: Chuyên 11', 'IChO · Cơ chế Hữu cơ', 8,
+    'Phản ứng Đóng vòng Diels–Alder, Ozon phân Anken & Cộng Hợp 1,2 / 1,4 Đien Liên hợp',
+    'Tổng hợp vòng 6 cạnh từ đien liên hợp + đienophin và kiểm soát động học vs nhiệt động',
+    'Buta-1,3-đien cộng $Br_2$ ở $-80^\\circ\\text{C}$ ưu tiên sản phẩm cộng 1,2 (kiểm soát động học), ở $+40^\\circ\\text{C}$ ưu tiên cộng 1,4 (kiểm soát nhiệt động).',
+    'Phản ứng Diels–Alder ghép hệ $4\\pi$ (đien) với $2\\pi$ (đienophin) tạo vòng cyclohexen trong một bước chuyển tiếp.',
+    '\\text{Đien } (4\\pi) + \\text{Đienophin } (2\\pi) \\xrightarrow{t^\\circ} \\text{Vòng } 6\\text{ cạnh}',
+    'alkene_addition_2d', 'benzene_pi_3d',
+    'Cho buta-1,3-đien phản ứng với etilen ở nhiệt độ thích hợp theo phản ứng Diels–Alder thu được sản phẩm vòng nào?',
+    ['A. Cyclobuten', 'B. Cyclohexen', 'C. Benzen', 'D. Cyclopentan'], 1,
+    'Phản ứng đóng vòng $[4+2]$ tạo thành vòng 6 cạnh chứa 1 nối đôi (cyclohexen).',
+    'Giải thích vì sao sản phẩm cộng 1,4 của buta-1,3-đien bền hơn về nhiệt động so với cộng 1,2.', 'Nối đôi nằm giữa mạch (2 nhóm thế) bền hơn nối đôi đầu mạch (1 nhóm thế).'
+  ],
+  [
+    'chem-chuyen-12-3', 'Lớp 12', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: Chuyên 12', 'HSG Quốc gia Hóa 12', 8,
+    'Phương trình Nernst Toàn phần, Giản đồ Latimer & Frost trong Điện hóa Học',
+    'Tính thế điện cực phụ thuộc pH/nồng độ và xét độ bền sự tự oxi hóa – khử (dismutation)',
+    'Phương trình Nernst ở $298\\text{ K}$: $E = E^\\circ + \\frac{0{,}0592}{n}\\log\\frac{[Ox]}{[Kh]}$.',
+    'Trên giản đồ Latimer $A \\xrightarrow{E_1} B \\xrightarrow{E_2} C$: nếu $E_{\\text{phải}} > E_{\\text{trái}}$ ($E_2 > E_1$) thì chất giữa $B$ tự phân hủy (tự oxi hóa–khử).',
+    'E = E^\\circ + \\frac{0{,}0592}{n}\\log\\frac{[\\text{Ox}]}{[\\text{Kh}]}',
+    'galvanic_cell_2d', 'galvanic_cell_3d',
+    'Cho giản đồ Latimer trong axit: $MnO_4^- \\xrightarrow{1{,}70} MnO_2 \\xrightarrow{1{,}51} Mn^{3+} \\xrightarrow{1{,}51} Mn^{2+}$ (giả sử $MnO_4^{2-} \\xrightarrow{2{,}26} MnO_2$ và $MnO_4^- \\xrightarrow{0{,}56} MnO_4^{2-}$). Ion $MnO_4^{2-}$ có bền trong axit không?',
+    ['A. Rất bền', 'B. Tự phân hủy thành MnO₄⁻ và MnO₂ do E_phải (2,26) > E_trái (0,56)', 'C. Chuyển hết thành Mn', 'D. Không đủ dữ liệu'], 1,
+    '$E_{\\text{phải}} = 2{,}26\\text{ V} > E_{\\text{trái}} = 0{,}56\\text{ V}$ nên $3MnO_4^{2-} + 4H^+ \\to 2MnO_4^- + MnO_2 + 2H_2O$.',
+    'Tính thế khử $E(Fe^{3+}/Fe^{2+})$ khi $[Fe^{3+}] = 0{,}01\\text{ M}$ và $[Fe^{2+}] = 1{,}0\\text{ M}$ biết $E^\\circ = +0{,}77\\text{ V}$.', 'E = 0,77 + 0,0592 log(0,01) = 0,6516 V'
+  ],
+  [
+    'chem-chuyen-12-4', 'Lớp 12', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: Chuyên 12', 'IChO · Phức chất', 9,
+    'Thuyết Trường Tinh thể (CFT), Năng lượng Ổn định CFSE & Hiệu ứng Jahn–Teller',
+    'Phân biệt phức spin cao – spin thấp, từ tính thuận từ (số e độc thân) và dãy phổ hóa học phối tử',
+    'Dãy phổ hóa học tăng dần $\\Delta_o$: $I^- < Br^- < Cl^- < F^- < OH^- < H_2O < NH_3 < en < CN^- < CO$.',
+    'Nếu $\\Delta_o > P$ (năng lượng ghép đôi): tạo phức **spin thấp** (nhiều e ghép đôi vào $t_{2g}$); nếu $\\Delta_o < P$: **spin cao**.',
+    'CFSE = (-0{,}4\\cdot n_{t_{2g}} + 0{,}6\\cdot n_{e_g})\\Delta_o',
+    'complex_ligand_2d', 'coordination_complex_3d',
+    'Phức bát diện $[Fe(CN)_6]^{4-}$ ($Fe^{2+}: d^6$, phối tử $CN^-$ trường mạnh) có bao nhiêu electron độc thân?',
+    ['A. 0 (Nghịch từ)', 'B. 2', 'C. 4', 'D. 5'], 0,
+    '$CN^-$ trường rất mạnh ép cả 6 electron ghép đôi vào 3 orbital $t_{2g}^6 e_g^0 \\Rightarrow$ 0 electron độc thân.',
+    'So sánh số e độc thân của $[Fe(H_2O)_6]^{2+}$ (spin cao) và $[Fe(CN)_6]^{4-}$ (spin thấp).', '[Fe(H₂O)₆]²⁺ có 4 e độc thân (t₂g⁴ eg²); [Fe(CN)₆]⁴⁻ có 0 e độc thân.'
+  ],
+  [
+    'chem-chuyen-12-5', 'Lớp 12', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: Chuyên 12', 'HSG Quốc gia · Hữu cơ', 10,
+    'Ngưng tụ Aldol, Phản ứng Claisen, Wittig & Tổng hợp Đa bước Hữu cơ',
+    'Tạo liên kết C–C mới qua enolat, phản ứng tạo nối đôi chọn lọc Wittig và bảo vệ nhóm chức',
+    'Phản ứng ngưng tụ Aldol: anđehit/xeton có $\\alpha$-H tạo $\\beta$-hiđroxi cacbonyl rồi tách nước tạo hợp chất không no $\\alpha,\\beta$.',
+    'Phản ứng Wittig dùng ylide photpho ($R_3P^+-C^-R\'$) biến $C=O$ trực tiếp thành nối đôi $C=C$ ở đúng vị trí định trước.',
+    '2CH_3CHO \\xrightarrow{\\text{OH}^-} CH_3CH(OH)CH_2CHO \\xrightarrow{t^\\circ} CH_3CH=CHCHO + H_2O',
+    'esterification_2d', 'ester_reflux_3d',
+    'Ngưng tụ aldol etanal ($CH_3CHO$) trong kiềm rồi đun nóng thu được anđehit không no nào?',
+    ['A. Propenal', 'B. But-2-enal (Crotonanđehit)', 'C. Benzaldehyde', 'D. Axeton'], 1,
+    '$CH_3-CH=CH-CHO$ (but-2-enal).',
+    'Điều kiện cấu tạo bắt buộc để một anđehit tự tham gia ngưng tụ aldol là gì?', 'Phải có ít nhất một nguyên tử H linh động ở vị trí α (C gắn với -CHO).'
+  ],
+  [
+    'chem-chuyen-12-6', 'Lớp 12', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: Chuyên 12', 'HSG Quốc gia · Amino Acid', 11,
+    'Điểm Đẳng điện (pI), Điện di Giấy & Giải trình tự Peptide (Sanger / Edman)',
+    'Tính $pI$ của amino acid trung tính/axit/kiềm và xác định đầu N / đầu C của chuỗi peptit',
+    'Điểm đẳng điện $pI$ là giá trị pH mà amino axit có tổng điện tích trung bình bằng 0 (không di chuyển trong điện trường).',
+    'Với amino acid 2 nhóm ion hóa: $pI = \\frac{pK_{a1} + pK_{a2}}{2}$; với Lysin (kiềm) lấy trung bình 2 $pK_a$ cao nhất; với Glu (axit) lấy 2 $pK_a$ thấp nhất.',
+    'pI = \\frac{pK_{a1} + pK_{a2}}{2}',
+    'amino_acid_zwitterion_2d', 'polymer_chain_3d',
+    'Tại $pH = 9{,}0$, glyxin ($pI = 5{,}97$) mang điện tích gì và di chuyển về cực nào trong điện di?',
+    ['A. Mang điện âm (-), về cực dương (+)', 'B. Mang điện dương (+), về cực âm (-)', 'C. Đứng yên tại vạch xuất phát', 'D. Phân hủy hoàn toàn'], 0,
+    'Khi $pH > pI$, dung dịch dư $OH^-$ khử proton biến glyxin thành anion $H_2N-CH_2-COO^-$ nên chạy về cực dương.',
+    'Tính điểm đẳng điện $pI$ của axit glutamic biết $pK_1(\\alpha\\text{-COOH})=2{,}19$, $pK_R(\\text{nhánh -COOH})=4{,}25$, $pK_2(\\text{-NH}_3^+)=9{,}67$.', 'pI = (2,19 + 4,25)/2 = 3,22'
+  ],
+  [
+    'chem-chuyen-12-7', 'Lớp 12', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: Chuyên 12', 'HSG Quốc gia · Phân tích', 12,
+    'Biện luận Phổ $^1\\text{H-NMR}$, $^{13}\\text{C-NMR}$, IR & MS Xác định Cấu trúc Hữu cơ',
+    'Quy tắc tách vạch $n + 1$, độ dịch chuyển hóa học $\\delta$ (ppm) và tích phân số proton',
+    'Độ dịch chuyển $\\delta$: H ankan ($0{,}9–1{,}5\\text{ ppm}$), H gắn C nối với O/este ($3{,}5–4{,}3\\text{ ppm}$), H vòng thơm ($6{,}8–8{,}2\\text{ ppm}$), H anđehit ($9{,}5–10\\text{ ppm}$).',
+    'Số đỉnh tách của tín hiệu proton bị chẻ bởi $n$ proton tương đương lân cận tuân theo quy tắc $n + 1$.',
+    '\\text{Số vạch tách} = n_{\\text{H lân cận}} + 1',
+    'flame_spectroscopy_2d', 'spectroscopy_prism_3d',
+    'Phổ $^1\\text{H-NMR}$ của một hợp chất $C_4H_8O_2$ gồm 1 mũi đơn (3H, $\\delta=2{,}0$), 1 mũi bốn (2H, $\\delta=4{,}1$) và 1 mũi ba (3H, $\\delta=1{,}25$). Chất đó là:',
+    ['A. Metyl propionat', 'B. Etyl axetat (CH₃COOCH₂CH₃)', 'C. Axit butiric', 'D. Propyl fomat'], 1,
+    'Cụm quartet 2H ($\delta=4{,}1$) – triplet 3H ($\delta=1{,}25$) là dấu hiệu điển hình của nhóm etyl $-OCH_2CH_3$; singlet 3H là $CH_3CO-$.',
+    'Tại sao nhóm $-CH_3$ trong etyl axetat lại cho mũi đơn (singlet) thay vì tách vạch?', 'Vì cacbon bên cạnh (C=O) không có nguyên tử hiđro nào.'
+  ],
+  [
+    'chem-chuyen-12-8', 'Lớp 12', 'Chuyên / HSG', 'Khu Chuyên Hóa · Bậc 3: Chuyên 12', 'IChO Tổng hợp', 13,
+    'Tổng hợp Chuỗi Phân hủy Oxit, Muối Phức & Bài toán Quy đổi Toàn diện IChO',
+    'Kết hợp bảo toàn e, bảo toàn điện tích, phương pháp đồng đẳng hóa giải bài tập vô cơ – hữu cơ cấp độ Olympic',
+    'Phương pháp **đồng đẳng hóa** quy đổi hỗn hợp este/peptit bất kì về chất đầu dãy ($HCOOCH_3$, $(HCOO)_3C_3H_5$, Gly-Gly...) tách thêm các nhóm $CH_2$ và $-H_2$.',
+    'Áp dụng định luật bảo toàn điện tích trong mọi dung dịch muối: $\\sum z_+ n_+ = \\sum z_- n_-$.',
+    '\\sum z_+ n_+ = \\sum z_- n_-',
+    'redox_balancing_2d', 'galvanic_cell_3d',
+    'Khi quy đổi hỗn hợp chất béo no bất kì bằng phương pháp đồng đẳng hóa, ta quy về chất đầu dãy nào cộng với nhóm $CH_2$?',
+    ['A. Tristearin', 'B. (HCOO)₃C₃H₅', 'C. Etyl axetat', 'D. Glixerol'], 1,
+    '$(HCOO)_3C_3H_5$ là triester đơn giản nhất của glixerol, mọi triglixerit no đều hơn nó một số nguyên nhóm $CH_2$.',
+    'Dung dịch chứa $0{,}1\\text{ mol } Na^+$, $0{,}2\\text{ mol } Ca^{2+}$, $0{,}1\\text{ mol } Cl^-$ và $x\\text{ mol } HCO_3^-$. Tính $x$.', '0,1 + 2(0,2) = 0,1 + x -> x = 0,4 mol'
+  ]
+];
+
+export const CHEMISTRY_CHUYEN_EXTRA_LESSONS: ChemistryLesson[] = SPECS.map((s) =>
+  makeChemLesson({
+    id: s[0],
+    track: 'chuyen',
+    grade: s[1],
+    tier: s[2],
+    stageLabel: s[3],
+    sourceTag: s[4],
+    lessonNumber: s[5],
+    title: s[6],
+    subtitle: s[7],
+    description: s[8],
+    theory1Heading: '1. Lí thuyết Chuyên sâu & Phương pháp Giải',
+    theory1: s[8],
+    theory2Heading: '2. Công thức Định lượng & Mở rộng HSG',
+    theory2: `${s[9]}\n• Hệ thức trọng tâm: $$${s[10]}$$`,
+    keyFormulas: [s[10]],
+    sim2d: s[11],
+    sim3d: s[12],
+    mcq1: {
+      source: s[4],
+      question: s[13],
+      options: s[14],
+      correctIndex: s[15],
+      explanation: s[16]
+    },
+    mcq2: {
+      source: s[4],
+      question: `Trong chuyên đề Chuyên "${s[6]}", công thức nào sau đây là chuẩn xác?`,
+      options: [
+        `A. $${s[10]}$`,
+        'B. Tỉ lệ thuận với bình phương hằng số Planck',
+        'C. Chỉ áp dụng cho khí hiếm lý tưởng đơn nguyên tử',
+        'D. Độc lập hoàn toàn với nồng độ ion'
+      ],
+      correctIndex: 0,
+      explanation: `${s[8]} ${s[9]}`
+    },
+    essay: {
+      source: s[4],
+      question: s[17],
+      solutionSteps: [s[18]],
+      finalAnswer: s[18]
+    }
+  })
+);

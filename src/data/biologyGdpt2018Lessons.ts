@@ -77,7 +77,7 @@ export const BIOLOGY_GDPT_2018_LESSONS: BiologyLesson[] = [
     theory2: '• Khi lai hai cặp tính trạng độc lập ($AaBb \\times AaBb$), tỉ lệ $F_2$ bằng tích xác suất từng cặp: $(3:1)(3:1) = 9:3:3:1$.\n• Giải thích sự xuất hiện biến dị tổ hợp phong phú trong sinh sản hữu tính.',
     keyFormulas: ['(3:1)^n \\text{ (tỉ lệ kiểu hình } F_2\\text{)}', '(1:2:1)^n \\text{ (tỉ lệ kiểu gen } F_2\\text{)}'],
     sim2d: 'mendel_punnett_2d',
-    sim3d: 'chromosome_mitosis_3d',
+    sim3d: 'mendel_peas_3d',
     mcq1: {
       source: 'KHTN 9 · Mendel',
       question: 'Cho đậu Hà Lan hạt vàng, trơn thuần chủng ($AABB$) lai với hạt xanh, nhăn ($aabb$). Tỉ lệ kiểu hình ở $F_2$ là:',
@@ -843,7 +843,7 @@ export const BIOLOGY_GDPT_2018_LESSONS: BiologyLesson[] = [
     theory2: '• Tạo DNA tái tổ hợp cần enzyme cắt giới hạn (Restriction endonuclease) và enzyme nối T4 DNA ligase.\n• Hệ CRISPR–Cas9 dùng sgRNA dẫn đường cắt chính xác DNA tại vị trí cạnh trình tự PAM ($5\'-NGG-3\'$).',
     keyFormulas: ['\\text{Thay } A-T \\leftrightarrow G-C \\implies \\Delta H = \\pm 1\\text{ LK Hydro}'],
     sim2d: 'crispr_editing_2d',
-    sim3d: 'dna_double_helix_3d',
+    sim3d: 'biotech_pcr_crispr_3d',
     mcq1: {
       source: 'Sinh 12',
       question: 'Dạng đột biến điểm nào thường làm thay đổi nhiều axit amin nhất trong chuỗi polypeptit?',
@@ -881,7 +881,7 @@ export const BIOLOGY_GDPT_2018_LESSONS: BiologyLesson[] = [
     theory2: '• Bệnh máu khó đông, mù màu do alen lặn trên vùng không tương đồng của NST $X$ có đặc điểm di truyền chéo (ông ngoại $\\to$ mẹ $\\to$ con trai).',
     keyFormulas: ['\\text{Giao tử hoán vị} = \\frac{f}{2},\\quad \\text{Giao tử liên kết} = \\frac{1 - f}{2}\\quad (f \\le 50\\%)'],
     sim2d: 'gene_linkage_2d',
-    sim3d: 'chromosome_mitosis_3d',
+    sim3d: 'gene_linkage_3d',
     mcq1: {
       source: 'Sinh 12 · Hoán vị gen',
       question: 'Một cơ thể có kiểu gen $\\frac{AB}{ab}$ xảy ra hoán vị gen với tần số $f = 24\\%$. Tỉ lệ loại giao tử $\\underline{Ab}$ tạo ra là:',
@@ -919,7 +919,7 @@ export const BIOLOGY_GDPT_2018_LESSONS: BiologyLesson[] = [
     theory2: '• Đột biến (tạo alen mới), Dòng gen, Phiêu bạt di truyền (làm nghèo vốn gen ở quần thể nhỏ), Giao phối không ngẫu nhiên (không đổi p, q nhưng đổi tần số kiểu gen) và **Chọn lọc tự nhiên** (nhân tố định hướng duy nhất).',
     keyFormulas: ['p + q = 1,\\quad p^2 + 2pq + q^2 = 1', 'H_n = H_0\\left(\\frac{1}{2}\\right)^n\\text{ (tự thụ)}'],
     sim2d: 'hardy_weinberg_2d',
-    sim3d: 'ecosystem_biome_3d',
+    sim3d: 'population_genetics_3d',
     mcq1: {
       source: 'Sinh 12 · Hardy–Weinberg',
       question: 'Trong một quần thể người cân bằng Hardy–Weinberg, tỉ lệ người bị bệnh bạch tạng (kiểu gen đồng hợp lặn $aa$) là $1/10000 = 0{,}0001$. Tỉ lệ người mang gen dị hợp ($Aa$) không biểu hiện bệnh là:',

@@ -17,8 +17,8 @@ export const BIOLOGY_GDPT_2006_LESSONS: BiologyLesson[] = [
     theory2Heading: '2. Bệnh Di truyền Người',
     theory2: '• Bệnh hồng cầu hình liềm (đột biến điểm gen Hbβ), bệnh Phenylketon niệu (thiếu enzyme chuyển hóa phenylalanine), hội chứng Down (3 NST 21).',
     keyFormulas: ['P(\\text{con bệnh}) = P(\\text{bố } Aa) \\times P(\\text{mẹ } Aa) \\times \\frac{1}{4}'],
-    sim2d: 'blood_typing_2d',
-    sim3d: 'chromosome_mitosis_3d',
+    sim2d: 'pedigree_genetics_2d',
+    sim3d: 'mendel_peas_3d',
     mcq1: {
       source: 'SGK Sinh 9 (2006)',
       question: 'Bố và mẹ đều bình thường nhưng sinh con gái bị bệnh bạch tạng. Kết luận nào đúng?',
@@ -56,7 +56,7 @@ export const BIOLOGY_GDPT_2006_LESSONS: BiologyLesson[] = [
     theory2: '• Lên men sữa chua ($\\text{Lactobacillus}$ chuyển đường lactose thành axit lactic làm đông tụ casein).',
     keyFormulas: ['\\text{C}_6\\text{H}_{12}\\text{O}_6 \\xrightarrow{\\text{Nấm men}} 2\\text{C}_2\\text{H}_5\\text{OH} + 2\\text{CO}_2'],
     sim2d: 'cellular_respiration_2d',
-    sim3d: 'virus_bacteriophage_3d',
+    sim3d: 'mitochondria_atp_3d',
     mcq1: {
       source: 'SGK Sinh 10 (2006)',
       question: 'Vi khuẩn lam có nguồn năng lượng từ ánh sáng và nguồn cacbon là $CO_2$ thuộc kiểu dinh dưỡng nào?',
@@ -132,7 +132,7 @@ export const BIOLOGY_GDPT_2006_LESSONS: BiologyLesson[] = [
     theory2: '• Cách li địa lí là điều kiện thúc đẩy phân hóa vốn gen dẫn tới **cách li sinh sản** (dấu mốc hình thành loài mới).\n• Lai xa kết hợp **đa bội hóa** (song nhị bội) tạo loài mới nhanh chóng ở thực vật.',
     keyFormulas: ['\\text{Loài A }(2n_A) \\times \\text{Loài B }(2n_B) \\to (n_A + n_B) \\xrightarrow{\\text{Đa bội}} 2n_A + 2n_B'],
     sim2d: 'natural_selection_2d',
-    sim3d: 'ecosystem_biome_3d',
+    sim3d: 'population_genetics_3d',
     mcq1: {
       source: 'SGK Sinh 12 (2006)',
       question: 'Cánh chim và cánh bướm (côn trùng) là ví dụ cho:',
@@ -170,7 +170,7 @@ export const BIOLOGY_GDPT_2006_LESSONS: BiologyLesson[] = [
     theory2: '• Taq polymerase chịu nhiệt $72^\\circ\\text{C}$ khuếch đại đoạn DNA đích theo hàm mũ $2^n$; trên gel Agarose, đoạn DNA ngắn hơn di chuyển nhanh hơn về cực dương.',
     keyFormulas: ['N_{\\text{PCR}} = N_0 \\cdot 2^n', '9+7=16,\\ 9+6+1=16,\\ 12+3+1=16'],
     sim2d: 'pcr_electrophoresis_2d',
-    sim3d: 'dna_double_helix_3d',
+    sim3d: 'biotech_pcr_crispr_3d',
     mcq1: {
       source: 'SGK Sinh 12 (2006)',
       question: 'Trong điện di trên gel Agarose, các đoạn DNA phân tách dựa vào yếu tố nào và chạy về phía cực nào?',

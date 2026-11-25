@@ -1,4 +1,5 @@
 import { BiologySimType } from '../../types';
+import { PerformanceMode } from '../../context/BackgroundContext';
 
 export interface BioSimTelemetry {
   metrics: { label: string; value: number | string; unit?: string }[];
@@ -10,10 +11,40 @@ function round(v: number, d = 2): number {
   return Math.round(v * f) / f;
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, dark: boolean) {
+function drawBioGlow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  coreHex: string,
+  edgeHex: string,
+  perfMode: PerformanceMode
+) {
+  if (perfMode === 'smooth') return;
+  ctx.save();
+  const radius = perfMode === 'ultra' ? r * 1.45 : r;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  g.addColorStop(0, coreHex);
+  g.addColorStop(0.45, edgeHex);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, dark: boolean, perfMode: PerformanceMode = 'balanced') {
   ctx.save();
   ctx.fillStyle = dark ? '#08101c' : '#f8fafc';
   ctx.fillRect(0, 0, w, h);
+  if (perfMode !== 'smooth') {
+    const amb = ctx.createRadialGradient(w * 0.5, h * 0.45, 24, w * 0.5, h * 0.45, Math.max(w, h) * 0.65);
+    amb.addColorStop(0, dark ? 'rgba(20,184,166,0.09)' : 'rgba(13,148,136,0.05)');
+    amb.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = amb;
+    ctx.fillRect(0, 0, w, h);
+  }
   ctx.strokeStyle = dark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.06)';
   ctx.lineWidth = 1;
   for (let x = 0; x <= w; x += 32) {
@@ -48,9 +79,10 @@ export function renderBiology2DSim(
   simType: BiologySimType,
   params: Record<string, number>,
   t: number,
-  dark: boolean
+  dark: boolean,
+  perfMode: PerformanceMode = 'balanced'
 ): BioSimTelemetry {
-  drawGrid(ctx, w, h, dark);
+  drawGrid(ctx, w, h, dark, perfMode);
   const fg = dark ? '#e2e8f0' : '#0f172a';
   const muted = dark ? '#94a3b8' : '#64748b';
   const cx = w * 0.5;
@@ -76,11 +108,13 @@ export function renderBiology2DSim(
       ctx.stroke();
 
       // Nucleus + Mito + Chloroplast/Vacuole + Vesicles
+      drawBioGlow(ctx, cx - 38, cy - 12, 48, 'rgba(99,102,241,0.3)', 'rgba(99,102,241,0.06)', perfMode);
       ctx.fillStyle = '#6366f1';
       ctx.beginPath();
       ctx.arc(cx - 38, cy - 12, 28, 0, Math.PI * 2);
       ctx.fill();
 
+      drawBioGlow(ctx, cx + 55, cy - 32, 34, 'rgba(249,115,22,0.34)', 'rgba(249,115,22,0.06)', perfMode);
       ctx.fillStyle = '#f97316';
       ctx.beginPath();
       ctx.ellipse(cx + 55, cy - 32, 22, 11, 0.4, 0, Math.PI * 2);
@@ -102,6 +136,7 @@ export function renderBiology2DSim(
         const u = ((t * (rate / 90) + i / 6) % 1);
         const vx = cx - 20 + u * 135;
         const vy = cy + Math.sin(u * Math.PI * 2 + i) * 14;
+        drawBioGlow(ctx, vx, vy, 12, 'rgba(251,191,36,0.4)', 'rgba(251,191,36,0)', perfMode);
         ctx.fillStyle = '#fbbf24';
         ctx.beginPath();
         ctx.arc(vx, vy, 4.5, 0, Math.PI * 2);
@@ -539,35 +574,184 @@ export function renderBiology2DSim(
     }
 
     case 'mendel_punnett_2d': {
-      const p1 = Math.round(params.parent1Het ?? 2);
-      const p2 = Math.round(params.parent2Het ?? 2);
+      const p1 = Math.max(1, Math.min(2, Math.round(params.parent1Het ?? 2)));
+      const p2 = Math.max(1, Math.min(2, Math.round(params.parent2Het ?? 2)));
       const nSample = params.sampleN ?? 640;
-      const gridSize = p1 === 2 && p2 === 2 ? 4 : 2;
-      const cell = Math.min(48, (h - 90) / gridSize);
-      const sx = cx - (gridSize * cell) / 2;
-      const sy = cy - (gridSize * cell) / 2;
 
-      for (let r = 0; r < gridSize; r++) {
-        for (let c = 0; c < gridSize; c++) {
-          const domA = r < gridSize / 2 || c < gridSize / 2;
-          ctx.fillStyle = domA ? 'rgba(16,185,129,0.28)' : 'rgba(245,158,11,0.28)';
-          ctx.fillRect(sx + c * cell, sy + r * cell, cell, cell);
-          ctx.strokeStyle = fg;
-          ctx.lineWidth = 1.2;
-          ctx.strokeRect(sx + c * cell, sy + r * cell, cell, cell);
+      const buildGametes = (hetCount: number, isSecondAlt: boolean): string[] => {
+        if (hetCount === 2) return ['AB', 'Ab', 'aB', 'ab'];
+        return isSecondAlt ? ['Ab', 'ab'] : ['A', 'a'];
+      };
+
+      const isSingleLocus = p1 === 1 && p2 === 1;
+      const gMale = isSingleLocus ? ['A', 'a'] : buildGametes(p1, false);
+      const gFemale = isSingleLocus ? ['A', 'a'] : buildGametes(p2, p2 === 1);
+
+      const combineGenotype = (gm: string, gf: string): string => {
+        if (isSingleLocus) {
+          return gm === gf ? gm + gf : 'Aa';
+        }
+        const aPair = [gm[0], gf[0]].sort().join('');
+        const bPair = [gm[1] || 'b', gf[1] || 'b'].sort().join('');
+        return `${aPair}${bPair}`;
+      };
+
+      const cols = gMale.length;
+      const rows = gFemale.length;
+      const drawPeaGlyph = (x: number, y: number, r: number, yellow: boolean, smooth: boolean) => {
+        ctx.save();
+        if (perfMode !== 'smooth') {
+          drawBioGlow(ctx, x, y, r * 2.1, yellow ? 'rgba(250,204,21,0.35)' : 'rgba(34,197,94,0.35)', 'rgba(0,0,0,0)', perfMode);
+        }
+        ctx.fillStyle = yellow ? '#facc15' : '#22c55e';
+        ctx.strokeStyle = yellow ? '#ca8a04' : '#15803d';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        if (smooth) {
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+        } else {
+          for (let k = 0; k < 12; k++) {
+            const ang = (k / 12) * Math.PI * 2;
+            const rr = r * (k % 2 === 0 ? 1.05 : 0.78);
+            const px = x + Math.cos(ang) * rr;
+            const py = y + Math.sin(ang) * rr;
+            if (k === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+        }
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      // Left Panel: Classic Cross Diagram P -> Gp -> F1 -> Phenotype Breakdown
+      const lx = 20;
+      const lw = Math.max(190, w * 0.38);
+      ctx.fillStyle = dark ? 'rgba(15,23,42,0.82)' : 'rgba(255,255,255,0.92)';
+      ctx.strokeStyle = dark ? 'rgba(56,189,248,0.28)' : 'rgba(15,23,42,0.12)';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(lx, 46, lw, h - 70);
+      ctx.strokeRect(lx, 46, lw, h - 70);
+
+      const p1Label = isSingleLocus ? 'Aa (Hạt Vàng)' : p1 === 2 ? 'AaBb (Vàng Trơn)' : 'Aabb (Vàng Nhăn)';
+      const p2Label = isSingleLocus ? 'Aa (Hạt Vàng)' : p2 === 2 ? 'AaBb (Vàng Trơn)' : 'Aabb (Vàng Nhăn)';
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 11.5px sans-serif';
+      ctx.fillText('SƠ ĐỒ LAI MENDEL (P → G → F)', lx + 12, 68);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`P:  ${p1Label.split(' ')[0]}  ×  ${p2Label.split(' ')[0]}`, lx + 12, 92);
+      ctx.fillStyle = muted;
+      ctx.font = '10.5px monospace';
+      ctx.fillText(`G♂: ${gMale.join(', ')}`, lx + 12, 114);
+      ctx.fillText(`G♀: ${gFemale.join(', ')}`, lx + 12, 132);
+
+      // Phenotype tally from cells
+      const counts = { yt: 0, yn: 0, xt: 0, xn: 0 };
+      const totalCells = rows * cols;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const geno = combineGenotype(gMale[c], gFemale[r]);
+          const isYellow = geno.includes('A');
+          const isSmooth = isSingleLocus ? true : geno.includes('B');
+          if (isYellow && isSmooth) counts.yt++;
+          else if (isYellow && !isSmooth) counts.yn++;
+          else if (!isYellow && isSmooth) counts.xt++;
+          else counts.xn++;
         }
       }
-      const ratioStr = gridSize === 4 ? '9 : 3 : 3 : 1' : p1 === 1 && p2 === 1 ? '3 : 1' : '3 : 3 : 1 : 1';
+
+      const phenRows = isSingleLocus
+        ? [
+            { name: 'Vàng (A_)', n: counts.yt, y: true, s: true },
+            { name: 'Xanh (aa)', n: counts.xt, y: false, s: true }
+          ]
+        : [
+            { name: 'Vàng Trơn (A_B_)', n: counts.yt, y: true, s: true },
+            { name: 'Vàng Nhăn (A_bb)', n: counts.yn, y: true, s: false },
+            { name: 'Xanh Trơn (aaB_)', n: counts.xt, y: false, s: true },
+            { name: 'Xanh Nhăn (aabb)', n: counts.xn, y: false, s: false }
+          ].filter((x) => x.n > 0);
+
+      let pyCursor = 160;
+      phenRows.forEach((pr) => {
+        const estPlants = Math.round((pr.n / totalCells) * nSample);
+        drawPeaGlyph(lx + 22, pyCursor - 4, 8, pr.y, pr.s);
+        ctx.fillStyle = fg;
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText(`${pr.name}: ${pr.n}/${totalCells} (${estPlants})`, lx + 38, pyCursor);
+        const barW = Math.max(8, (pr.n / totalCells) * (lw - 56));
+        ctx.fillStyle = pr.y ? '#facc15' : '#22c55e';
+        ctx.fillRect(lx + 38, pyCursor + 6, barW, 6);
+        pyCursor += 34;
+      });
+
+      // Right Panel: Punnett Grid with Gamete Headers & Colored Genotypes
+      const gridZoneX = lx + lw + 36;
+      const availW = w - gridZoneX - 24;
+      const cellW = Math.min(82, Math.max(46, Math.floor((availW - 36) / cols)));
+      const cellH = Math.min(54, Math.max(36, Math.floor((h - 104) / rows)));
+      const gx0 = gridZoneX + Math.max(0, (availW - cols * cellW) * 0.5);
+      const gy0 = 72;
+
+      ctx.textAlign = 'center';
+      // Column headers (G Male)
+      gMale.forEach((gm, c) => {
+        const cxCell = gx0 + c * cellW + cellW / 2;
+        ctx.fillStyle = '#0ea5e9';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText(`♂ ${gm}`, cxCell, gy0 - 10);
+      });
+      // Row headers (G Female)
+      gFemale.forEach((gf, r) => {
+        const cyCell = gy0 + r * cellH + cellH / 2 + 4;
+        ctx.fillStyle = '#ec4899';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText(`♀ ${gf}`, gx0 - 22, cyCell);
+      });
+
+      const pulseIdx = Math.floor(t * 2) % totalCells;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idxCell = r * cols + c;
+          const geno = combineGenotype(gMale[c], gFemale[r]);
+          const isYellow = geno.includes('A');
+          const isSmooth = isSingleLocus ? true : geno.includes('B');
+          const x = gx0 + c * cellW;
+          const y = gy0 + r * cellH;
+          const active = idxCell === pulseIdx && perfMode !== 'smooth';
+
+          ctx.fillStyle = active
+            ? 'rgba(56,189,248,0.28)'
+            : isYellow
+            ? 'rgba(250,204,21,0.16)'
+            : 'rgba(34,197,94,0.16)';
+          ctx.fillRect(x, y, cellW, cellH);
+          ctx.strokeStyle = active ? '#38bdf8' : dark ? 'rgba(148,163,184,0.35)' : 'rgba(15,23,42,0.25)';
+          ctx.lineWidth = active ? 2 : 1;
+          ctx.strokeRect(x, y, cellW, cellH);
+
+          drawPeaGlyph(x + 14, y + cellH / 2, Math.min(7, cellH * 0.16), isYellow, isSmooth);
+          ctx.fillStyle = fg;
+          ctx.font = `bold ${cols === 4 ? 11 : 13}px monospace`;
+          ctx.fillText(geno, x + cellW * 0.62, y + cellH / 2 + 4);
+        }
+      }
+      ctx.textAlign = 'left';
+
+      const ratioStr = phenRows.map((p) => p.n).join(' : ');
       ctx.fillStyle = fg;
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(`Khung Punnett ${gridSize}×${gridSize} · Tỉ lệ kiểu hình: ${ratioStr} (Mẫu n=${nSample})`, 22, 22);
+      ctx.font = 'bold 12.5px sans-serif';
+      ctx.fillText(`Khung Punnett ${rows}×${cols} · Tỉ lệ kiểu hình: ${ratioStr} (Mẫu n = ${nSample} cây)`, 20, 24);
       return {
         metrics: [
-          { label: 'Tỉ lệ kiểu hình lý thuyết', value: ratioStr },
-          { label: 'Số tổ hợp giao tử', value: gridSize * gridSize, unit: 'tổ hợp' },
-          { label: 'Đồng hợp lặn ước tính', value: round(nSample / (gridSize * gridSize), 0), unit: 'cây' }
+          { label: 'Tỉ lệ kiểu hình', value: ratioStr },
+          { label: 'Số tổ hợp giao tử', value: totalCells, unit: 'tổ hợp' },
+          { label: 'Đồng hợp lặn ước tính', value: Math.round((1 / totalCells) * nSample), unit: 'cây' }
         ],
-        statusNote: 'Các cặp gen phân li độc lập nhân xác suất giao tử tạo khung Punnett đối xứng.'
+        statusNote: 'Các cặp alen phân li độc lập trong giảm phân, tổ hợp tự do tạo nên khung Punnett đầy đủ kiểu gen.'
       };
     }
 
@@ -776,6 +960,11 @@ export function renderBiology2DSim(
       drawPlotAxes(ctx, padL, 28, padB, plotW, muted);
 
       // Animated ECG trace
+      ctx.save();
+      if (perfMode !== 'smooth') {
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = perfMode === 'ultra' ? 14 : 6;
+      }
       ctx.strokeStyle = '#ef4444';
       ctx.lineWidth = 2.6;
       ctx.beginPath();
@@ -793,6 +982,7 @@ export function renderBiology2DSim(
         else ctx.lineTo(px, py);
       }
       ctx.stroke();
+      ctx.restore();
 
       ctx.fillStyle = fg;
       ctx.font = 'bold 12px sans-serif';
@@ -1347,10 +1537,17 @@ export function renderBiology2DSim(
         ctx.fillStyle = '#64748b';
         ctx.fillRect(cx + 38, y, 42, 4);
       });
-      // Target amplified band (brightness scales with cycles)
+      // Target amplified band (brightness scales with cycles + UV fluorescence glow)
       const bandY = 64 + (1 - Math.log10(targetBp / 150) / Math.log10(15)) * (h - 130);
+      drawBioGlow(ctx, cx + 132, bandY + 1, 38, 'rgba(16,185,129,0.45)', 'rgba(16,185,129,0.08)', perfMode);
+      ctx.save();
+      if (perfMode !== 'smooth') {
+        ctx.shadowColor = '#10b981';
+        ctx.shadowBlur = perfMode === 'ultra' ? 18 : 9;
+      }
       ctx.fillStyle = `rgba(16, 185, 129, ${Math.min(1, 0.25 + cycles / 32).toFixed(2)})`;
       ctx.fillRect(cx + 106, bandY - 3, 52, 8);
+      ctx.restore();
 
       ctx.fillStyle = fg;
       ctx.font = 'bold 12px sans-serif';
@@ -1413,6 +1610,162 @@ export function renderBiology2DSim(
           { label: 'Tương thích truyền máu', value: safe ? 'An toàn' : 'Nguy hiểm (Ngưng kết)' }
         ],
         statusNote: 'Nguyên tắc truyền máu: Kháng nguyên hồng cầu người cho không bị kháng thể huyết tương người nhận làm ngưng kết.'
+      };
+    }
+
+    case 'pedigree_genetics_2d': {
+      const mode = Math.max(1, Math.min(3, Math.round(params.inheritanceMode ?? 1)));
+      const marriage = Math.max(1, Math.min(3, Math.round(params.marriageType ?? 2)));
+      const carrierPct = params.carrierProbPct ?? 67;
+      const modeNames = [
+        'Gen lặn trên NST thường (aa)',
+        'Gen trội trên NST thường (A_)',
+        'Gen lặn liên kết NST giới tính X (Xᵃ)'
+      ];
+
+      // Pedigree nodes (I, II, III)
+      const drawNode = (
+        x: number,
+        y: number,
+        male: boolean,
+        state: 'healthy' | 'affected' | 'carrier',
+        tag: string,
+        geno: string,
+        highlight = false
+      ) => {
+        if (highlight) {
+          drawBioGlow(ctx, x, y, 30, 'rgba(56,189,248,0.4)', 'rgba(56,189,248,0.06)', perfMode);
+        }
+        ctx.save();
+        ctx.lineWidth = highlight ? 2.6 : 2;
+        ctx.strokeStyle = state === 'affected' ? '#ef4444' : highlight ? '#38bdf8' : fg;
+        ctx.fillStyle = state === 'affected' ? '#ef4444' : dark ? '#0f172a' : '#ffffff';
+        if (male) {
+          ctx.fillRect(x - 13, y - 13, 26, 26);
+          ctx.strokeRect(x - 13, y - 13, 26, 26);
+        } else {
+          ctx.beginPath();
+          ctx.arc(x, y, 13.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        if (state === 'carrier') {
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = muted;
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(tag, x, y - 17);
+        ctx.fillStyle = state === 'affected' ? '#f87171' : '#38bdf8';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText(geno, x, y + 25);
+        ctx.restore();
+      };
+
+      const y1 = 68;
+      const y2 = 148;
+      const y3 = 228;
+
+      // Gen I (1 x 2, 3 x 4)
+      ctx.strokeStyle = muted;
+      ctx.lineWidth = 1.6;
+      // Pair I-1 x I-2
+      ctx.beginPath();
+      ctx.moveTo(w * 0.22, y1);
+      ctx.lineTo(w * 0.34, y1);
+      ctx.moveTo(w * 0.28, y1);
+      ctx.lineTo(w * 0.28, y1 + 36);
+      ctx.moveTo(w * 0.2, y1 + 36);
+      ctx.lineTo(w * 0.38, y1 + 36);
+      ctx.moveTo(w * 0.2, y1 + 36);
+      ctx.lineTo(w * 0.2, y2);
+      ctx.moveTo(w * 0.38, y1 + 36);
+      ctx.lineTo(w * 0.38, y2);
+      ctx.stroke();
+
+      // Pair I-3 x I-4
+      ctx.beginPath();
+      ctx.moveTo(w * 0.62, y1);
+      ctx.lineTo(w * 0.74, y1);
+      ctx.moveTo(w * 0.68, y1);
+      ctx.lineTo(w * 0.68, y1 + 36);
+      ctx.moveTo(w * 0.56, y1 + 36);
+      ctx.lineTo(w * 0.76, y1 + 36);
+      ctx.moveTo(w * 0.56, y1 + 36);
+      ctx.lineTo(w * 0.56, y2);
+      ctx.moveTo(w * 0.76, y1 + 36);
+      ctx.lineTo(w * 0.76, y2);
+      ctx.stroke();
+
+      // Gen II marriage II-2 (w*0.38) x II-3 (w*0.56) -> Gen III child (w*0.47)
+      ctx.beginPath();
+      ctx.moveTo(w * 0.38, y2);
+      ctx.lineTo(w * 0.56, y2);
+      ctx.moveTo(w * 0.47, y2);
+      ctx.lineTo(w * 0.47, y3 - 16);
+      ctx.stroke();
+
+      // Determine genotypes by inheritanceMode + marriageType
+      const gI1 = mode === 1 ? 'Aa' : mode === 2 ? 'Aa' : 'XᴬY';
+      const gI2 = mode === 1 ? 'Aa' : mode === 2 ? 'aa' : 'XᴬXᵃ';
+      const sI1 = mode === 2 ? 'affected' : mode === 1 ? 'carrier' : 'healthy';
+      const sI2 = mode === 3 || mode === 1 ? 'carrier' : 'healthy';
+
+      drawNode(w * 0.22, y1, true, sI1, 'I-1', gI1);
+      drawNode(w * 0.34, y1, false, sI2, 'I-2', gI2);
+      const sI3 = mode === 1 ? 'carrier' : mode === 3 ? 'affected' : 'healthy';
+      drawNode(w * 0.62, y1, true, sI3, 'I-3', mode === 1 ? 'Aa' : mode === 3 ? 'XᵃY' : 'aa');
+      drawNode(w * 0.74, y1, false, mode === 3 ? 'carrier' : 'healthy', 'I-4', mode === 3 ? 'XᴬXᵃ' : 'Aa');
+
+      // Gen II nodes
+      drawNode(w * 0.2, y2, false, mode === 2 ? 'healthy' : 'affected', 'II-1', mode === 1 ? 'aa' : mode === 2 ? 'aa' : 'XᵃY');
+      const ii2State = marriage === 2 ? 'healthy' : marriage === 3 ? 'carrier' : mode === 3 ? 'carrier' : 'healthy';
+      const ii3State = marriage === 2 ? 'affected' : 'carrier';
+      const ii2Geno = mode === 3 ? 'XᴬXᵃ' : marriage === 2 ? 'AA/Aa' : 'Aa';
+      const ii3Geno = mode === 3 ? (marriage === 2 ? 'XᵃY' : 'XᴬY') : marriage === 2 ? 'aa' : 'Aa';
+
+      drawNode(w * 0.38, y2, false, ii2State, 'II-2', ii2Geno, true);
+      drawNode(w * 0.56, y2, true, ii3State, 'II-3', ii3Geno, true);
+      drawNode(w * 0.76, y2, true, mode === 2 ? 'affected' : 'healthy', 'II-4', mode === 3 ? 'XᴬY' : 'A_');
+
+      // Calculate target disease probability for III-1
+      let probDisease = 0;
+      const pCarrier = carrierPct / 100;
+      if (mode === 1) {
+        probDisease = marriage === 1 ? round(pCarrier * pCarrier * 0.25 * 100, 1) : marriage === 2 ? round(pCarrier * 0.5 * 100, 1) : 25;
+      } else if (mode === 2) {
+        probDisease = marriage === 2 ? 50 : marriage === 3 ? 75 : round(pCarrier * 50, 1);
+      } else {
+        probDisease = marriage === 2 ? round(pCarrier * 50, 1) : round(pCarrier * 25, 1);
+      }
+      const pulseR = 1 + Math.sin(t * 3.5) * 0.06;
+      drawNode(w * 0.47, y3, true, probDisease >= 40 ? 'affected' : 'carrier', `III-1 (${probDisease}%)`, `${probDisease}% bệnh`, pulseR > 1.02);
+
+      // Generation axis labels
+      ctx.fillStyle = muted;
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText('I', 18, y1 + 4);
+      ctx.fillText('II', 18, y2 + 4);
+      ctx.fillText('III', 18, y3 + 4);
+
+      // Legend bottom-right
+      ctx.font = '10.5px sans-serif';
+      ctx.fillStyle = fg;
+      ctx.fillText('□ Nam lành · ○ Nữ lành · Đỏ: Bị bệnh · Chấm vàng: Dị hợp mang gen', 24, h - 12);
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 12.5px sans-serif';
+      ctx.fillText(`Phả hệ: ${modeNames[mode - 1]} · Xác suất dị hợp = ${carrierPct}% → P(III-1 bệnh) = ${probDisease}%`, 20, 24);
+      return {
+        metrics: [
+          { label: 'Quy luật di truyền', value: mode === 1 ? 'Lặn NST thường' : mode === 2 ? 'Trội NST thường' : 'Liên kết giới tính X' },
+          { label: 'Xác suất con III-1 bệnh', value: probDisease, unit: '%' },
+          { label: 'Xác suất sinh con lành', value: round(100 - probDisease, 1), unit: '%' }
+        ],
+        statusNote: 'Bố mẹ bình thường sinh con gái bị bệnh khẳng định chắc chắn bệnh do gen lặn nằm trên NST thường.'
       };
     }
 

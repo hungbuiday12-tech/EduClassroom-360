@@ -62,9 +62,22 @@ export type Math3DMode =
 interface Math3DViewProps {
   initialMode?: Math3DMode;
   onBack?: () => void;
+  embedded?: boolean;
+  embeddedBadge?: string;
+  allowedModes?: Math3DMode[];
+  heightClass?: string;
+  onOpenFull3D?: () => void;
 }
 
-export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vector', onBack }) => {
+export const Math3DView: React.FC<Math3DViewProps> = ({
+  initialMode = 'oxyz_vector',
+  onBack,
+  embedded = false,
+  embeddedBadge,
+  allowedModes,
+  heightClass = 'h-[340px]',
+  onOpenFull3D
+}) => {
   const { t } = useLanguage();
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -2058,14 +2071,22 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   return (
     <ViewportPortal active={isFullscreen}>
       <div
-        className={`sim-math-scope relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col lg:block ${
+        className={`sim-math-scope relative w-full overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-slate-950 shadow-2xl transition-all flex flex-col ${
           isFullscreen
-            ? 'fixed inset-0 z-[100] h-[100dvh] w-screen rounded-none'
-            : 'rounded-[4px] min-h-[540px] lg:min-h-0 lg:h-[620px]'
+            ? 'fixed inset-0 z-[100] h-[100dvh] w-screen rounded-none lg:block'
+            : embedded
+            ? 'rounded-xl'
+            : 'rounded-[4px] min-h-[540px] lg:min-h-0 lg:h-[620px] lg:block'
         }`}
       >
-        {/* TOP HEADER OVERLAY (Stacked on < lg to prevent overlapping 3D viewport, floating on lg+) */}
-        <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:top-4 lg:left-4 lg:right-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/95 lg:bg-transparent border-b border-slate-800/80 lg:border-b-0 lg:pointer-events-none shrink-0">
+        {/* TOP HEADER OVERLAY (Stacked when embedded or < lg, floating on lg+ standalone) */}
+        <div
+          className={`relative z-20 p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-900/95 border-b border-slate-800/80 shrink-0 ${
+            embedded && !isFullscreen
+              ? ''
+              : 'lg:p-0 lg:absolute lg:top-4 lg:left-4 lg:right-4 lg:bg-transparent lg:border-b-0 lg:pointer-events-none'
+          }`}
+        >
           <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-[4px] bg-slate-800/80 lg:bg-slate-900/95 border border-slate-700/80 text-white shadow-lg max-w-full">
             {(isFullscreen || onBack) && (
               <button
@@ -2081,6 +2102,11 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>{isFullscreen ? 'Thu nhỏ' : 'Quay lại'}</span>
               </button>
+            )}
+            {embeddedBadge && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 text-[10px] font-mono font-bold uppercase shrink-0">
+                {embeddedBadge}
+              </span>
             )}
             <Box className="w-4 h-4 text-indigo-400 shrink-0" />
             <span className="text-[11px] sm:text-xs font-bold tracking-wide truncate">
@@ -2098,8 +2124,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
             </span>
           </div>
 
-          <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full">
-            {/* Mode Switcher Tabs (scrollable on phones & iPads) */}
+          <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 max-w-full flex-wrap">
+            {/* Mode Switcher Tabs */}
             <div className="sim-seg-box flex items-center gap-1 p-1 bg-slate-900/95 border border-slate-700/80 rounded-lg shadow-lg overflow-x-auto max-w-full scrollbar-none">
               {[
                 { id: 'oxyz_vector' as Math3DMode, label: 'Vector Oxyz' },
@@ -2113,19 +2139,21 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                 { id: 'line_plane_oxyz' as Math3DMode, label: 'Đường & Mặt Oxyz' },
                 { id: 'integral_disks_3d' as Math3DMode, label: 'Đĩa Tích Phân' },
                 { id: 'geometric_transform_3d' as Math3DMode, label: 'Biến Hình 3D' }
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setMode(m.id)}
-                  className={`sim-btn-math px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-md border whitespace-nowrap shrink-0 cursor-pointer ${
-                    mode === m.id
-                      ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-sm'
-                      : 'border-transparent text-slate-300 hover:text-white'
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
+              ]
+                .filter((m) => !allowedModes || allowedModes.length === 0 || allowedModes.includes(m.id))
+                .map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setMode(m.id)}
+                    className={`sim-btn-math px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-md border whitespace-nowrap shrink-0 cursor-pointer ${
+                      mode === m.id
+                        ? 'sim-btn-active bg-indigo-600 border-indigo-400 text-white shadow-sm'
+                        : 'border-transparent text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
             </div>
 
             <div className="hidden xl:flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-900/95 border border-slate-700/80 shadow-lg shrink-0">
@@ -2216,11 +2244,28 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
+            {onOpenFull3D && !isFullscreen && (
+              <button
+                type="button"
+                onClick={onOpenFull3D}
+                className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-bold cursor-pointer whitespace-nowrap shrink-0"
+              >
+                <span>Lab 3D Đầy đủ</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* 3D WebGL Canvas Container (Unobstructed middle stage on < lg, full height on lg+) */}
-        <div className={`relative w-full ${isFullscreen ? 'flex-1 min-h-[240px] lg:h-full' : 'h-[270px] sm:h-[340px] lg:h-full'}`}>
+        {/* 3D WebGL Canvas Container */}
+        <div
+          className={`relative w-full ${
+            isFullscreen
+              ? 'flex-1 min-h-[240px] lg:h-full'
+              : embedded
+              ? heightClass
+              : 'h-[270px] sm:h-[340px] lg:h-full'
+          }`}
+        >
           <div
             ref={mountRef}
             className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
@@ -2232,9 +2277,21 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
           )}
         </div>
 
-        {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK (Below canvas on < lg, floating dock on lg+) */}
-        <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 w-full lg:w-[96%] lg:max-w-3xl lg:pointer-events-none bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
-          <div className="pointer-events-auto bg-slate-900/96 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[34dvh] sm:max-h-[240px] lg:max-h-none overflow-y-auto transition-all duration-300">
+        {/* ERGONOMIC COLLAPSIBLE CONTROL DOCK */}
+        <div
+          className={`relative z-20 p-2.5 sm:p-3 w-full bg-slate-950/95 border-t border-slate-800/80 shrink-0 ${
+            embedded && !isFullscreen
+              ? ''
+              : 'lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 lg:w-[96%] lg:max-w-3xl lg:pointer-events-none lg:bg-transparent lg:border-t-0'
+          }`}
+        >
+          <div
+            className={`pointer-events-auto bg-slate-900/96 border border-slate-800 shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 overflow-y-auto transition-all duration-300 ${
+              embedded && !isFullscreen
+                ? 'rounded-xl max-h-[260px]'
+                : 'rounded-2xl sm:rounded-3xl max-h-[34dvh] sm:max-h-[240px] lg:max-h-none'
+            }`}
+          >
           {/* Header Row of Dock */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-300">

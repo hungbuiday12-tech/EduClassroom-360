@@ -40,6 +40,8 @@ import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../commo
 import { SimAnalysisProBar } from '../common/SimAnalysisProBar';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { enrichLectureStepWithConceptsAndAnnotations } from '../../data/lectureConceptAnnotations';
 
 interface DataLogEntry {
   id: number;
@@ -57,6 +59,7 @@ export function buildBiologyLectureSteps(lesson: BiologyLesson): LectureStep[] {
   const paramStr = Object.values(lesson.paramBounds)
     .map((b) => `${b.label} (${b.unit || 'val'})`)
     .join(', ');
+  const isSpecialized = lesson.track === 'chuyen';
 
   const sectionSteps: LectureStep[] = lesson.theorySections.map((sec, idx) => {
     const formula = lesson.keyFormulas[idx] || formula0;
@@ -64,10 +67,12 @@ export function buildBiologyLectureSteps(lesson: BiologyLesson): LectureStep[] {
     const mcq = lesson.practiceExercises[idx % Math.max(1, lesson.practiceExercises.length)];
     const essay = lesson.essayExercises[0];
 
-    return {
+    const step: LectureStep = {
       stepTitle: sec.heading,
       stepType: idx === 0 ? 'concept' : 'derivation',
-      conceptSection: `${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}`,
+      conceptSection: isSpecialized
+        ? `${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}`
+        : `**Khái niệm cốt lõi & Đặc điểm cần nhớ:**\n${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}\n• **Liên hệ thực tế**: Hãy hình dung cấu tạo sinh học luôn gắn liền với chức năng sống của tế bào/cơ thể.`,
       formulaSection: formula
         ? {
             primaryFormula: formula,
@@ -75,9 +80,12 @@ export function buildBiologyLectureSteps(lesson: BiologyLesson): LectureStep[] {
             variablesNote: `Áp dụng cho chủ đề "${lesson.title}" (${lesson.stageLabel || lesson.grade}).`
           }
         : undefined,
-      deepDiveSection: `${sec.content}\n\n**Phương pháp học sâu Sinh học ${lesson.grade}**:\n• Liên hệ trực tiếp cấu trúc phân tử/tế bào với chức năng sinh lí tương ứng.\n• Khi làm bài tập quy luật di truyền hoặc sinh thái, kiểm tra điều kiện áp dụng (độc lập/liên kết, ngẫu phối/tự thụ).`,
+      deepDiveSection: isSpecialized
+        ? `${sec.content}\n\n**Phương pháp học sâu Sinh học ${lesson.grade} (Chuyên/HSG)**:\n• Liên hệ trực tiếp cấu trúc phân tử/tế bào với chức năng sinh lí tương ứng.\n• Khi làm bài tập quy luật di truyền hoặc sinh thái, kiểm tra điều kiện áp dụng (độc lập/liên kết, ngẫu phối/tự thụ).`
+        : `**Hướng dẫn từng bước dễ hiểu (${lesson.grade}):**\n1. **Xác định đối tượng sinh học**: Bài đang xét ở cấp độ phân tử (DNA/mRNA), tế bào (nguyên/giảm phân), cơ thể hay quần thể.\n2. **Nhận diện quy luật**: Kiểm tra các từ khóa dấu hiệu (ví dụ tỉ lệ $3:1, 9:3:3:1$, chiều mạch khuôn $3'\\to 5'$, hay trạng thái ưu/nhược trương).\n3. **Quan sát mô phỏng**: Mở mô hình 2D/3D ngay bên dưới và nhấn các nút tương tác để thấy cơ chế vận hành sống động.`,
       teacherExplanation: sec.content,
       formulaHighlight: formula || undefined,
+      quickIntuition: `Đọc kĩ khái niệm ở trên rồi thử kích hoạt mô phỏng sinh học 2D/3D bên dưới để quan sát diễn biến theo thời gian thực.`,
       workedExample:
         idx === lesson.theorySections.length - 1 && essay
           ? {
@@ -86,7 +94,7 @@ export function buildBiologyLectureSteps(lesson: BiologyLesson): LectureStep[] {
               answer: essay.finalAnswer
             }
           : undefined,
-      keyTakeaway: `Nắm chắc bản chất sinh học và quy luật trong mục "${sec.heading}".`,
+      keyTakeaway: `Nắm chắc khái niệm, đặc điểm và quy luật sinh học trong mục "${sec.heading}".`,
       miniQuiz: mcq
         ? [
             {
@@ -107,12 +115,18 @@ export function buildBiologyLectureSteps(lesson: BiologyLesson): LectureStep[] {
           }
         : undefined
     };
+
+    return enrichLectureStepWithConceptsAndAnnotations(
+      step,
+      { subject: 'biology', lessonTitle: lesson.title, keyFormulas: lesson.keyFormulas },
+      idx
+    );
   });
 
-  sectionSteps.push({
-    stepTitle: `${sectionSteps.length + 1}. Thực hành Kiểm chứng trên Phòng Lab Sinh học 2D & Mô hình 3D`,
+  const labStep: LectureStep = {
+    stepTitle: `${sectionSteps.length + 1}. Thực hành Quan sát & Điều khiển Mô phỏng Sinh học 2D & 3D`,
     stepType: 'experiment',
-    conceptSection: `Chuyển sang tab Mô phỏng 2D hoặc Mô hình 3D để thay đổi trực tiếp: ${paramStr}.`,
+    conceptSection: `Chuyển sang mô phỏng 2D hoặc Mô hình 3D để tương tác trực tiếp các bước thí nghiệm (thụ phấn lai Mendel, xung thần kinh, nhịp tim, chu kì PCR...) và điều chỉnh: ${paramStr}.`,
     formulaSection: formula0
       ? {
           primaryFormula: formula0,
@@ -120,12 +134,20 @@ export function buildBiologyLectureSteps(lesson: BiologyLesson): LectureStep[] {
           variablesNote: `Các thông số điều chỉnh: ${paramStr}.`
         }
       : undefined,
-    deepDiveSection: `• Thay đổi từng thanh trượt và nhấn Ghi mẫu đo để lập bảng đối chiếu số liệu.\n• Sử dụng bộ công cụ Phân tích Pro (A/B Snapshot & Quét biến Sweep) để tìm điểm tối ưu sinh lí.`,
+    deepDiveSection: `• Sử dụng các nút tương tác thí nghiệm và thanh trượt thông số ngay trong bảng điều khiển 3D.\n• Nhấn **Ghi mẫu đo** ở nhiều mức thông số khác nhau để lập bảng số liệu và xem biểu đồ xu hướng.`,
     teacherExplanation: `Kiểm chứng trực quan quá trình sinh học qua phòng thí nghiệm ảo (${lesson.simulationType}).`,
     keyTakeaway: 'Ghi ít nhất 3 mẫu đo thực nghiệm để quan sát sự đáp ứng của hệ sinh học.',
     miniQuiz: [],
     miniEssay: undefined
-  });
+  };
+
+  sectionSteps.push(
+    enrichLectureStepWithConceptsAndAnnotations(
+      labStep,
+      { subject: 'biology', lessonTitle: lesson.title, keyFormulas: lesson.keyFormulas },
+      sectionSteps.length
+    )
+  );
 
   return sectionSteps;
 }
@@ -137,6 +159,9 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
   const { language, translate } = useLanguage();
   const isEn = language === 'en';
   const { location, navigate, goBack } = useNavigation();
+  const { perfMode } = useBackgroundTheme();
+  const perfModeRef = useRef(perfMode);
+  perfModeRef.current = perfMode;
 
   const activeView = location.biologyView;
   const activeTab = location.biologyTab;
@@ -249,7 +274,8 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
               active2DSpec.id,
               paramsRef.current,
               simTimeRef.current,
-              dark
+              dark,
+              perfModeRef.current
             );
             ctx.restore();
             count++;

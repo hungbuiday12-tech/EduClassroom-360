@@ -657,7 +657,10 @@ export type ChemistrySimType =
   | 'colligative_boiling_2d'
   | 'flame_spectroscopy_2d'
   | 'complex_ligand_2d'
-  | 'stoichiometry_gas_2d';
+  | 'stoichiometry_gas_2d'
+  | 'carbonyl_alcohol_2d'
+  | 'qualitative_ion_2d'
+  | 'metallurgy_furnace_2d';
 
 export type Chemistry3DMode =
   | 'atomic_orbitals_3d'
@@ -675,7 +678,14 @@ export type Chemistry3DMode =
   | 'methane_ethane_3d'
   | 'spectroscopy_prism_3d'
   | 'periodic_tower_3d'
-  | 'colloid_micelle_3d';
+  | 'colloid_micelle_3d'
+  | 'carbohydrate_ring_3d'
+  | 'carbonyl_alcohol_3d'
+  | 'haber_contact_reactor_3d'
+  | 'metal_corrosion_3d'
+  | 'alkene_addition_3d'
+  | 'amino_peptide_3d'
+  | 'halogen_ion_bench_3d';
 
 export type ChemistryDomainId =
   | 'atomic_periodic'
@@ -750,7 +760,8 @@ export type BiologySimType =
   | 'carbon_nitrogen_cycle_2d'
   | 'viral_lytic_cycle_2d'
   | 'pcr_electrophoresis_2d'
-  | 'blood_typing_2d';
+  | 'blood_typing_2d'
+  | 'pedigree_genetics_2d';
 
 export type Biology3DMode =
   | 'eukaryotic_cell_3d'
@@ -768,7 +779,12 @@ export type Biology3DMode =
   | 'antibody_antigen_3d'
   | 'virus_bacteriophage_3d'
   | 'plant_vascular_3d'
-  | 'ecosystem_biome_3d';
+  | 'ecosystem_biome_3d'
+  | 'mendel_peas_3d'
+  | 'population_genetics_3d'
+  | 'endocrine_pancreas_3d'
+  | 'biotech_pcr_crispr_3d'
+  | 'gene_linkage_3d';
 
 export type BiologyDomainId =
   | 'cell_membrane'

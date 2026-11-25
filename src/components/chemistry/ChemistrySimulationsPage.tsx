@@ -16,17 +16,22 @@ import { Chemistry3DMode, ChemistryDomainId, ChemistrySimType } from '../../type
 import { CHEMISTRY_2D_SIMS, CHEMISTRY_3D_SIMS, CHEMISTRY_DOMAINS } from '../../data/chemistryDomainsData';
 import { renderChemistry2DSim, ChemSimTelemetry } from './chemistry2DEngine';
 import { Chemistry3DView } from './Chemistry3DView';
+import { ChemistryApparatusWorkbench } from './ChemistryApparatusWorkbench';
 import { ChemistrySandboxes } from './ChemistrySandboxes';
 import { SimAnalysisProBar } from '../common/SimAnalysisProBar';
 import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
 import { FormattedText } from '../common/MathRenderer';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
 
 export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { location, navigate, goBack } = useNavigation();
+  const { perfMode } = useBackgroundTheme();
+  const perfModeRef = useRef(perfMode);
+  perfModeRef.current = perfMode;
 
   const initialZone: 'sim2d' | 'sim3d' | 'sandbox' =
     location.chemistryView === 'sandbox'
@@ -145,7 +150,8 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
               active2DSpec.id,
               paramsRef.current,
               simTimeRef.current,
-              dark
+              dark,
+              perfModeRef.current
             );
             ctx.restore();
             count++;
@@ -231,7 +237,7 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
               }`}
             >
               <FlaskConical className="w-3.5 h-3.5 icon-anim-flask" />
-              <span>Sandbox Hóa học (4 Phòng)</span>
+              <span>Sandbox Hóa học (5 Phòng)</span>
             </button>
           </div>
 
@@ -355,7 +361,15 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
               </div>
 
               <div className="p-2 bg-slate-950">
-                <canvas ref={canvasRef} className="w-full h-[380px] block rounded-lg" />
+                <ChemistryApparatusWorkbench
+                  dimension="2d"
+                  simId={active2DSpec.id}
+                  domainId={active2DSpec.domainId}
+                  simParams={params}
+                  simTimeRef={simTimeRef}
+                >
+                  <canvas ref={canvasRef} className="w-full h-[380px] block rounded-lg" />
+                </ChemistryApparatusWorkbench>
               </div>
 
               <div className="p-4 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">

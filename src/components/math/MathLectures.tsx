@@ -995,6 +995,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
               <InteractiveLectureRoom
                 lessonKey={activeLecture.id}
                 subject="math"
+                mathLecture={activeLecture}
                 grade={activeLecture.gradeGroup || activeLecture.grade}
                 subjectAccent={activeLecture.track === 'chuyen' ? 'amber' : 'indigo'}
                 kicker={`${

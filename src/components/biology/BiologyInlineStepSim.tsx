@@ -17,6 +17,7 @@ import { resolveBioStepSim } from './biologyStepSimResolver';
 import { BioSimTelemetry, renderBiology2DSim } from './biology2DEngine';
 import { Biology3DView } from './Biology3DView';
 import { FormattedText, MathFormula } from '../common/MathRenderer';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
 
 interface BiologyInlineStepSimProps {
   lesson: BiologyLesson;
@@ -47,6 +48,9 @@ export const BiologyInlineStepSim: React.FC<BiologyInlineStepSimProps> = ({
     () => resolveBioStepSim(lesson, stepIndex, stepTitle, stepConcept),
     [lesson, stepIndex, stepTitle, stepConcept]
   );
+  const { perfMode } = useBackgroundTheme();
+  const perfModeRef = useRef(perfMode);
+  perfModeRef.current = perfMode;
 
   const [params, setParams] = useState<Record<string, number>>(() => ({ ...resolved.defaultParams }));
   const [isRunning, setIsRunning] = useState(true);
@@ -98,7 +102,8 @@ export const BiologyInlineStepSim: React.FC<BiologyInlineStepSimProps> = ({
               resolved.sim2dId,
               paramsRef.current,
               simTimeRef.current,
-              isDark
+              isDark,
+              perfModeRef.current
             );
             ctx.restore();
             frame++;
@@ -355,8 +360,11 @@ export const BiologyInlineStepSim: React.FC<BiologyInlineStepSimProps> = ({
           ) : (
             <Biology3DView
               mode={resolved.sim3dMode}
-              title={`${resolved.spec3D.title} · Phần ${stepIndex + 1}/${totalSteps}`}
+              title={resolved.spec3D.title}
               heightClass="h-[340px]"
+              embedded
+              embeddedBadge={`3D SINH · PHẦN ${stepIndex + 1}/${totalSteps}`}
+              onOpenFull3D={onOpenSim3D}
             />
           )}
         </section>

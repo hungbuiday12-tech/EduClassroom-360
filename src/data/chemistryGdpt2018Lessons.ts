@@ -81,7 +81,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '2\\text{Al} + 6\\text{HCl} \\to 2\\text{AlCl}_3 + 3\\text{H}_2\\uparrow'
     ],
     sim2d: 'metal_activity_2d',
-    sim3d: 'galvanic_cell_3d',
+    sim3d: 'metal_corrosion_3d',
     mcq1: {
       source: 'KHTN 9 · GDPT 2018',
       question: 'Ngâm một đinh sắt sạch trong dung dịch $\\text{CuSO}_4$ dư. Hiện tượng quan sát được là:',
@@ -122,8 +122,8 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '\\text{Fe}_2\\text{O}_3 + 3\\text{CO} \\xrightarrow{t^\\circ} 2\\text{Fe} + 3\\text{CO}_2',
       '2\\text{Al}_2\\text{O}_3 \\xrightarrow{\\text{đpnc, Na}_3\\text{AlF}_6} 4\\text{Al} + 3\\text{O}_2\\uparrow'
     ],
-    sim2d: 'stoichiometry_gas_2d',
-    sim3d: 'electrolysis_cell_3d',
+    sim2d: 'metallurgy_furnace_2d',
+    sim3d: 'metal_corrosion_3d',
     mcq1: {
       source: 'KHTN 9',
       question: 'Trong công nghiệp, kim loại Nhôm (Al) được sản xuất bằng phương pháp nào?',
@@ -164,7 +164,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '\\text{Cl}_2 + 2\\text{NaOH} \\to \\text{NaCl} + \\text{NaClO} + \\text{H}_2\\text{O}'
     ],
     sim2d: 'halogen_displacement_2d',
-    sim3d: 'vsepr_geometry_3d',
+    sim3d: 'halogen_ion_bench_3d',
     mcq1: {
       source: 'KHTN 9',
       question: 'Sục khí Clo vào dung dịch NaOH ở nhiệt độ thường thu được dung dịch nước Gia-ven chứa hai muối là:',
@@ -205,7 +205,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '\\text{CH}_2=\\text{CH}_2 + \\text{Br}_2 \\to \\text{BrCH}_2-\\text{CH}_2\\text{Br}'
     ],
     sim2d: 'alkene_addition_2d',
-    sim3d: 'methane_ethane_3d',
+    sim3d: 'alkene_addition_3d',
     mcq1: {
       source: 'KHTN 9 · Hữu cơ',
       question: 'Thuốc thử đơn giản nhất dùng để phân biệt hai khí không màu Methane ($CH_4$) và Ethylene ($C_2H_4$) là:',
@@ -278,12 +278,12 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
     sourceTag: 'Hóa 10 · Chương 1: Cấu tạo nguyên tử',
     lessonNumber: 1,
     title: 'Cấu tạo vỏ nguyên tử, Orbital (AO) & Cấu hình Electron',
-    subtitle: 'Nguyên lí vững bền Klechkowski, nguyên lí Pauli, quy tắc Hund và hàm mật độ đám mây orbital',
-    description: 'Làm chủ cách viết cấu hình electron cho các nguyên tố từ Z=1 đến Z=30 (kể cả Cr Z=24 và Cu Z=29) và dự đoán tính kim loại/phi kim.',
-    theory1Heading: '1. Nguyên lí & Quy tắc phân bố electron vào AO',
-    theory1: '• **Pauli**: Mỗi AO chứa tối đa 2 electron có spin ngược dấu nhau ($\\uparrow\\downarrow$).\n• **Vững bền**: Chiếm các mức năng lượng từ thấp đến cao ($1s\\ 2s\\ 2p\\ 3s\\ 3p\\ 4s\\ 3d\\ 4p$).\n• **Hund**: Trong cùng phân lớp, electron phân bố sao cho số electron độc thân đạt cực đại.',
-    theory2Heading: '2. Ngoại lệ bão hòa/bán bão hòa phân lớp 3d',
-    theory2: '• Cr ($Z=24$): $[\\text{Ar}]3d^5 4s^1$ (bán bão hòa $3d^5$ bền).\n• Cu ($Z=29$): $[\\text{Ar}]3d^{10} 4s^1$ (bão hòa $3d^{10}$ bền).',
+    subtitle: 'Cách electron sắp xếp theo lớp – phân lớp, hình dạng đám mây orbital và quy tắc điền electron cơ bản',
+    description: 'Hiểu trực quan vì sao electron chuyển động thành từng lớp năng lượng, cách viết cấu hình electron (Z=1 đến Z=30) và dự đoán nguyên tố là kim loại hay phi kim.',
+    theory1Heading: '1. Khái niệm Orbital (AO) & Quy tắc sắp xếp Electron',
+    theory1: '• **Orbital nguyên tử (AO)** là vùng không gian quanh hạt nhân mà ở đó xác suất tìm thấy electron lớn nhất (~90%); AO s có dạng hình cầu, AO p có dạng hình số 8 nổi.\n• **Quy tắc điền e dễ nhớ**: Mỗi ô AO chứa tối đa 2 electron quay ngược chiều nhau (Pauli); electron điền từ mức năng lượng thấp lên cao ($1s\\ 2s\\ 2p\\ 3s\\ 3p\\ 4s\\ 3d\\ 4p$); trong cùng phân lớp, electron ưu tiên đứng riêng lẻ trước khi ghép đôi (quy tắc Hund).',
+    theory2Heading: '2. Tính chất lớp vỏ ngoài cùng & Ngoại lệ Cr, Cu',
+    theory2: '• **Tính chất cơ bản**: Lớp ngoài cùng có 1, 2, 3 electron thường là **kim loại** (trừ H, He, B); có 5, 6, 7 electron thường là **phi kim**; có 8 electron là **khí hiếm** trơ bền.\n• **Lưu ý 2 ngoại lệ đặc biệt**: Cr ($Z=24$) là $[\\text{Ar}]3d^5 4s^1$ và Cu ($Z=29$) là $[\\text{Ar}]3d^{10} 4s^1$ vì phân lớp $3d$ nửa đầy ($d^5$) hoặc đầy ($d^{10}$) bền vững hơn.',
     keyFormulas: [
       'A = Z + N,\\quad \\text{Số e tối đa lớp } n = 2n^2',
       '\\text{Cr }(Z=24): [\\text{Ar}]3d^5 4s^1,\\quad \\text{Cu }(Z=29): [\\text{Ar}]3d^{10} 4s^1'
@@ -359,13 +359,13 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
     stageLabel: 'GDPT 2018 · Hóa học 10',
     sourceTag: 'Hóa 10 · Chương 3: Liên kết hóa học',
     lessonNumber: 3,
-    title: 'Liên kết Ion, Cộng hóa trị, Liên kết Hydrogen & VSEPR',
-    subtitle: 'Quy tắc Octet, hiệu độ âm điện Δχ, lai hóa sp/sp²/sp³, liên kết hydrogen và tương tác van der Waals',
-    description: 'Giải thích vì sao $H_2O$ sôi ở $100^\\circ\\text{C}$ trong khi $H_2S$ sôi ở $-60^\\circ\\text{C}$, đồng thời dự đoán hình dạng không gian 3D theo VSEPR.',
-    theory1Heading: '1. Phân loại liên kết theo hiệu độ âm điện Δχ',
-    theory1: '• $0 \\le \\Delta\\chi < 0{,}4$: cộng hóa trị không phân cực ($H_2, Cl_2, CH_4$).\n• $0{,}4 \\le \\Delta\\chi < 1{,}7$: cộng hóa trị phân cực ($HCl, H_2O, NH_3$).\n• $\\Delta\\chi \\ge 1{,}7$: liên kết ion ($NaCl, CaF_2, K_2O$).',
-    theory2Heading: '2. Liên kết Hydrogen & Tương tác Van der Waals',
-    theory2: '• Liên kết Hydrogen ($X-H\\cdots Y$ với X, Y là F, O, N có độ âm điện lớn) làm tăng mạnh nhiệt độ sôi và độ tan trong nước ($NH_3, H_2O, C_2H_5OH$).',
+    title: 'Liên kết Ion, Cộng hóa trị, Liên kết Hydrogen & Hình dạng Phân tử',
+    subtitle: 'Quy tắc 8 electron (Octet), cách phân biệt liên kết qua hiệu độ âm điện Δχ và lực hút giữa các phân tử',
+    description: 'Hiểu bản chất nhường – nhận hay góp chung electron, vì sao nước ($H_2O$) có nhiệt độ sôi cao bất thường ở $100^\\circ\\text{C}$ và hình dạng không gian 3D của phân tử.',
+    theory1Heading: '1. Khái niệm & Tính chất của Liên kết Ion và Cộng hóa trị',
+    theory1: '• **Liên kết ion** ($\\Delta\\chi \\ge 1{,}7$): Kim loại nhường e thành ion dương, phi kim nhận e thành ion âm hút nhau (ví dụ muối ăn $NaCl$: rắn, nhiệt độ nóng chảy cao, tan tốt trong nước).\n• **Liên kết cộng hóa trị** ($\\Delta\\chi < 1{,}7$): Các nguyên tử góp chung electron (như $H_2, HCl, H_2O$); nếu cặp e lệch về nguyên tử hút mạnh hơn thì là liên kết phân cực ($0{,}4 \\le \\Delta\\chi < 1{,}7$).',
+    theory2Heading: '2. Liên kết Hydrogen & Tính chất vật lí dễ nhận biết',
+    theory2: '• **Liên kết Hydrogen** ($X-H\\cdots Y$ với F, O, N) giúp các phân tử hút nhau bền hơn, làm tăng mạnh **nhiệt độ sôi** và **độ tan trong nước** (ví dụ $H_2O$ sôi ở $100^\\circ\\text{C}$, ancol etylic tan vô hạn trong nước, còn $H_2S$ không có liên kết H nên là chất khí ở $-60^\\circ\\text{C}$).',
     keyFormulas: [
       '\\Delta\\chi = |\\chi_A - \\chi_B|',
       'T_{\\text{sôi}}: \\text{HF} > \\text{HI} > \\text{HBr} > \\text{HCl}'
@@ -471,7 +471,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
     essay: {
       source: 'Hóa 10 · Nhiệt hóa học',
       question: 'Tính $\\Delta_r H^\\circ_{298}$ của phản ứng đốt cháy 1 mol metan $\\text{CH}_4(g) + 2\\text{O}_2(g) \\to \\text{CO}_2(g) + 2\\text{H}_2\\text{O}(l)$, biết $\\Delta_f H^\\circ$ của $CH_4(g)=-74{,}6$, $CO_2(g)=-393{,}5$, $H_2O(l)=-285{,}8\\text{ kJ/mol}$.',
-      solutionSteps: ['$\Delta_f H^\circ(\text{O}_2) = 0$.', '$\\Delta_r H^\\circ = [(-393{,}5) + 2(-285{,}8)] - [(-74{,}6) + 0] = -965{,}1 + 74{,}6 = -890{,}5\\text{ kJ}$.'],
+      solutionSteps: ['$\\Delta_f H^\\circ(\\text{O}_2) = 0$.', '$\\Delta_r H^\\circ = [(-393{,}5) + 2(-285{,}8)] - [(-74{,}6) + 0] = -965{,}1 + 74{,}6 = -890{,}5\\text{ kJ}$.'],
       finalAnswer: '-890,5 kJ (tỏa nhiệt)'
     }
   }),
@@ -535,7 +535,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '\\text{HF} + \\text{SiO}_2 \\to \\text{SiF}_4\\uparrow + \\text{H}_2\\text{O}'
     ],
     sim2d: 'halogen_displacement_2d',
-    sim3d: 'spectroscopy_prism_3d',
+    sim3d: 'halogen_ion_bench_3d',
     mcq1: {
       source: 'Hóa 10 · GDPT 2018',
       question: 'Trong dãy hydrogen halide HF, HCl, HBr, HI, dung dịch nào là acid yếu nhưng có khả năng ăn mòn thủy tinh ($SiO_2$)?',
@@ -660,7 +660,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '[\\text{Cu(NH}_3)_4]^{2+}\\text{ (xanh lam thẫm)}'
     ],
     sim2d: 'haber_ammonia_2d',
-    sim3d: 'equilibrium_piston_3d',
+    sim3d: 'haber_contact_reactor_3d',
     mcq1: {
       source: 'Hóa 11',
       question: 'Trong phản ứng $4\\text{NH}_3 + 5\\text{O}_2 \\xrightarrow{\\text{Pt}, 850^\\circ\\text{C}} 4\\text{NO} + 6\\text{H}_2\\text{O}$, amoniac thể hiện tính chất gì?',
@@ -701,7 +701,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '\\text{Ba}^{2+} + \\text{SO}_4^{2-} \\to \\text{BaSO}_4\\downarrow\\text{ (trắng không tan trong axit)}'
     ],
     sim2d: 'contact_sulfuric_2d',
-    sim3d: 'activation_surface_3d',
+    sim3d: 'haber_contact_reactor_3d',
     mcq1: {
       source: 'Hóa 11 · An toàn thí nghiệm',
       question: 'Cách pha loãng dung dịch $H_2SO_4$ đặc đúng quy trình an toàn phòng thí nghiệm là:',
@@ -824,7 +824,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '\\text{R}-\\text{C}\\equiv\\text{CH} + [\\text{Ag}(\\text{NH}_3)_2]\\text{OH} \\to \\text{R}-\\text{C}\\equiv\\text{CAg}\\downarrow\\text{ (vàng)}'
     ],
     sim2d: 'alkene_addition_2d',
-    sim3d: 'methane_ethane_3d',
+    sim3d: 'alkene_addition_3d',
     mcq1: {
       source: 'Hóa 11 · GDPT 2018',
       question: 'Chất nào sau đây có đồng phân hình học (cis–trans)?',
@@ -905,8 +905,8 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '\\text{RCHO} + 2[\\text{Ag}(\\text{NH}_3)_2]\\text{OH} \\xrightarrow{t^\\circ} \\text{RCOONH}_4 + 2\\text{Ag}\\downarrow + 3\\text{NH}_3 + \\text{H}_2\\text{O}',
       '\\text{HCHO} \\to 4\\text{Ag}\\downarrow'
     ],
-    sim2d: 'carbohydrate_ring_2d',
-    sim3d: 'ester_reflux_3d',
+    sim2d: 'carbonyl_alcohol_2d',
+    sim3d: 'carbonyl_alcohol_3d',
     mcq1: {
       source: 'Hóa 11 · GDPT 2018',
       question: 'Sục $0{,}1\\text{ mol}$ khí methanal ($HCHO$) vào lượng dư dung dịch $AgNO_3/NH_3$ đun nóng. Khối lượng Ag thu được là:',
@@ -989,7 +989,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '(\\text{C}_6\\text{H}_{10}\\text{O}_5)_n \\xrightarrow{+n\\text{H}_2\\text{O}} n\\text{C}_6\\text{H}_{12}\\text{O}_6 \\xrightarrow{\\text{men}} 2n\\text{C}_2\\text{H}_5\\text{OH} + 2n\\text{CO}_2'
     ],
     sim2d: 'carbohydrate_ring_2d',
-    sim3d: 'polymer_chain_3d',
+    sim3d: 'carbohydrate_ring_3d',
     mcq1: {
       source: 'Hóa 12',
       question: 'Thuốc thử duy nhất để phân biệt hai dung dịch Glucose và Fructose là:',
@@ -1030,7 +1030,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '\\text{Biuret (tím)}: \\text{Peptide có } \\ge 2\\text{ liên kết peptide} + \\text{Cu(OH)}_2'
     ],
     sim2d: 'amino_acid_zwitterion_2d',
-    sim3d: 'coordination_complex_3d',
+    sim3d: 'amino_peptide_3d',
     mcq1: {
       source: 'Hóa 12 · Điện di',
       question: 'Đặt hỗn hợp 3 amino acid: Glycine ($pI = 6{,}0$), Glutamic acid ($pI = 3{,}2$) và Lysine ($pI = 9{,}7$) lên giấy thấm tẩm đệm $pH = 6{,}0$ rồi nối nguồn điện một chiều. Ion nào dịch chuyển về cực dương (Anode)?',
@@ -1193,7 +1193,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       '\\text{Gắn Zn}: \\text{Zn} \\to \\text{Zn}^{2+} + 2e\\text{ (Fe được bảo vệ)}'
     ],
     sim2d: 'corrosion_protection_2d',
-    sim3d: 'galvanic_cell_3d',
+    sim3d: 'metal_corrosion_3d',
     mcq1: {
       source: 'Hóa 12 · GDPT 2018',
       question: 'Trường hợp nào sau đây xảy ra **ăn mòn điện hóa**?',
@@ -1264,12 +1264,12 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
     sourceTag: 'Hóa 12 · Chương 8: Kim loại chuyển tiếp & Phức chất',
     lessonNumber: 8,
     title: 'Kim loại Chuyển tiếp dãy 1 (Sc → Zn) & Sơ lược Phức chất',
-    subtitle: 'Nhiều trạng thái oxi hóa, ion có màu, phức tứ diện/bát diện/vuông phẳng và tách mức năng lượng trường phối tử Δ₀',
-    description: 'Chủ đề mới nổi bật của GDPT 2018: cấu tạo phức $[Cu(H_2O)_6]^{2+}, [Ag(NH_3)_2]^+$ và nguyên nhân tạo màu ion kim loại chuyển tiếp.',
-    theory1Heading: '1. Đặc điểm Kim loại chuyển tiếp dãy thứ nhất',
-    theory1: '• Có electron điền vào phân lớp $3d$ ($Sc$ đến $Cu$); có nhiều số oxi hóa (Cr từ $+2$ đến $+6$; Mn từ $+2$ đến $+7$; Fe $+2, +3$).\n• Đa số hợp chất và ion dung dịch có **màu sắc đặc trưng** (do chuyển dời electron giữa các obitan $d$).',
-    theory2Heading: '2. Thành phần & Hình học của Phức chất',
-    theory2: '• Phức chất gồm **nguyên tử trung tâm** (cation kim loại nhận cặp e) và các **phối tử (ligand)** ($H_2O, NH_3, Cl^-, CN^-$ cho cặp e qua liên kết cho–nhận).\n• Số phối trí 6 $\\to$ Bát diện ($[Fe(CN)_6]^{3-}, [Cu(H_2O)_6]^{2+}$); số phối trí 4 $\\to$ Tứ diện hoặc vuông phẳng ($[PtCl_2(NH_3)_2]$).',
+    subtitle: 'Tính chất nhiều số oxi hóa, màu sắc ion đặc trưng và cách các phân tử nước/amoniac liên kết tạo phức chất',
+    description: 'Tìm hiểu trực quan về kim loại chuyển tiếp quen thuộc (Sắt, Đồng, Crom, Mangan) và cấu tạo phức chất xanh lam $[Cu(NH_3)_4(H_2O)_2]^{2+}$.',
+    theory1Heading: '1. Khái niệm & Tính chất chung của Kim loại chuyển tiếp dãy 1',
+    theory1: '• **Vị trí & Cấu tạo**: Gồm các kim loại chu kì 4 từ Sc ($Z=21$) đến Cu ($Z=29$) có electron điền vào phân lớp $3d$ (thêm Zn ở cuối dãy). Đặc trưng bởi độ cứng cao, nhiệt độ nóng chảy cao và **có nhiều số oxi hóa** (ví dụ Fe có $+2, +3$; Mn có $+2, +4, +7$).\n• **Tính chất nhận biết**: Hợp chất và dung dịch ion thường có **màu sắc rất rực rỡ** ($Cu^{2+}$ xanh lam, $Fe^{3+}$ vàng nâu, $MnO_4^-$ tím thẫm).',
+    theory2Heading: '2. Khái niệm Phức chất (Nguyên tử trung tâm & Phối tử)',
+    theory2: '• **Cấu tạo đơn giản**: Phức chất gồm một **cation kim loại trung tâm** ở giữa (như $Cu^{2+}, Fe^{2+}, Ag^+$) hút các phân tử hoặc ion nhỏ xung quanh gọi là **phối tử** ($H_2O, NH_3, Cl^-, CN^-$) bằng liên kết cho–nhận.\n• **Hình dạng phổ biến**: Phức 6 phối tử xếp thành hình **bát diện** (như $[Cu(H_2O)_6]^{2+}$), phức 4 phối tử xếp **tứ diện** hoặc **vuông phẳng** (như thuốc thử phức đồng xanh lam thẫm với $NH_3$).',
     keyFormulas: [
       '[\\text{Cu}(\\text{H}_2\\text{O})_6]^{2+} + 4\\text{NH}_3 \\to [\\text{Cu}(\\text{NH}_3)_4(\\text{H}_2\\text{O})_2]^{2+} + 4\\text{H}_2\\text{O}',
       '\\Delta_o = \\frac{hc}{\\lambda}'

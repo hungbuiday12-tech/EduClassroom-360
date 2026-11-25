@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { Text as TroikaText } from 'troika-three-text';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
@@ -90,28 +89,202 @@ export interface TroikaLabelOptions {
   onSync?: () => void;
 }
 
-export function createTroikaLabel(options: TroikaLabelOptions): TroikaText {
-  const label = new TroikaText();
-  label.text = options.text;
-  label.fontSize = options.fontSize ?? 0.3;
-  label.color = options.color ?? 0xf8fafc;
-  label.anchorX = options.anchorX ?? 'center';
-  label.anchorY = options.anchorY ?? 'middle';
-  label.outlineWidth = options.outlineWidth ?? 0.025;
-  label.outlineColor = options.outlineColor ?? 0x020617;
-  label.outlineOpacity = 0.85;
-  label.depthOffset = -0.5;
-  if (options.maxWidth !== undefined) {
-    label.maxWidth = options.maxWidth;
+function toCssColor(c: number | string | undefined, fallback: string): string {
+  if (typeof c === 'number') {
+    return `#${(c & 0xffffff).toString(16).padStart(6, '0')}`;
   }
-  if (options.position) {
-    label.position.set(options.position[0], options.position[1], options.position[2]);
+  if (typeof c === 'string' && c.trim()) return c;
+  return fallback;
+}
+
+export class BillboardTextLabel extends THREE.Group {
+  public text: string;
+  public fontSize: number;
+  public color: number | string;
+  public outlineWidth: number;
+  public outlineColor: number | string;
+  public anchorX: 'left' | 'center' | 'right' | number;
+  public anchorY: 'top' | 'middle' | 'bottom' | number;
+  public maxWidth?: number;
+
+  private readonly plane: THREE.Mesh;
+  private readonly mat: THREE.MeshBasicMaterial;
+  private canvas: HTMLCanvasElement | null = null;
+  private tex: THREE.CanvasTexture | null = null;
+  private renderedKey = '';
+
+  constructor(options: TroikaLabelOptions) {
+    super();
+    this.text = options.text ?? '';
+    this.fontSize = options.fontSize ?? 0.3;
+    this.color = options.color ?? 0xf8fafc;
+    this.outlineWidth = options.outlineWidth ?? 0.025;
+    this.outlineColor = options.outlineColor ?? 0x020617;
+    this.anchorX = options.anchorX ?? 'center';
+    this.anchorY = options.anchorY ?? 'middle';
+    this.maxWidth = options.maxWidth;
+
+    this.mat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    const geo = new THREE.PlaneGeometry(1, 1);
+    this.plane = new THREE.Mesh(geo, this.mat);
+    this.plane.renderOrder = 25;
+    this.add(this.plane);
+
+    if (options.position) {
+      this.position.set(options.position[0], options.position[1], options.position[2]);
+    }
+    this.userData.isBillboardLabel = true;
+    this.userData.lastText = this.text;
+    this.userData.lastColor = this.color;
+    this.sync(options.onSync);
   }
-  label.userData.isBillboardLabel = true;
-  label.userData.lastText = options.text;
-  label.userData.lastColor = label.color;
-  label.sync(options.onSync);
-  return label;
+
+  public sync(onSync?: () => void): void {
+    const cleanText = String(this.text ?? '');
+    const fillCss = toCssColor(this.color, '#f8fafc');
+    const key = `${cleanText}|${fillCss}|${this.fontSize}|${this.anchorX}|${this.anchorY}|${this.maxWidth ?? ''}`;
+    if (key === this.renderedKey) {
+      onSync?.();
+      return;
+    }
+    this.renderedKey = key;
+
+    if (!cleanText.trim()) {
+      this.plane.visible = false;
+      onSync?.();
+      return;
+    }
+    this.plane.visible = true;
+
+    if (typeof document === 'undefined') {
+      onSync?.();
+      return;
+    }
+
+    const pxFont = 52;
+    const fontFamily = `'Inter', 'Segoe UI', 'Noto Sans', 'DejaVu Sans', system-ui, -apple-system, sans-serif`;
+    const fontStr = `700 ${pxFont}px ${fontFamily}`;
+
+    const canvas = this.canvas || document.createElement('canvas');
+    this.canvas = canvas;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      onSync?.();
+      return;
+    }
+
+    ctx.font = fontStr;
+    const rawLines = cleanText.split('\n');
+    let lines = rawLines;
+    if (this.maxWidth && this.maxWidth > 0) {
+      const worldPerPx = this.fontSize / pxFont;
+      const maxPxW = this.maxWidth / Math.max(0.0001, worldPerPx);
+      const wrapped: string[] = [];
+      for (const raw of rawLines) {
+        const words = raw.split(' ');
+        let cur = '';
+        for (const w of words) {
+          const test = cur ? `${cur} ${w}` : w;
+          if (ctx.measureText(test).width > maxPxW && cur) {
+            wrapped.push(cur);
+            cur = w;
+          } else {
+            cur = test;
+          }
+        }
+        if (cur) wrapped.push(cur);
+      }
+      if (wrapped.length > 0) lines = wrapped;
+    }
+
+    const lineHeight = Math.round(pxFont * 1.32);
+    const maxTextW = Math.max(
+      24,
+      ...lines.map((l) => Math.ceil(ctx.measureText(l).width))
+    );
+    const padX = 28;
+    const padY = 18;
+    const cw = Math.max(64, maxTextW + padX * 2);
+    const ch = Math.max(48, lines.length * lineHeight + padY * 2);
+
+    canvas.width = cw;
+    canvas.height = ch;
+    ctx.clearRect(0, 0, cw, ch);
+
+    // Subtle dark glass label plate with colored accent border
+    const r = 18;
+    ctx.beginPath();
+    ctx.roundRect(4, 4, cw - 8, ch - 8, r);
+    ctx.fillStyle = 'rgba(7, 13, 25, 0.84)';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = fillCss;
+    ctx.globalAlpha = 0.52;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    ctx.font = fontStr;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+
+    const outlineCss = toCssColor(this.outlineColor, '#020617');
+    for (let i = 0; i < lines.length; i++) {
+      const ly = padY + (i + 0.5) * lineHeight;
+      ctx.lineWidth = Math.max(4, Math.round(pxFont * 0.14));
+      ctx.strokeStyle = outlineCss;
+      ctx.strokeText(lines[i], cw / 2, ly);
+      ctx.fillStyle = fillCss;
+      ctx.fillText(lines[i], cw / 2, ly);
+    }
+
+    if (this.tex) {
+      this.tex.dispose();
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    this.tex = tex;
+    this.mat.map = tex;
+    this.mat.needsUpdate = true;
+
+    const worldH = (ch / pxFont) * this.fontSize * 0.92;
+    const worldW = (cw / ch) * worldH;
+    this.plane.scale.set(worldW, worldH, 1);
+
+    let ox = 0;
+    if (this.anchorX === 'left') ox = worldW * 0.5;
+    else if (this.anchorX === 'right') ox = -worldW * 0.5;
+    let oy = 0;
+    if (this.anchorY === 'top') oy = -worldH * 0.5;
+    else if (this.anchorY === 'bottom') oy = worldH * 0.5;
+    this.plane.position.set(ox, oy, 0);
+
+    onSync?.();
+  }
+
+  public dispose(): void {
+    if (this.tex) {
+      this.tex.dispose();
+      this.tex = null;
+    }
+    this.plane.geometry.dispose();
+    this.mat.dispose();
+  }
+}
+
+export function createTroikaLabel(options: TroikaLabelOptions): BillboardTextLabel {
+  return new BillboardTextLabel(options);
 }
 
 export function updateBillboardLabels(root: THREE.Object3D, camera: THREE.Camera): void {

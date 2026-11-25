@@ -22,11 +22,15 @@ import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../commo
 import { FormattedText } from '../common/MathRenderer';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
 
 export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { location, navigate, goBack } = useNavigation();
+  const { perfMode } = useBackgroundTheme();
+  const perfModeRef = useRef(perfMode);
+  perfModeRef.current = perfMode;
 
   const initialZone: 'sim2d' | 'sim3d' | 'sandbox' =
     location.biologyView === 'sandbox'
@@ -145,7 +149,8 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
               active2DSpec.id,
               paramsRef.current,
               simTimeRef.current,
-              dark
+              dark,
+              perfModeRef.current
             );
             ctx.restore();
             count++;
@@ -229,7 +234,7 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
               }`}
             >
               <Microscope className="w-3.5 h-3.5 icon-anim-dna" />
-              <span>Sandbox Sinh học (4 Phòng)</span>
+              <span>Sandbox Sinh học (5 Phòng)</span>
             </button>
           </div>
 

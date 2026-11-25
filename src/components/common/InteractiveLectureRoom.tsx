@@ -48,12 +48,14 @@ import {
   LectureStepSavedResult,
   LessonAssessmentRecord,
   LessonProgressAnalysis,
+  MathLecture,
   PhysicsLesson
 } from '../../types';
 import { PhysicsInline2DSim } from '../physics/PhysicsInline2DSim';
 import { PhysicsInline3DSim } from '../physics/PhysicsInline3DSim';
 import { ChemistryInlineStepSim } from '../chemistry/ChemistryInlineStepSim';
 import { BiologyInlineStepSim } from '../biology/BiologyInlineStepSim';
+import { MathInlineStepSim } from '../math/MathInlineStepSim';
 import { FormattedText, MathFormula } from './MathRenderer';
 import { MonokaiCodeBlock } from '../cs/SublimeEditor';
 import { safeFetchJson, streamTutorChat } from '../../lib/apiClient';
@@ -92,6 +94,7 @@ interface InteractiveLectureRoomProps {
   physicsLesson?: PhysicsLesson;
   chemistryLesson?: ChemistryLesson;
   biologyLesson?: BiologyLesson;
+  mathLecture?: MathLecture;
   grade?: string;
   subjectAccent: 'indigo' | 'blue' | 'emerald' | 'amber';
   kicker: string;
@@ -125,6 +128,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
   physicsLesson,
   chemistryLesson,
   biologyLesson,
+  mathLecture,
   grade = '',
   subjectAccent,
   kicker,
@@ -1878,6 +1882,60 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
 
               <BiologyInlineStepSim
                 lesson={biologyLesson}
+                stepIndex={idx}
+                totalSteps={steps.length}
+                stepTitle={step.stepTitle}
+                stepConcept={step.conceptSection}
+                viewMode={simView}
+                isWebGLActive={viewLayout === 'slides' || simView === '3d' || activeFull3DStep === idx}
+                onActivateWebGL={() => setActiveFull3DStep(idx)}
+                onOpenSim2D={onOpenSim2D}
+                onOpenSim3D={onOpenSim3D}
+              />
+            </div>
+          );
+        })()}
+
+        {/* ============================================================== */}
+        {/* INLINE 2D + 3D MATH SIMULATIONS                                */}
+        {/* ============================================================== */}
+        {subject === 'math' && mathLecture && (() => {
+          const simView = inlineSimViewByStep[idx] || 'both';
+          return (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-indigo-50/70 dark:bg-slate-900 border border-indigo-200/90 dark:border-indigo-900/60">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
+                  <Compass className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <span>Mô Hình Toán Học Trực Quan 2D &amp; 3D (Phần {idx + 1})</span>
+                </div>
+                <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px]">
+                  {(
+                    [
+                      { id: 'both', label: '2D + 3D' },
+                      { id: '2d', label: 'Chỉ 2D' },
+                      { id: '3d', label: 'Chỉ 3D' }
+                    ] as const
+                  ).map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        setInlineSimViewByStep((prev) => ({ ...prev, [idx]: opt.id }))
+                      }
+                      className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                        simView === opt.id
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <MathInlineStepSim
+                lesson={mathLecture}
                 stepIndex={idx}
                 totalSteps={steps.length}
                 stepTitle={step.stepTitle}

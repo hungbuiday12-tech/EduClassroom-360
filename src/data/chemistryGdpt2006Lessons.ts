@@ -63,7 +63,7 @@ export const CHEMISTRY_GDPT_2006_LESSONS: ChemistryLesson[] = [
       'n_{\\text{khí (ĐKTC 2006)}} = \\frac{V}{22{,}4}'
     ],
     sim2d: 'metal_activity_2d',
-    sim3d: 'crystal_lattice_3d',
+    sim3d: 'metal_corrosion_3d',
     mcq1: {
       source: 'Hóa 9 (2006)',
       question: 'Không dùng xô, chậu bằng Nhôm để đựng nước vôi trong ($Ca(OH)_2$) hay dung dịch NaOH vì:',
@@ -145,7 +145,7 @@ export const CHEMISTRY_GDPT_2006_LESSONS: ChemistryLesson[] = [
     keyFormulas: [
       '\\overline{A} = \\frac{\\%_1 \\cdot A_1 + \\%_2 \\cdot A_2}{100}'
     ],
-    sim2d: 'periodic_trends_2d',
+    sim2d: 'atomic_orbitals_2d',
     sim3d: 'atomic_orbitals_3d',
     mcq1: {
       source: 'Hóa 10 (2006)',
@@ -187,7 +187,7 @@ export const CHEMISTRY_GDPT_2006_LESSONS: ChemistryLesson[] = [
       '2\\text{Fe} + 6\\text{H}_2\\text{SO}_4\\text{ (đặc, nóng)} \\to \\text{Fe}_2(\\text{SO}_4)_3 + 3\\text{SO}_2\\uparrow + 6\\text{H}_2\\text{O}'
     ],
     sim2d: 'contact_sulfuric_2d',
-    sim3d: 'activation_surface_3d',
+    sim3d: 'haber_contact_reactor_3d',
     mcq1: {
       source: 'Hóa 10 (2006)',
       question: 'Sục khí $SO_2$ đến dư vào dung dịch $Br_2$ màu nâu đỏ. Hiện tượng quan sát được là:',
@@ -354,8 +354,8 @@ export const CHEMISTRY_GDPT_2006_LESSONS: ChemistryLesson[] = [
       '\\text{NH}_4^+ + \\text{OH}^- \\xrightarrow{t^\\circ} \\text{NH}_3\\uparrow + \\text{H}_2\\text{O}',
       '3\\text{Cu} + 8\\text{H}^+ + 2\\text{NO}_3^- \\to 3\\text{Cu}^{2+} + 2\\text{NO}\\uparrow + 4\\text{H}_2\\text{O}'
     ],
-    sim2d: 'flame_spectroscopy_2d',
-    sim3d: 'spectroscopy_prism_3d',
+    sim2d: 'qualitative_ion_2d',
+    sim3d: 'halogen_ion_bench_3d',
     mcq1: {
       source: 'Hóa 12 (2006)',
       question: 'Chỉ dùng một thuốc thử duy nhất nào để phân biệt 4 dung dịch: $NH_4Cl$, $FeCl_2$, $FeCl_3$, $AlCl_3$?',

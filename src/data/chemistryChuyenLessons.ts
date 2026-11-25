@@ -22,8 +22,8 @@ export const CHEMISTRY_CHUYEN_LESSONS: ChemistryLesson[] = [
         '3n_{\\text{Fe}} = 2n_{\\text{O}} + n_{e\\text{ sản phẩm khử}}',
         '\\Delta m_{\\text{rắn khử oxit}} = m_{\\text{O mất đi}} = 16 \\cdot n_{\\text{CO}_2}'
       ],
-      sim2d: 'redox_balancing_2d',
-      sim3d: 'galvanic_cell_3d',
+      sim2d: 'metallurgy_furnace_2d',
+      sim3d: 'metal_corrosion_3d',
       mcq1: {
         source: 'Tuyển sinh Chuyên Hóa 10',
         question: 'Dẫn luồng khí CO dư qua $20\\text{ g}$ hỗn hợp X gồm $FeO, Fe_3O_4, Fe_2O_3$ đun nóng. Khí thoát ra sục vào $Ca(OH)_2$ dư thu được $25\\text{ g}$ kết tủa. Khối lượng sắt thu được là:',
@@ -66,7 +66,7 @@ export const CHEMISTRY_CHUYEN_LESSONS: ChemistryLesson[] = [
       'U_L = \\Delta_f H^\\circ - \\Delta_{\\text{th}}H - I_1 - \\frac{1}{2}E_b - EA'
     ],
     sim2d: 'atomic_orbitals_2d',
-    sim3d: 'crystal_lattice_3d',
+    sim3d: 'atomic_orbitals_3d',
     mcq1: {
       source: 'Olympic 30/4 · Chuyên Hóa 10',
       question: 'Bộ 4 số lượng tử nào sau đây hợp lệ cho một electron trong phân lớp $3d$?',
@@ -79,7 +79,7 @@ export const CHEMISTRY_CHUYEN_LESSONS: ChemistryLesson[] = [
       question: 'Trong chu trình Born–Haber tạo $NaCl(s)$ từ $Na(s)$ và $\\frac{1}{2}Cl_2(g)$, quá trình nào **tỏa nhiệt mạnh nhất**?',
       options: ['A. Thăng hoa Na(s) -> Na(g)', 'B. Ion hóa Na(g) -> Na⁺(g) + e', 'C. Tạo mạng tinh thể Na⁺(g) + Cl⁻(g) -> NaCl(s)', 'D. Phân li phân tử Cl₂ -> 2Cl'],
       correctIndex: 2,
-      explanation: 'Năng lượng mạng lưới tinh thể $U_L$ (kết hợp ion khí ngược dấu thành tinh thể rắn) tỏa lượng nhiệt lớn nhất ($\approx -787\\text{ kJ/mol}$).'
+      explanation: 'Năng lượng mạng lưới tinh thể $U_L$ (kết hợp ion khí ngược dấu thành tinh thể rắn) tỏa lượng nhiệt lớn nhất ($\\approx -787\\text{ kJ/mol}$).'
     },
     essay: {
       source: 'Chuyên Hóa 10',

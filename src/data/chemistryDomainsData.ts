@@ -724,6 +724,66 @@ export const CHEMISTRY_2D_SIMS: Chemistry2DSimSpec[] = [
       { label: 'Vừa đủ (0.2 Zn + 0.4 HCl)', description: 'Cả hai hết hoàn toàn, thu 0.2 mol H₂', params: { molZn: 0.2, molHCl: 0.4, gasStd: 1 } },
       { label: 'Dư Zn (0.3 Zn + 0.4 HCl)', description: 'Tính thể tích H₂ theo chất hết HCl', params: { molZn: 0.3, molHCl: 0.4, gasStd: 1 } }
     ]
+  },
+  {
+    id: 'carbonyl_alcohol_2d',
+    domainId: 'organic_polymer',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Ancol – Phenol – Anđehit: Tráng Bạc Tollens, Cu(OH)₂ & Iodoform',
+    subtitle: 'Thí nghiệm phân biệt Etanol, Glixerol (phức xanh lam Cu(OH)₂), Phenol (↓ trắng Br₂) và Anđehit fomic/axetic (gương Ag)',
+    formula: '\\text{RCHO} + 2[\\text{Ag}(\\text{NH}_3)_2]\\text{OH} \\xrightarrow{t^\\circ} \\text{RCOONH}_4 + 2\\text{Ag}\\downarrow + 3\\text{NH}_3 + \\text{H}_2\\text{O}',
+    linkedLessonId: 'chem-11-9',
+    defaultParams: { compoundId: 3, reagentId: 1, tempC: 65 },
+    paramBounds: {
+      compoundId: { min: 1, max: 4, step: 1, unit: '', label: 'Chất hữu cơ (1:C₂H₅OH 2:Glixerol 3:CH₃CHO 4:Phenol)' },
+      reagentId: { min: 1, max: 4, step: 1, unit: '', label: 'Thuốc thử (1:Tollens Ag 2:Cu(OH)₂ 3:Nước Br₂ 4:I₂/NaOH)' },
+      tempC: { min: 20, max: 90, step: 5, unit: '°C', label: 'Nhiệt độ đun cách thủy' }
+    },
+    presets: [
+      { label: 'CH₃CHO tráng bạc Tollens', description: 'Kết tủa Ag trắng sáng bám thành ống nghiệm', params: { compoundId: 3, reagentId: 1, tempC: 70 } },
+      { label: 'Glixerol + Cu(OH)₂', description: 'Tạo dung dịch phức đồng(II) glixerat xanh lam thẫm', params: { compoundId: 2, reagentId: 2, tempC: 25 } },
+      { label: 'Phenol + Nước Brom', description: 'Xuất hiện kết tủa trắng 2,4,6-tribromophenol ngay lập tức', params: { compoundId: 4, reagentId: 3, tempC: 25 } },
+      { label: 'Phản ứng Iodoform (CHI₃)', description: 'Kết tủa vàng chanh iodoform đặc trưng nhóm CH₃CO- / CH₃CH(OH)-', params: { compoundId: 3, reagentId: 4, tempC: 55 } }
+    ]
+  },
+  {
+    id: 'qualitative_ion_2d',
+    domainId: 'electro_inorganic',
+    grades: ['Lớp 10', 'Lớp 11', 'Lớp 12'],
+    title: 'Nhận Biết Ion Vô Cơ & Tích Số Tan Kết Tủa (AgX, BaSO₄, Fe²⁺/³⁺, Al³⁺)',
+    subtitle: 'Nhỏ thuốc thử AgNO₃, BaCl₂, NaOH/NH₃ dư vào ống nghiệm quan sát màu kết tủa, tan lưỡng tính và tạo phức [Cu(NH₃)₄]²⁺',
+    formula: '\\text{Ag}^+ + \\text{Cl}^- \\to \\text{AgCl}\\downarrow\\text{ (trắng)}\\quad |\\quad \\text{Al(OH)}_3 + \\text{OH}^- \\to [\\text{Al(OH)}_4]^-',
+    linkedLessonId: 'chem-10-20',
+    defaultParams: { ionCode: 1, reagentDrops: 70, excessBase: 0 },
+    paramBounds: {
+      ionCode: { min: 1, max: 6, step: 1, unit: '', label: 'Ion mẫu (1:Cl⁻/Br⁻/I⁻ 2:SO₄²⁻ 3:Fe³⁺ 4:Fe²⁺ 5:Cu²⁺ 6:Al³⁺)' },
+      reagentDrops: { min: 0, max: 100, step: 5, unit: '%', label: 'Lượng thuốc thử nhỏ vào' },
+      excessBase: { min: 0, max: 1, step: 1, unit: '', label: 'Thêm kiềm / NH₃ dư (0/1)' }
+    },
+    presets: [
+      { label: 'Phân biệt Cl⁻ / Br⁻ / I⁻ bằng AgNO₃', description: 'AgCl trắng, AgBr vàng nhạt, AgI vàng đậm', params: { ionCode: 1, reagentDrops: 80, excessBase: 0 } },
+      { label: 'Cu²⁺ + NH₃ dư -> [Cu(NH₃)₄]²⁺', description: 'Kết tủa xanh lơ tan tạo phức xanh thẫm', params: { ionCode: 5, reagentDrops: 75, excessBase: 1 } },
+      { label: 'Al³⁺ lưỡng tính trong NaOH dư', description: 'Kết tủa keo trắng Al(OH)₃ sinh ra rồi tan hết', params: { ionCode: 6, reagentDrops: 75, excessBase: 1 } }
+    ]
+  },
+  {
+    id: 'metallurgy_furnace_2d',
+    domainId: 'electro_inorganic',
+    grades: ['Lớp 9', 'Lớp 12'],
+    title: 'Lò Cao Luyện Gang – Thép & Phản Ứng Nhiệt Nhôm (Al + Fe₂O₃)',
+    subtitle: 'Khảo sát phân tầng nhiệt độ lò cao (C → CO₂ → CO khử Fe₂O₃ thành gang lỏng) và phản ứng tỏa nhiệt mạnh nhiệt nhôm 2500°C',
+    formula: '\\text{Fe}_2\\text{O}_3 + 3\\text{CO} \\xrightarrow{t^\\circ} 2\\text{Fe} + 3\\text{CO}_2\\quad |\\quad 2\\text{Al} + \\text{Fe}_2\\text{O}_3 \\xrightarrow{t^\\circ} \\text{Al}_2\\text{O}_3 + 2\\text{Fe}',
+    linkedLessonId: 'chem-9-2',
+    defaultParams: { processMode: 1, blastTemp: 1550, oxygenBlast: 75 },
+    paramBounds: {
+      processMode: { min: 1, max: 2, step: 1, unit: '', label: 'Quy trình (1:Lò cao Gang-Thép 2:Nhiệt nhôm Al+Fe₂O₃)' },
+      blastTemp: { min: 600, max: 2400, step: 50, unit: '°C', label: 'Nhiệt độ vùng phản ứng' },
+      oxygenBlast: { min: 20, max: 100, step: 5, unit: '%', label: 'Lưu lượng khí O₂ / Xung kích hoạt' }
+    },
+    presets: [
+      { label: 'Lò cao luyện Gang lỏng (1600°C)', description: 'Than cốc cháy tạo CO khử quặng Hematit và đá vôi tạo xỉ CaSiO₃', params: { processMode: 1, blastTemp: 1600, oxygenBlast: 80 } },
+      { label: 'Phản ứng Nhiệt nhôm (2200°C)', description: 'Sắt nóng chảy rực sáng dùng hàn đường ray xe lửa', params: { processMode: 2, blastTemp: 2200, oxygenBlast: 95 } }
+    ]
   }
 ];
 
@@ -921,6 +981,90 @@ export const CHEMISTRY_3D_SIMS: Chemistry3DSimSpec[] = [
     linkedLessonId: 'chem-12-1',
     presets: [
       { label: 'Cấu trúc cầu Mixen 3D', description: 'Đuôi hướng tâm, đầu -COO⁻ hướng nước', settings: { speed: 0.9 } }
+    ]
+  },
+  {
+    id: 'carbohydrate_ring_3d',
+    domainId: 'organic_polymer',
+    grades: ['Lớp 9', 'Lớp 12'],
+    title: 'Vòng Ghế α/β-Glucozơ, Fructozơ & Chuỗi Xoắn Amylose 3D',
+    subtitle: 'Cấu dạng ghế 6 cạnh pyranose bền vững với các nhóm -OH định hướng xích đạo (equatorial) & trục (axial)',
+    formula: '\\alpha\\text{-D-Glucopyranose} \\rightleftharpoons \\text{Mạch hở (-CHO)} \\rightleftharpoons \\beta\\text{-D-Glucopyranose}',
+    linkedLessonId: 'chem-12-2',
+    presets: [
+      { label: 'Vòng 6 cạnh α/β-Glucozơ', description: 'Dị phân hóa tại C1 tạo liên kết α-1,4 và β-1,4 glycosid', settings: { speed: 1, showLabels: true } }
+    ]
+  },
+  {
+    id: 'carbonyl_alcohol_3d',
+    domainId: 'organic_polymer',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Ống Nghiệm Tráng Bạc Tollens & Phân Tử Ancol – Anđehit 3D',
+    subtitle: 'Lớp gương bạc kim loại phản xạ sáng bóng kết tinh dần trên thành thủy tinh borosilicate cùng mô hình CH₃CHO / C₂H₅OH',
+    formula: '\\text{CH}_3\\text{CHO} + 2[\\text{Ag}(\\text{NH}_3)_2]\\text{OH} \\xrightarrow{t^\\circ} \\text{CH}_3\\text{COONH}_4 + 2\\text{Ag}\\downarrow',
+    linkedLessonId: 'chem-11-9',
+    presets: [
+      { label: 'Gương bạc Tollens phản xạ PBR', description: 'Đun nóng nhẹ 60°C kết tủa bạc phủ đều ống nghiệm', settings: { speed: 1.1, temperature: 340 } }
+    ]
+  },
+  {
+    id: 'haber_contact_reactor_3d',
+    domainId: 'equilibrium_acidbase',
+    grades: ['Lớp 11'],
+    title: 'Tháp Tổng Hợp Haber–Bosch (NH₃) & Lò Tiếp Xúc V₂O₅ (SO₃) 3D',
+    subtitle: 'Khí N₂ + 3H₂ qua các tầng xúc tác Fe nung đỏ 450°C dưới áp suất 200 atm và dàn ngưng tụ NH₃ lỏng',
+    formula: '\\text{N}_2 + 3\\text{H}_2 \\xrightleftharpoons[450^\\circ\\text{C}, 200\\text{ atm}]{\\text{Fe}} 2\\text{NH}_3',
+    linkedLessonId: 'chem-11-3',
+    presets: [
+      { label: 'Tháp tổng hợp công nghiệp', description: 'Dòng khí tuần hoàn qua tầng xúc tác phát sáng', settings: { speed: 1.2, temperature: 450 } }
+    ]
+  },
+  {
+    id: 'metal_corrosion_3d',
+    domainId: 'electro_inorganic',
+    grades: ['Lớp 9', 'Lớp 12'],
+    title: 'Ăn Mòn Điện Hóa, Lò Cao Luyện Gang & Đẩy Muối CuSO₄ 3D',
+    subtitle: 'Thanh Fe nhúng CuSO₄ bám đồng đỏ, vỏ thép gắn Kẽm hy sinh bảo vệ catot và hạt electron chuyển dịch',
+    formula: '\\text{Fe} + \\text{Cu}^{2+} \\to \\text{Fe}^{2+} + \\text{Cu}\\downarrow\\quad |\\quad \\text{Zn (Anode hy sinh)} \\to \\text{Zn}^{2+} + 2e',
+    linkedLessonId: 'chem-12-6',
+    presets: [
+      { label: 'Bảo vệ Catot bằng Kẽm', description: 'Dòng electron từ thanh Zn bảo vệ hoàn toàn tấm thép Fe', settings: { speed: 1, showVectors: true } }
+    ]
+  },
+  {
+    id: 'alkene_addition_3d',
+    domainId: 'organic_polymer',
+    grades: ['Lớp 9', 'Lớp 11'],
+    title: 'Cơ Chế Cộng Ái Điện Tử π (Anken C=C + Br₂ / HBr) 3D',
+    subtitle: 'Đám mây orbital π tím-lam phía trên và dưới liên kết đôi C=C mở ra đón phân tử Br₂ chuyển thành dẫn xuất bão hòa sp³',
+    formula: '\\text{CH}_2=\\text{CH}_2 + \\text{Br}_2 \\to \\text{CH}_2\\text{Br}-\\text{CH}_2\\text{Br}',
+    linkedLessonId: 'chem-11-7',
+    presets: [
+      { label: 'Phá vỡ liên kết π', description: 'Chuyển góc lai hóa sp² (120°) sang tứ diện sp³ (109.5°)', settings: { speed: 1.1 } }
+    ]
+  },
+  {
+    id: 'amino_peptide_3d',
+    domainId: 'organic_polymer',
+    grades: ['Lớp 12'],
+    title: 'Ion Lưỡng Cực Amino Axit, Liên Kết Peptide –CONH– & Chuỗi Xoắn α 3D',
+    subtitle: 'Nhóm -NH₃⁺ và -COO⁻ tạo ion lưỡng cực, liên kết peptide phẳng liên hợp và phức màu tím Biuret với Cu²⁺',
+    formula: '^+\\text{H}_3\\text{N}-\\text{CH}(R)-\\text{COO}^- \\xrightarrow{\\text{ngưng tụ}} (-\\text{NH}-\\text{CH}(R)-\\text{CO}-)_n',
+    linkedLessonId: 'chem-12-3',
+    presets: [
+      { label: 'Chuỗi Tripeptit & Mặt phẳng -CONH-', description: 'Liên kết peptit phẳng cố định không gian', settings: { speed: 0.9, showLabels: true } }
+    ]
+  },
+  {
+    id: 'halogen_ion_bench_3d',
+    domainId: 'electro_inorganic',
+    grades: ['Lớp 10', 'Lớp 11', 'Lớp 12'],
+    title: 'Giá Ống Nghiệm Kết Tủa AgX, BaSO₄ & Phản Ứng Đẩy Halogen 3D',
+    subtitle: '4 ống nghiệm thủy tinh chứa kết tủa AgCl trắng, AgBr vàng nhạt, AgI vàng đậm và phức Cu(NH₃)₄²⁺ xanh thẫm',
+    formula: '\\text{AgCl}\\text{ (trắng)} \\mid \\text{AgBr}\\text{ (vàng nhạt)} \\mid \\text{AgI}\\text{ (vàng đậm)}',
+    linkedLessonId: 'chem-10-20',
+    presets: [
+      { label: 'So sánh 4 ống nghiệm nhận biết', description: 'Quan sát trực quan độ sâu màu kết tủa bạc halogenua', settings: { speed: 1, showLabels: true } }
     ]
   }
 ];

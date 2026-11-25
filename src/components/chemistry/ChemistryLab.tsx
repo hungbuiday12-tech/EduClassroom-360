@@ -40,6 +40,7 @@ import {
 } from '../../data/chemistryDomainsData';
 import { renderChemistry2DSim, ChemSimTelemetry } from './chemistry2DEngine';
 import { Chemistry3DView } from './Chemistry3DView';
+import { ChemistryApparatusWorkbench } from './ChemistryApparatusWorkbench';
 import { FormattedText, MathFormula } from '../common/MathRenderer';
 import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
 import { LectureThumbnail } from '../common/LectureThumbnail';
@@ -49,6 +50,8 @@ import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../commo
 import { SimAnalysisProBar } from '../common/SimAnalysisProBar';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { enrichLectureStepWithConceptsAndAnnotations } from '../../data/lectureConceptAnnotations';
 
 interface DataLogEntry {
   id: number;
@@ -66,6 +69,7 @@ export function buildChemistryLectureSteps(lesson: ChemistryLesson): LectureStep
   const paramStr = Object.values(lesson.paramBounds)
     .map((b) => `${b.label} (${b.unit || 'val'})`)
     .join(', ');
+  const isSpecialized = lesson.track === 'chuyen';
 
   const sectionSteps: LectureStep[] = lesson.theorySections.map((sec, idx) => {
     const formula = lesson.keyFormulas[idx] || formula0;
@@ -73,10 +77,12 @@ export function buildChemistryLectureSteps(lesson: ChemistryLesson): LectureStep
     const mcq = lesson.practiceExercises[idx % Math.max(1, lesson.practiceExercises.length)];
     const essay = lesson.essayExercises[0];
 
-    return {
+    const step: LectureStep = {
       stepTitle: sec.heading,
       stepType: idx === 0 ? 'concept' : 'derivation',
-      conceptSection: `${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}`,
+      conceptSection: isSpecialized
+        ? `${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}`
+        : `**Khái niệm cần nắm & Tính chất cốt lõi:**\n${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}\n• **Mẹo nhận biết nhanh**: Quan sát kĩ trạng thái chất (rắn, kết tủa, khí thoát ra, đổi màu dung dịch) để chọn đúng phản ứng.`,
       formulaSection: formula
         ? {
             primaryFormula: formula,
@@ -84,9 +90,12 @@ export function buildChemistryLectureSteps(lesson: ChemistryLesson): LectureStep
             variablesNote: `Áp dụng cho chủ đề "${lesson.title}" (${lesson.stageLabel || lesson.grade}).`
           }
         : undefined,
-      deepDiveSection: `${sec.content}\n\n**Phương pháp giải nhanh Hóa học ${lesson.grade}**:\n• Viết đúng phương trình hóa học hoặc bán phản ứng oxi hóa – khử và cân bằng hệ số.\n• Áp dụng định luật bảo toàn khối lượng, bảo toàn nguyên tố và bảo toàn electron trước khi lập hệ phương trình.`,
+      deepDiveSection: isSpecialized
+        ? `${sec.content}\n\n**Phương pháp giải nhanh Hóa học ${lesson.grade} (Chuyên/HSG)**:\n• Viết đúng phương trình hóa học hoặc bán phản ứng oxi hóa – khử và cân bằng hệ số.\n• Áp dụng định luật bảo toàn khối lượng, bảo toàn nguyên tố và bảo toàn electron trước khi lập hệ phương trình.`
+        : `**Hướng dẫn từng bước dễ hiểu (${lesson.grade}):**\n1. **Đọc kĩ hiện tượng**: Xác định chất tham gia, chất sản phẩm và màu sắc/kết tủa/khí đặc trưng.\n2. **Cân bằng phương trình**: Ghi đúng hóa trị và cân bằng số nguyên tử hai vế trước khi tính số mol.\n3. **Đổi về số mol**: Dùng $n = m/M$, $n = C_M \\cdot V$ hoặc $n = V/24{,}79$ (điều kiện chuẩn) rồi tính theo tỉ lệ phương trình.`,
       teacherExplanation: sec.content,
       formulaHighlight: formula || undefined,
+      quickIntuition: `Nắm bản chất "${sec.heading}" rồi thử tự tay thao tác trên phòng thí nghiệm 3D ngay bên dưới để thấy hiện tượng trực tiếp.`,
       workedExample:
         idx === lesson.theorySections.length - 1 && essay
           ? {
@@ -95,7 +104,7 @@ export function buildChemistryLectureSteps(lesson: ChemistryLesson): LectureStep
               answer: essay.finalAnswer
             }
           : undefined,
-      keyTakeaway: `Nắm chắc bản chất phản ứng và đơn vị chuẩn trong mục "${sec.heading}".`,
+      keyTakeaway: `Nắm chắc khái niệm, tính chất nhận biết và đơn vị chuẩn trong mục "${sec.heading}".`,
       miniQuiz: mcq
         ? [
             {
@@ -116,25 +125,39 @@ export function buildChemistryLectureSteps(lesson: ChemistryLesson): LectureStep
           }
         : undefined
     };
+
+    return enrichLectureStepWithConceptsAndAnnotations(
+      step,
+      { subject: 'chemistry', lessonTitle: lesson.title, keyFormulas: lesson.keyFormulas },
+      idx
+    );
   });
 
-  sectionSteps.push({
-    stepTitle: `${sectionSteps.length + 1}. Thực hành Kiểm chứng trên Phòng Lab 2D & Mô hình 3D`,
+  const labStep: LectureStep = {
+    stepTitle: `${sectionSteps.length + 1}. Thực hành Tự Tay Làm Thí Nghiệm 2D & 3D`,
     stepType: 'experiment',
-    conceptSection: `Chuyển sang tab Mô phỏng 2D hoặc Mô phỏng 3D để thay đổi trực tiếp: ${paramStr}.`,
+    conceptSection: `Sử dụng phòng thí nghiệm tương tác ngay bên dưới để tự tay mở khóa buret, châm lửa, thêm thuốc thử và điều chỉnh các thông số: ${paramStr}.`,
     formulaSection: formula0
       ? {
           primaryFormula: formula0,
           secondaryFormulas: lesson.keyFormulas.slice(1, 3),
-          variablesNote: `Các tham số điều chỉnh được: ${paramStr}.`
+          variablesNote: `Các thông số điều chỉnh được: ${paramStr}.`
         }
       : undefined,
-    deepDiveSection: `• Thay đổi từng thanh trượt và nhấn Ghi mẫu đo để lập bảng đối chiếu.\n• Sử dụng bộ công cụ Phân tích Pro (A/B Snapshot & Quét biến Sweep) ngay bên dưới mô phỏng.`,
-    teacherExplanation: `Kiểm chứng trực quan định luật hóa học qua phòng thí nghiệm tương tác 2D/3D (${lesson.simulationType}).`,
-    keyTakeaway: 'Ghi ít nhất 3 mẫu đo thực nghiệm để xác nhận xu hướng biến đổi.',
+    deepDiveSection: `• Thí nghiệm 3D bắt đầu ở trạng thái ban đầu chưa phản ứng — hãy nhấn các nút thao tác dụng cụ để tự quan sát biến đổi màu sắc, kết tủa, bọt khí.\n• Thay đổi từng thanh trượt và nhấn **Ghi mẫu đo** để lập bảng đối chiếu kết quả thực nghiệm.`,
+    teacherExplanation: `Tự tay thực hiện thí nghiệm và kiểm chứng hiện tượng hóa học qua phòng lab ảo (${lesson.simulationType}).`,
+    keyTakeaway: 'Thực hiện từng bước thí nghiệm và ghi ít nhất 3 mẫu đo để rút ra quy luật.',
     miniQuiz: [],
     miniEssay: undefined
-  });
+  };
+
+  sectionSteps.push(
+    enrichLectureStepWithConceptsAndAnnotations(
+      labStep,
+      { subject: 'chemistry', lessonTitle: lesson.title, keyFormulas: lesson.keyFormulas },
+      sectionSteps.length
+    )
+  );
 
   return sectionSteps;
 }
@@ -146,6 +169,9 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
   const { language, translate } = useLanguage();
   const isEn = language === 'en';
   const { location, navigate, goBack } = useNavigation();
+  const { perfMode } = useBackgroundTheme();
+  const perfModeRef = useRef(perfMode);
+  perfModeRef.current = perfMode;
 
   const activeView = location.chemistryView;
   const activeTab = location.chemistryTab;
@@ -262,7 +288,8 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
               active2DSpec.id,
               paramsRef.current,
               simTimeRef.current,
-              isDark
+              isDark,
+              perfModeRef.current
             );
             ctx.restore();
             frameCount++;
@@ -971,7 +998,15 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
                   </div>
 
                   <div className="p-2 bg-slate-950">
-                    <canvas ref={canvasRef} className="w-full h-[360px] block rounded-lg" />
+                    <ChemistryApparatusWorkbench
+                      dimension="2d"
+                      simId={active2DSpec.id}
+                      domainId={active2DSpec.domainId}
+                      simParams={params}
+                      simTimeRef={simTimeRef}
+                    >
+                      <canvas ref={canvasRef} className="w-full h-[360px] block rounded-lg" />
+                    </ChemistryApparatusWorkbench>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800">

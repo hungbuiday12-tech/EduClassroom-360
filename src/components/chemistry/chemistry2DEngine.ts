@@ -1,4 +1,5 @@
 import { ChemistrySimType } from '../../types';
+import { PerformanceMode } from '../../context/BackgroundContext';
 
 export interface ChemSimTelemetry {
   metrics: { label: string; value: number | string; unit?: string }[];
@@ -10,10 +11,61 @@ function round(val: number, digits = 2): number {
   return Math.round(val * f) / f;
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, dark: boolean) {
+function drawBloomOrb(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  coreColor: string,
+  midColor: string,
+  perfMode: PerformanceMode
+) {
+  if (perfMode === 'smooth') return;
+  ctx.save();
+  const radius = perfMode === 'ultra' ? r * 1.45 : r;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+  g.addColorStop(0, coreColor);
+  g.addColorStop(perfMode === 'ultra' ? 0.45 : 0.35, midColor);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGlassReflect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  wGlass: number,
+  hGlass: number,
+  perfMode: PerformanceMode
+) {
+  if (perfMode === 'smooth') return;
+  ctx.save();
+  const sheen = ctx.createLinearGradient(x, y, x + wGlass, y);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.22)');
+  sheen.addColorStop(0.18, 'rgba(255,255,255,0.06)');
+  sheen.addColorStop(0.7, 'rgba(255,255,255,0)');
+  sheen.addColorStop(0.92, perfMode === 'ultra' ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.06)');
+  sheen.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sheen;
+  ctx.fillRect(x + 2, y + 2, wGlass - 4, hGlass - 4);
+  ctx.restore();
+}
+
+function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, dark: boolean, perfMode: PerformanceMode = 'balanced') {
   ctx.save();
   ctx.fillStyle = dark ? '#0b1120' : '#f8fafc';
   ctx.fillRect(0, 0, w, h);
+  if (perfMode !== 'smooth') {
+    const amb = ctx.createRadialGradient(w * 0.5, h * 0.45, 20, w * 0.5, h * 0.45, Math.max(w, h) * 0.65);
+    amb.addColorStop(0, dark ? 'rgba(16,185,129,0.09)' : 'rgba(14,165,233,0.06)');
+    amb.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = amb;
+    ctx.fillRect(0, 0, w, h);
+  }
   ctx.strokeStyle = dark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.06)';
   ctx.lineWidth = 1;
   const step = 32;
@@ -94,9 +146,10 @@ export function renderChemistry2DSim(
   simType: ChemistrySimType,
   params: Record<string, number>,
   t: number,
-  dark: boolean
+  dark: boolean,
+  perfMode: PerformanceMode = 'balanced'
 ): ChemSimTelemetry {
-  drawGrid(ctx, w, h, dark);
+  drawGrid(ctx, w, h, dark, perfMode);
   const fg = dark ? '#e2e8f0' : '#0f172a';
   const muted = dark ? '#94a3b8' : '#64748b';
   const cx = w * 0.5;
@@ -240,10 +293,16 @@ export function renderChemistry2DSim(
       ctx.fillRect(bx - 36, by + 56, 72, 14);
 
       const flicker = Math.sin(t * 9) * 5;
+      drawBloomOrb(ctx, bx, by - 54, 96, `${ion.color}44`, `${ion.color}18`, perfMode);
       const grad = ctx.createRadialGradient(bx, by - 36, 4, bx, by - 45, 58);
       grad.addColorStop(0, '#ffffff');
       grad.addColorStop(0.35, ion.color);
       grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.save();
+      if (perfMode === 'ultra') {
+        ctx.shadowColor = ion.color;
+        ctx.shadowBlur = 22;
+      }
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.moveTo(bx - 22, by);
@@ -251,6 +310,7 @@ export function renderChemistry2DSim(
       ctx.quadraticCurveTo(bx + 28, by - 65, bx + 22, by);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
 
       // Right: Visible Spectrum Bar (380nm - 780nm) + sharp emission lines
       const sx = w * 0.44;
@@ -274,10 +334,16 @@ export function renderChemistry2DSim(
       ion.lines.forEach((nm) => {
         const u = Math.max(0.03, Math.min(0.97, (nm - 380) / 400));
         const lx = sx + u * sw;
-        ctx.fillStyle = wlToColor(nm);
+        const lCol = wlToColor(nm);
+        ctx.save();
+        if (perfMode !== 'smooth') {
+          ctx.shadowColor = lCol;
+          ctx.shadowBlur = perfMode === 'ultra' ? 16 : 8;
+        }
+        ctx.fillStyle = lCol;
         ctx.globalAlpha = intensity;
         ctx.fillRect(lx - slitWidth, sy + 2, slitWidth * 2 + 1, sh - 4);
-        ctx.globalAlpha = 1;
+        ctx.restore();
         ctx.fillStyle = fg;
         ctx.font = 'bold 11px monospace';
         ctx.fillText(`${nm}nm`, lx - 16, sy - 8);
@@ -790,13 +856,26 @@ export function renderChemistry2DSim(
       ctx.lineTo(fx + 14, fy - 42);
       ctx.closePath();
       ctx.fillStyle = isPink
-        ? 'rgba(236,72,153,0.45)'
+        ? 'rgba(236,72,153,0.48)'
         : curPh > 6.5
-        ? 'rgba(244,114,182,0.2)'
+        ? 'rgba(244,114,182,0.22)'
         : 'rgba(148,163,184,0.16)';
       ctx.fill();
       ctx.strokeStyle = fg;
       ctx.stroke();
+      drawBloomOrb(
+        ctx,
+        fx,
+        fy + 16,
+        58,
+        isPink ? 'rgba(236,72,153,0.28)' : 'rgba(56,189,248,0.16)',
+        'rgba(236,72,153,0.06)',
+        perfMode
+      );
+      // Spinning magnetic stir bar at flask bottom
+      ctx.fillStyle = '#e2e8f0';
+      const barW = 10 + Math.abs(Math.cos(t * 7)) * 12;
+      ctx.fillRect(fx - barW * 0.5, fy + 40, barW, 4);
 
       const gx = w * 0.48;
       const gw = w * 0.46;
@@ -1015,6 +1094,7 @@ export function renderChemistry2DSim(
 
       ctx.fillStyle = code === 2 ? 'rgba(148,163,184,0.18)' : 'rgba(14,165,233,0.28)';
       ctx.fillRect(cx - 140, cy - 45, 280, 145);
+      drawGlassReflect(ctx, cx - 140, cy - 45, 280, 145, perfMode);
       ctx.strokeStyle = fg;
       ctx.lineWidth = 2.5;
       ctx.strokeRect(cx - 140, cy - 45, 280, 145);
@@ -1024,6 +1104,7 @@ export function renderChemistry2DSim(
       ctx.fillRect(cx + 75, cy - 72, 20, 130);
       if (code !== 2) {
         const coat = Math.min(8, 2 + mCu * 0.45);
+        drawBloomOrb(ctx, cx - 85, cy + 8, 56, 'rgba(217,119,6,0.26)', 'rgba(245,158,11,0.06)', perfMode);
         ctx.fillStyle = '#d97706';
         ctx.fillRect(cx - 95 - coat / 2, cy - 40, 20 + coat, 98);
       }
@@ -1746,6 +1827,411 @@ export function renderChemistry2DSim(
           { label: 'Chất dư sau phản ứng', value: excess }
         ],
         statusNote: 'Tính lượng sản phẩm luôn theo chất hết trước (n_Zn vs n_HCl / 2).'
+      };
+    }
+
+    case 'carbonyl_alcohol_2d': {
+      const comp = Math.max(1, Math.min(4, Math.round(params.compoundId ?? 3)));
+      const reag = Math.max(1, Math.min(4, Math.round(params.reagentId ?? 1)));
+      const tempC = params.tempC ?? 65;
+
+      const compInfo = [
+        { name: 'Etanol (C₂H₅OH)', grp: 'Ancol đơn chức bậc I', col: '#38bdf8' },
+        { name: 'Glixerol (C₃H₅(OH)₃)', grp: 'Poliancol có ≥2 nhóm -OH kề', col: '#0ea5e9' },
+        { name: 'Anđehit axetic (CH₃CHO)', grp: 'Nhóm chức -CHO & CH₃CO-', col: '#10b981' },
+        { name: 'Phenol (C₆H₅OH)', grp: 'Nhóm -OH gắn vòng Benzen', col: '#a855f7' }
+      ][comp - 1];
+
+      const reagNames = [
+        'Tollens [Ag(NH₃)₂]OH',
+        'Cu(OH)₂ / OH⁻',
+        'Nước Brom (Br₂)',
+        'I₂ / NaOH (Iodoform)'
+      ];
+
+      // Determine chemical reaction & visual phenotype accurately
+      let rxOccurs = false;
+      let solColor = 'rgba(148,163,184,0.18)';
+      let pptColor = '';
+      let silverMirror = false;
+      let phenomenon = 'Không có hiện tượng rõ rệt';
+      let equation = 'Không phản ứng ở điều kiện này';
+
+      if (reag === 1) {
+        // Tollens
+        if (comp === 3 && tempC >= 45) {
+          rxOccurs = true;
+          silverMirror = true;
+          solColor = 'rgba(226,232,240,0.45)';
+          phenomenon = 'Lớp Bạc (Ag) sáng bóng bám thành ống nghiệm!';
+          equation = 'CH₃CHO + 2[Ag(NH₃)₂]OH → CH₃COONH₄ + 2Ag↓ + 3NH₃↑ + H₂O';
+        } else if (comp === 3) {
+          solColor = 'rgba(203,213,225,0.28)';
+          phenomenon = 'Cần đun nóng ≥ 45°C để tráng bạc nhanh';
+          equation = 'Tăng nhiệt độ cách thủy để phản ứng Tollens xảy ra mạnh';
+        }
+      } else if (reag === 2) {
+        // Cu(OH)2
+        if (comp === 2) {
+          rxOccurs = true;
+          solColor = 'rgba(29,78,216,0.78)';
+          phenomenon = 'Hòa tan Cu(OH)₂ tạo phức xanh lam thẫm!';
+          equation = '2C₃H₅(OH)₃ + Cu(OH)₂ → [C₃H₅(OH)₂O]₂Cu (xanh lam) + 2H₂O';
+        } else if (comp === 3 && tempC >= 60) {
+          rxOccurs = true;
+          solColor = 'rgba(56,189,248,0.22)';
+          pptColor = '#dc2626';
+          phenomenon = 'Kết tủa Đỏ gạch Cu₂O↓ xuất hiện khi đun nóng!';
+          equation = 'CH₃CHO + 2Cu(OH)₂ + NaOH → CH₃COONa + Cu₂O↓ (đỏ gạch) + 3H₂O';
+        } else {
+          solColor = 'rgba(56,189,248,0.25)';
+          pptColor = '#0284c7';
+          phenomenon = comp === 3 ? 'Đun nóng ≥ 60°C để tạo Cu₂O đỏ gạch' : 'Kết tủa xanh Cu(OH)₂ không tan';
+        }
+      } else if (reag === 3) {
+        // Bromine water
+        if (comp === 4) {
+          rxOccurs = true;
+          solColor = 'rgba(241,245,249,0.35)';
+          pptColor = '#f8fafc';
+          phenomenon = 'Mất màu nước Brom & ↓ trắng 2,4,6-tribromophenol!';
+          equation = 'C₆H₅OH + 3Br₂ → C₆H₂Br₃OH↓ (trắng) + 3HBr';
+        } else if (comp === 3) {
+          rxOccurs = true;
+          solColor = 'rgba(226,232,240,0.24)';
+          phenomenon = 'Nhóm -CHO khử làm mất màu nâu đỏ của nước Br₂!';
+          equation = 'CH₃CHO + Br₂ + H₂O → CH₃COOH + 2HBr';
+        } else {
+          solColor = 'rgba(217,119,6,0.58)';
+          phenomenon = 'Nước Brom giữ nguyên màu nâu đỏ';
+        }
+      } else if (reag === 4) {
+        // Iodoform I2/NaOH
+        if (comp === 1 || comp === 3) {
+          rxOccurs = true;
+          solColor = 'rgba(254,240,138,0.28)';
+          pptColor = '#eab308';
+          phenomenon = 'Kết tủa Vàng chanh Iodoform (CHI₃↓) mùi đặc trưng!';
+          equation = comp === 3 ? 'CH₃CHO + 3I₂ + 4NaOH → CHI₃↓ + HCOONa + 3NaI + 3H₂O' : 'C₂H₅OH + 4I₂ + 6NaOH → CHI₃↓ + HCOONa + 5NaI + 5H₂O';
+        } else {
+          solColor = 'rgba(180,83,9,0.42)';
+          phenomenon = 'Không có nhóm CH₃CO- / CH₃CH(OH)- → âm tính Iodoform';
+        }
+      }
+
+      // Left: Molecule badge & functional group card
+      const lx = 26;
+      ctx.fillStyle = dark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.9)';
+      ctx.strokeStyle = compInfo.col;
+      ctx.lineWidth = 2;
+      ctx.fillRect(lx, 56, w * 0.44, h - 104);
+      ctx.strokeRect(lx, 56, w * 0.44, h - 104);
+
+      drawAtomNode(ctx, lx + 46, 108, 22, compInfo.col, comp === 4 ? 'PhOH' : comp === 3 ? 'CHO' : 'OH');
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(compInfo.name, lx + 82, 102);
+      ctx.fillStyle = muted;
+      ctx.font = '11px sans-serif';
+      ctx.fillText(compInfo.grp, lx + 82, 122);
+
+      ctx.fillStyle = rxOccurs ? '#10b981' : '#f59e0b';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`Thuốc thử: ${reagNames[reag - 1]}`, lx + 18, 168);
+      ctx.fillStyle = fg;
+      ctx.font = '11.5px sans-serif';
+      ctx.fillText(phenomenon.slice(0, 46), lx + 18, 194);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 10.5px monospace';
+      ctx.fillText(equation.slice(0, 48), lx + 18, 224);
+
+      // Right: Heated water bath + reaction test tube
+      const tx = w * 0.72;
+      const ty = cy - 68;
+      // Water bath beaker
+      ctx.fillStyle = tempC > 50 ? 'rgba(249,115,22,0.16)' : 'rgba(56,189,248,0.14)';
+      ctx.fillRect(tx - 78, ty + 32, 156, 128);
+      ctx.strokeStyle = muted;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(tx - 78, ty + 24, 156, 136);
+
+      // Test tube inside bath
+      if (silverMirror) {
+        drawBloomOrb(ctx, tx, ty + 76, 86, 'rgba(226,232,240,0.45)', 'rgba(56,189,248,0.15)', perfMode);
+      } else if (rxOccurs) {
+        drawBloomOrb(ctx, tx, ty + 76, 74, `${compInfo.col}38`, 'rgba(16,185,129,0.08)', perfMode);
+      }
+
+      ctx.fillStyle = solColor;
+      ctx.fillRect(tx - 28, ty + 22, 56, 114);
+      drawGlassReflect(ctx, tx - 28, ty - 6, 56, 142, perfMode);
+      ctx.strokeStyle = silverMirror ? '#f8fafc' : fg;
+      ctx.lineWidth = silverMirror ? 5 : 2.5;
+      ctx.strokeRect(tx - 28, ty - 6, 56, 142);
+
+      // Precipitate settling particles or rising bubbles
+      if (pptColor) {
+        const dropCount = perfMode === 'ultra' ? 28 : perfMode === 'balanced' ? 18 : 10;
+        for (let i = 0; i < dropCount; i++) {
+          const px = tx - 20 + ((i * 19) % 40);
+          const py = ty + 112 + ((i * 11 + Math.sin(t * 2 + i) * 4) % 20);
+          ctx.fillStyle = pptColor;
+          ctx.beginPath();
+          ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      if (tempC >= 55) {
+        for (let i = 0; i < (perfMode === 'ultra' ? 12 : 7); i++) {
+          const bx = tx - 64 + ((i * 23) % 128);
+          const by = ty + 148 - ((t * 48 + i * 21) % 105);
+          ctx.fillStyle = 'rgba(226,232,240,0.45)';
+          ctx.beginPath();
+          ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(`Thử nghiệm ${compInfo.name} + ${reagNames[reag - 1]} (${tempC}°C)`, 18, 28);
+
+      return {
+        metrics: [
+          { label: 'Chất hữu cơ', value: compInfo.name },
+          { label: 'Hiện tượng chính', value: rxOccurs ? (silverMirror ? 'Tráng gương Ag' : pptColor ? 'Kết tủa đặc trưng' : 'Đổi màu/tạo phức') : 'Âm tính' },
+          { label: 'Nhiệt độ đun', value: tempC, unit: '°C' }
+        ],
+        statusNote: phenomenon
+      };
+    }
+
+    case 'qualitative_ion_2d': {
+      const ionCode = Math.max(1, Math.min(6, Math.round(params.ionCode ?? 1)));
+      const drops = params.reagentDrops ?? 70;
+      const excess = Math.round(params.excessBase ?? 0) === 1;
+      const frac = Math.min(1, drops / 100);
+
+      if (ionCode === 1) {
+        // 3 Halide comparison tubes: Cl-, Br-, I- + AgNO3 (+ optional NH3 excess)
+        const halides = [
+          { lbl: 'Cl⁻ + Ag⁺', ppt: 'AgCl↓ (Trắng)', col: '#f8fafc', dissolves: true },
+          { lbl: 'Br⁻ + Ag⁺', ppt: 'AgBr↓ (Vàng nhạt)', col: '#fef08a', dissolves: false },
+          { lbl: 'I⁻ + Ag⁺', ppt: 'AgI↓ (Vàng đậm)', col: '#eab308', dissolves: false }
+        ];
+        halides.forEach((hal, idx) => {
+          const tx = w * (0.24 + idx * 0.26);
+          const ty = cy - 62;
+          const dissolved = excess && hal.dissolves;
+          drawBloomOrb(ctx, tx, ty + 80, 62, `${hal.col}28`, 'rgba(56,189,248,0.05)', perfMode);
+          ctx.fillStyle = dissolved ? 'rgba(226,232,240,0.16)' : 'rgba(56,189,248,0.22)';
+          ctx.fillRect(tx - 28, ty + 16, 56, 118);
+          drawGlassReflect(ctx, tx - 28, ty, 56, 134, perfMode);
+          ctx.strokeStyle = fg;
+          ctx.lineWidth = 2.4;
+          ctx.strokeRect(tx - 28, ty, 56, 134);
+
+          if (!dissolved && drops > 10) {
+            const pCount = Math.round(frac * (perfMode === 'ultra' ? 24 : 14));
+            for (let i = 0; i < pCount; i++) {
+              const px = tx - 20 + ((i * 17) % 40);
+              const py = ty + 106 + ((i * 9 + Math.sin(t * 2 + i) * 3) % 24);
+              ctx.fillStyle = hal.col;
+              ctx.beginPath();
+              ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          ctx.fillStyle = fg;
+          ctx.font = 'bold 11.5px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(hal.lbl, tx, ty - 10);
+          ctx.fillStyle = dissolved ? '#38bdf8' : muted;
+          ctx.fillText(dissolved ? 'Tan -> [Ag(NH₃)₂]⁺' : hal.ppt, tx, ty + 154);
+        });
+        ctx.textAlign = 'left';
+        ctx.fillStyle = fg;
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(`Nhận biết Halogenua Cl⁻ / Br⁻ / I⁻ bằng AgNO₃ (${drops}% · ${excess ? 'Có NH₃ dư' : 'Chưa thêm NH₃'})`, 18, 28);
+        return {
+          metrics: [
+            { label: 'Thuốc thử chính', value: 'AgNO₃ + NH₃' },
+            { label: 'Thứ tự đậm màu ↓', value: 'AgCl < AgBr < AgI' },
+            { label: 'Ảnh hưởng NH₃ dư', value: excess ? 'Hòa tan AgCl tạo phức' : 'Tách 3 kết tủa rõ màu' }
+          ],
+          statusNote: 'AgCl trắng tan hết trong dung dịch NH₃ loãng; AgI vàng đậm hầu như không tan.'
+        };
+      }
+
+      const specs = [
+        { ion: 'SO₄²⁻', reag: 'BaCl₂', ppt: 'BaSO₄↓ (Trắng bền)', solCol: 'rgba(148,163,184,0.2)', pptCol: '#f8fafc', amphoteric: false, complexCol: '' },
+        { ion: 'Fe³⁺', reag: 'NaOH', ppt: 'Fe(OH)₃↓ (Nâu đỏ)', solCol: 'rgba(245,158,11,0.24)', pptCol: '#9a3412', amphoteric: false, complexCol: '' },
+        { ion: 'Fe²⁺', reag: 'NaOH', ppt: 'Fe(OH)₂↓ (Trắng xanh → nâu)', solCol: 'rgba(16,185,129,0.2)', pptCol: '#bbf7d0', amphoteric: false, complexCol: '' },
+        { ion: 'Cu²⁺', reag: 'NH₃ / NaOH', ppt: 'Cu(OH)₂↓ (Xanh lam)', solCol: 'rgba(14,165,233,0.34)', pptCol: '#0284c7', amphoteric: false, complexCol: 'rgba(29,78,216,0.82)' },
+        { ion: 'Al³⁺', reag: 'NaOH', ppt: 'Al(OH)₃↓ (Keo trắng)', solCol: 'rgba(148,163,184,0.18)', pptCol: '#e2e8f0', amphoteric: true, complexCol: 'rgba(226,232,240,0.15)' }
+      ][ionCode - 2];
+
+      const tx = cx - 44;
+      const ty = cy - 64;
+      const dissolvedIntoComplex = excess && Boolean(specs.complexCol);
+
+      // Animated reagent droplet falling from pipette
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(cx - 5, 42, 10, 32);
+      if (drops > 0) {
+        const dropY = 76 + ((t * 95) % 44);
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(cx, dropY, 4.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      drawBloomOrb(ctx, cx, ty + 78, 90, dissolvedIntoComplex && ionCode === 5 ? 'rgba(29,78,216,0.38)' : `${specs.pptCol}28`, 'rgba(56,189,248,0.06)', perfMode);
+      ctx.fillStyle = dissolvedIntoComplex ? specs.complexCol : specs.solCol;
+      ctx.fillRect(tx, ty + 20, 88, 126);
+      drawGlassReflect(ctx, tx, ty, 88, 146, perfMode);
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = 2.6;
+      ctx.strokeRect(tx, ty, 88, 146);
+
+      if (!dissolvedIntoComplex && drops > 10) {
+        const pCount = Math.round(frac * (perfMode === 'ultra' ? 32 : 18));
+        for (let i = 0; i < pCount; i++) {
+          const px = tx + 10 + ((i * 23) % 68);
+          const py = ty + 112 + ((i * 11 + Math.sin(t * 2 + i) * 4) % 28);
+          ctx.fillStyle = specs.pptCol;
+          ctx.beginPath();
+          ctx.arc(px, py, 3.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(
+        `Nhận biết ${specs.ion} + ${specs.reag} (${drops}%) → ${
+          dissolvedIntoComplex
+            ? ionCode === 5
+              ? 'Tan thành phức [Cu(NH₃)₄]²⁺ xanh thẫm!'
+              : 'Al(OH)₃ tan trong NaOH dư → [Al(OH)₄]⁻!'
+            : specs.ppt
+        }`,
+        18,
+        28
+      );
+      return {
+        metrics: [
+          { label: 'Ion khảo sát', value: specs.ion },
+          { label: 'Kết tủa ban đầu', value: specs.ppt },
+          { label: 'Kiềm / NH₃ dư', value: dissolvedIntoComplex ? 'Kết tủa TAN hết' : 'Không tan' }
+        ],
+        statusNote: 'Quan sát màu kết tủa đặc trưng và tính tan lưỡng tính / tạo phức khi nhỏ dư thuốc thử.'
+      };
+    }
+
+    case 'metallurgy_furnace_2d': {
+      const mode = Math.round(params.processMode ?? 1);
+      const tempC = params.blastTemp ?? 1550;
+      const o2Pct = params.oxygenBlast ?? 75;
+      const heatRatio = Math.min(1, Math.max(0.15, (tempC - 500) / 1900));
+
+      if (mode === 1) {
+        // Blast furnace cutaway: C + O2 -> CO2 -> CO reducing Fe2O3
+        const fx = cx - 90;
+        drawBloomOrb(ctx, cx, cy + 44, 140 * heatRatio, 'rgba(249,115,22,0.45)', 'rgba(239,68,68,0.12)', perfMode);
+        const fGrad = ctx.createLinearGradient(0, 56, 0, h - 38);
+        fGrad.addColorStop(0, 'rgba(56,189,248,0.18)');
+        fGrad.addColorStop(0.45, `rgba(245,158,11,${(0.25 + heatRatio * 0.4).toFixed(2)})`);
+        fGrad.addColorStop(1, `rgba(239,68,68,${(0.45 + heatRatio * 0.45).toFixed(2)})`);
+        ctx.fillStyle = fGrad;
+        ctx.beginPath();
+        ctx.moveTo(fx + 35, 56);
+        ctx.lineTo(fx + 145, 56);
+        ctx.lineTo(fx + 175, cy + 28);
+        ctx.lineTo(fx + 155, h - 42);
+        ctx.lineTo(fx + 25, h - 42);
+        ctx.lineTo(fx + 5, cy + 28);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = fg;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Molten Pig Iron hearth
+        ctx.fillStyle = '#f97316';
+        ctx.fillRect(fx + 28, h - 66, 124, 22);
+
+        // Rising CO gas bubbles & O2 blast arrows
+        drawArrow(ctx, fx - 54, cy + 44, fx + 12, cy + 44, '#38bdf8', 3);
+        drawArrow(ctx, fx + 234, cy + 44, fx + 168, cy + 44, '#38bdf8', 3);
+        const nGas = perfMode === 'ultra' ? 20 : 12;
+        for (let i = 0; i < nGas; i++) {
+          const gy = h - 74 - ((t * (40 + o2Pct * 0.8) + i * 26) % (h - 140));
+          const gx = cx - 45 + ((i * 29) % 90) + Math.sin(t * 3 + i) * 6;
+          ctx.fillStyle = gy < cy - 20 ? '#94a3b8' : '#fde047';
+          ctx.beginPath();
+          ctx.arc(gx, gy, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = fg;
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('Vùng 400–700°C: Fe₂O₃ + 3CO → 2Fe + 3CO₂', cx + 98, 108);
+        ctx.fillText('Vùng 1000°C: CaCO₃ → CaO + CO₂ (tạo xỉ CaSiO₃)', cx + 98, 174);
+        ctx.fillText('Nồi lò ≥1500°C: Gang lỏng chảy ra', cx + 98, h - 54);
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(`Lò Cao Luyện Gang · T_nồi = ${tempC}°C · Gió O₂ = ${o2Pct}%`, 18, 28);
+
+        const feYield = round(Math.min(98.5, 45 + heatRatio * 42 + o2Pct * 0.14), 1);
+        return {
+          metrics: [
+            { label: 'Nhiệt độ nồi lò', value: tempC, unit: '°C' },
+            { label: 'Hiệu suất hoàn nguyên Fe', value: feYield, unit: '%' },
+            { label: 'Chất khử chính', value: 'Khí CO (từ C + O₂)' }
+          ],
+          statusNote: 'Khí CO sinh ra từ than cốc khử oxit sắt qua nhiều tầng: Fe₂O₃ → Fe₃O₄ → FeO → Fe.'
+        };
+      }
+
+      // Process 2: Thermite Reaction (2Al + Fe2O3 -> Al2O3 + 2Fe)
+      drawBloomOrb(ctx, cx, cy - 12, 145 * heatRatio, 'rgba(253,224,71,0.58)', 'rgba(249,115,22,0.18)', perfMode);
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.moveTo(cx - 64, cy - 42);
+      ctx.lineTo(cx + 64, cy - 42);
+      ctx.lineTo(cx + 38, cy + 48);
+      ctx.lineTo(cx - 38, cy + 48);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // White-hot sparks erupting
+      const sparkN = perfMode === 'ultra' ? 28 : 14;
+      for (let i = 0; i < sparkN; i++) {
+        const life = (t * 1.4 + i / sparkN) % 1;
+        const ang = -Math.PI * 0.85 + ((i * 37) % 100) * 0.007 * Math.PI;
+        const sx = cx + Math.cos(ang) * life * 115;
+        const sy = cy - 36 + Math.sin(ang) * life * 95 + life * life * 45;
+        ctx.fillStyle = life < 0.4 ? '#ffffff' : '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 3.2 * (1 - life * 0.6), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Molten iron pool below crucible
+      ctx.fillStyle = '#f97316';
+      ctx.fillRect(cx - 56, h - 54, 112, 18);
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(`Phản ứng Nhiệt Nhôm (2Al + Fe₂O₃ → Al₂O₃ + 2Fe) · T ≈ ${Math.max(1800, tempC)}°C`, 18, 28);
+      return {
+        metrics: [
+          { label: 'Nhiệt độ phản ứng', value: Math.max(1800, tempC), unit: '°C' },
+          { label: 'Biến thiên ΔH', value: -851.5, unit: 'kJ/mol' },
+          { label: 'Sản phẩm nóng chảy', value: 'Fe lỏng + xỉ Al₂O₃' }
+        ],
+        statusNote: 'Nhôm khử mạnh oxit sắt giải phóng nhiệt lượng cực lớn làm sắt nóng chảy dùng hàn đường ray.'
       };
     }
 

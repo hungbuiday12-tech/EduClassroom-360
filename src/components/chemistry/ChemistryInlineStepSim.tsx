@@ -17,6 +17,7 @@ import { resolveChemStepSim } from './chemistryStepSimResolver';
 import { ChemSimTelemetry, renderChemistry2DSim } from './chemistry2DEngine';
 import { Chemistry3DView } from './Chemistry3DView';
 import { FormattedText, MathFormula } from '../common/MathRenderer';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
 
 interface ChemistryInlineStepSimProps {
   lesson: ChemistryLesson;
@@ -47,6 +48,9 @@ export const ChemistryInlineStepSim: React.FC<ChemistryInlineStepSimProps> = ({
     () => resolveChemStepSim(lesson, stepIndex, stepTitle, stepConcept),
     [lesson, stepIndex, stepTitle, stepConcept]
   );
+  const { perfMode } = useBackgroundTheme();
+  const perfModeRef = useRef(perfMode);
+  perfModeRef.current = perfMode;
 
   const [params, setParams] = useState<Record<string, number>>(() => ({ ...resolved.defaultParams }));
   const [isRunning, setIsRunning] = useState(true);
@@ -98,7 +102,8 @@ export const ChemistryInlineStepSim: React.FC<ChemistryInlineStepSimProps> = ({
               resolved.sim2dId,
               paramsRef.current,
               simTimeRef.current,
-              isDark
+              isDark,
+              perfModeRef.current
             );
             ctx.restore();
             frame++;
@@ -357,6 +362,7 @@ export const ChemistryInlineStepSim: React.FC<ChemistryInlineStepSimProps> = ({
               mode={resolved.sim3dMode}
               title={`${resolved.spec3D.title} · Phần ${stepIndex + 1}/${totalSteps}`}
               heightClass="h-[340px]"
+              showApparatusBench={false}
             />
           )}
         </section>

@@ -621,6 +621,7 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
         );
       case 'alkane_alkene_2d':
       case 'benzene_aromatic_2d':
+      case 'carbonyl_alcohol_2d':
       case 'esterification_2d':
       case 'polymerization_2d':
         return (
@@ -628,6 +629,18 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
             <polygon points="28,12 42,20 42,36 28,44 14,36 14,20" fill="#10b981" fillOpacity="0.16" stroke="#059669" strokeWidth="2" strokeLinejoin="round" />
             <circle cx="28" cy="28" r="8" fill="none" stroke="#f59e0b" strokeWidth="1.6" className="holo-dash" />
             <circle cx="28" cy="12" r="2.3" fill="#0ea5e9" className="math-focus-pulse" />
+          </svg>
+        );
+      case 'qualitative_ion_2d':
+      case 'metallurgy_furnace_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <rect x="13" y="13" width="8" height="30" rx="4" fill="#38bdf8" fillOpacity="0.22" stroke="#0284c7" strokeWidth="1.6" />
+            <rect x="24" y="13" width="8" height="30" rx="4" fill="#facc15" fillOpacity="0.25" stroke="#eab308" strokeWidth="1.6" />
+            <rect x="35" y="13" width="8" height="30" rx="4" fill="#f97316" fillOpacity="0.25" stroke="#ea580c" strokeWidth="1.6" />
+            <circle cx="17" cy="36" r="2.6" fill="#f8fafc" />
+            <circle cx="28" cy="36" r="2.6" fill="#facc15" />
+            <circle cx="39" cy="36" r="2.6" fill="#ef4444" />
           </svg>
         );
       default:
@@ -691,6 +704,18 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
             <rect x="30" y="12" width="14" height="14" rx="3" fill="#38bdf8" fillOpacity="0.65" />
             <rect x="12" y="30" width="14" height="14" rx="3" fill="#38bdf8" fillOpacity="0.65" />
             <rect x="30" y="30" width="14" height="14" rx="3" fill="#f59e0b" fillOpacity="0.85" className="bio-cell-breathe" />
+          </svg>
+        );
+      case 'pedigree_genetics_2d':
+        return (
+          <svg viewBox="0 0 56 56" className="w-full h-full">
+            <rect x="12" y="12" width="10" height="10" rx="2" fill="none" stroke="#14b8a6" strokeWidth="1.8" />
+            <circle cx="39" cy="17" r="5" fill="#f59e0b" fillOpacity="0.85" stroke="#d97706" strokeWidth="1.5" />
+            <line x1="22" y1="17" x2="34" y2="17" stroke="#64748b" strokeWidth="1.5" />
+            <line x1="28" y1="17" x2="28" y2="29" stroke="#64748b" strokeWidth="1.5" />
+            <line x1="17" y1="29" x2="39" y2="29" stroke="#64748b" strokeWidth="1.5" />
+            <rect x="12" y="34" width="10" height="10" rx="2" fill="#f59e0b" fillOpacity="0.85" />
+            <circle cx="39" cy="39" r="5" fill="none" stroke="#14b8a6" strokeWidth="1.8" />
           </svg>
         );
       case 'predator_prey_2d':

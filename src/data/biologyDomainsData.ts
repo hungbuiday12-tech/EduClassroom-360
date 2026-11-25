@@ -677,6 +677,25 @@ export const BIOLOGY_2D_SIMS: Biology2DSimSpec[] = [
     presets: [
       { label: 'Người cho O → Nhận AB (An toàn)', description: 'Hồng cầu O không mang kháng nguyên A, B', params: { donorType: 0, recipientType: 3, pA: 0.25 } }
     ]
+  },
+  {
+    id: 'pedigree_genetics_2d',
+    domainId: 'genetics_molecular',
+    grades: ['Lớp 9', 'Lớp 12'],
+    title: 'Phân Tích Phả Hệ Di Truyền Người & Xác Suất Sinh Con (Bayes)',
+    subtitle: 'Sơ đồ phả hệ 3–4 thế hệ phân biệt bệnh gen lặn NST thường, gen trội và gen lặn liên kết NST giới tính X',
+    formula: 'P(\\text{bệnh}) = P(\\text{bố mang}) \\times P(\\text{mẹ mang}) \\times \\frac{1}{4}',
+    linkedLessonId: 'bio-9-5',
+    defaultParams: { inheritanceMode: 1, marriageType: 2, carrierProbPct: 67 },
+    paramBounds: {
+      inheritanceMode: { min: 1, max: 3, step: 1, unit: '', label: 'Quy luật (1:Lặn NST thường 2:Trội thường 3:Liên kết X)' },
+      marriageType: { min: 1, max: 3, step: 1, unit: '', label: 'Cặp hôn nhân III (1:Bình thường×Bình thường 2:Lành×Bệnh 3:Đều mang)' },
+      carrierProbPct: { min: 10, max: 100, step: 5, unit: '%', label: 'Xác suất dị hợp trong họ' }
+    },
+    presets: [
+      { label: 'Gen lặn NST thường (Bố mẹ lành sinh con bệnh)', description: 'Dấu hiệu nhận biết kinh điển: bố mẹ bình thường sinh con gái bị bệnh', params: { inheritanceMode: 1, marriageType: 1, carrierProbPct: 67 } },
+      { label: 'Bệnh máu khó đông liên kết NST X', description: 'Di truyền chéo từ ông ngoại qua mẹ sang cháu trai', params: { inheritanceMode: 3, marriageType: 2, carrierProbPct: 50 } }
+    ]
   }
 ];
 
@@ -696,5 +715,10 @@ export const BIOLOGY_3D_SIMS: Biology3DSimSpec[] = [
   { id: 'antibody_antigen_3d', domainId: 'physiology_organism', grades: ['Lớp 11'], title: 'Kháng thể Chữ Y (IgG) Bắt Kháng nguyên 3D', subtitle: 'Vùng Fab đặc hiệu khóa kháng nguyên và đại thực bào thực bào', formula: '\\text{Ag} + \\text{Ab} \\to \\text{Phức hợp miễn dịch}', linkedLessonId: 'bio-11-10' },
   { id: 'virus_bacteriophage_3d', domainId: 'cell_membrane', grades: ['Lớp 10'], title: 'Thể thực khuẩn Phage T4 & Capsid Xoắn 3D', subtitle: 'Đầu 20 mặt icosahedron chứa DNA, bao đuôi co bóp và chân bám', formula: '\\text{Capsid} + \\text{Nucleic acid}', linkedLessonId: 'bio-10-7' },
   { id: 'plant_vascular_3d', domainId: 'physiology_organism', grades: ['Lớp 11'], title: 'Hệ Mạch gỗ (Xylem) & Mạch rây (Phloem) 3D', subtitle: 'Dòng đi lên nước–ion khoáng và dòng đi xuống đường saccarôzơ', formula: '\\text{Áp suất rễ} + \\text{Thoát hơi nước} + \\text{Lực liên kết}', linkedLessonId: 'bio-11-2' },
-  { id: 'ecosystem_biome_3d', domainId: 'ecology_biosphere', grades: ['Lớp 12'], title: 'Tháp Sinh thái & Sinh quyển Đa tầng 3D', subtitle: 'Cấu trúc phân tầng thảm thực vật và dòng năng lượng qua các bậc dinh dưỡng', formula: 'E_{n+1} / E_n \\approx 0{,}1', linkedLessonId: 'bio-12-11' }
+  { id: 'ecosystem_biome_3d', domainId: 'ecology_biosphere', grades: ['Lớp 12'], title: 'Tháp Sinh thái & Sinh quyển Đa tầng 3D', subtitle: 'Cấu trúc phân tầng thảm thực vật và dòng năng lượng qua các bậc dinh dưỡng', formula: 'E_{n+1} / E_n \\approx 0{,}1', linkedLessonId: 'bio-12-11' },
+  { id: 'mendel_peas_3d', domainId: 'genetics_molecular', grades: ['Lớp 9', 'Lớp 12'], title: 'Thí Nghiệm Đậu Hà Lan Mendel & Bảng Phân Li F₂ 3D', subtitle: 'Cây đậu bố mẹ hoa tím/trắng, hạt phấn thụ phấn chéo, quả đậu mở vỏ hạt Vàng-Trơn/Xanh-Nhăn & tỉ lệ 9:3:3:1', formula: 'F_1 (AaBb \\times AaBb) \\implies 9\\text{A\\_B\\_} : 3\\text{A\\_bb} : 3\\text{aaB\\_} : 1\\text{aabb}', linkedLessonId: 'bio-9-1' },
+  { id: 'population_genetics_3d', domainId: 'evolution_population', grades: ['Lớp 9', 'Lớp 12'], title: 'Quần Thể Tiến Hóa, Hardy–Weinberg & Chọn Lọc Tự Nhiên 3D', subtitle: 'Đàn sinh vật mang kiểu gen AA/Aa/aa di chuyển dưới áp lực chọn lọc và hiệu ứng thắt cổ chai', formula: 'p^2 + 2pq + q^2 = 1', linkedLessonId: 'bio-12-5' },
+  { id: 'endocrine_pancreas_3d', domainId: 'physiology_organism', grades: ['Lớp 11'], title: 'Tuyến Tụy (Đảo Langerhans) – Thụ Thể Insulin & Điều Hòa Đường Huyết 3D', subtitle: 'Tế bào β tụy tiết hạt Insulin gắn thụ thể màng kích hoạt kênh GLUT4 hấp thu Glucose', formula: '\\text{Insulin } \\to \\text{Kênh GLUT4 mở } \\to \\text{Glucose máu}\\downarrow', linkedLessonId: 'bio-11-16' },
+  { id: 'biotech_pcr_crispr_3d', domainId: 'genetics_molecular', grades: ['Lớp 9', 'Lớp 12'], title: 'Máy Luân Nhiệt PCR, Điện Di Gel UV & Phức Hợp CRISPR–Cas9 3D', subtitle: 'Khay điện di gel phát quang UV các băng DNA theo kích thước bp và đầu cắt Cas9–sgRNA chỉnh sửa đoạn gen', formula: 'N_n = N_0 \\cdot 2^n \\quad | \\quad \\text{Cas9 + sgRNA} \\to \\text{Cắt DSB tại PAM}', linkedLessonId: 'bio-12-13' },
+  { id: 'gene_linkage_3d', domainId: 'genetics_molecular', grades: ['Lớp 12'], title: 'Cặp NST Tương Đồng Tiếp Hợp & Hoán Vị Gen Chiasmata Morgan 3D', subtitle: 'Hai crômatit khác nguồn gốc trao đổi chéo đoạn DNA tại điểm bắt chéo tạo giao tử hoán vị AB, ab, Ab, aB', formula: 'f_{\\text{hoán vị}} = \\frac{\\text{Giao tử tái tổ hợp}}{\\text{Tổng giao tử}} \\le 50\\%', linkedLessonId: 'bio-12-4' }
 ];

@@ -405,111 +405,265 @@ const CS_DOMAIN_RULES: DomainKnowledgeRule[] = [
 
 const CHEMISTRY_DOMAIN_RULES: DomainKnowledgeRule[] = [
   {
+    keywords: /nguyên tử|orbital|ao\b|cấu hình electron|bảng tuần hoàn|chu kì|nhóm a|độ âm điện|bán kính/i,
+    concepts: [
+      {
+        term: 'Cấu tạo nguyên tử & Lớp vỏ Electron',
+        symbol: 'A = Z + N, \\quad \\text{Số e tối đa lớp } n = 2n^2',
+        definition: 'Nguyên tử gồm hạt nhân mang điện dương ($Z$ proton, $N$ neutron không mang điện) và lớp vỏ gồm $Z$ electron mang điện âm chuyển động trong các vùng không gian gọi là orbital (AO).',
+        intuition: 'Số electron ở lớp ngoài cùng quyết định tính chất hóa học: 1–3e thường là kim loại (dễ nhường e), 5–7e thường là phi kim (dễ nhận e), 8e là khí hiếm (rất bền).'
+      },
+      {
+        term: 'Quy luật Bảng Tuần Hoàn (Chu kì & Nhóm A)',
+        symbol: '\\text{Chu kì: } R\\downarrow,\\; \\chi\\uparrow \\quad | \\quad \\text{Nhóm A: } R\\uparrow,\\; \\chi\\downarrow',
+        definition: 'Trong cùng một chu kì (trái sang phải), hạt nhân hút electron mạnh hơn nên bán kính giảm và tính phi kim tăng. Đi từ trên xuống trong nhóm A, số lớp electron tăng nên bán kính tăng và tính kim loại tăng.',
+        intuition: 'Nhớ mẹo: góc trên bên phải (như F, O, Cl) phi kim mạnh nhất; góc dưới bên trái (như K, Na, Cs) kim loại mạnh nhất.'
+      }
+    ],
+    annotations: [
+      { symbol: 'Z, A', meaning: 'Số hiệu nguyên tử ($Z = p = e$) và Số khối ($A = Z + N$)', unitOrType: 'Hạt / amu', condition: '$Z \\ge 1$' },
+      { symbol: '\\chi', meaning: 'Độ âm điện (khả năng hút electron khi tạo liên kết)', unitOrType: 'Thang Pauling', condition: 'F lớn nhất ($3{,}98$)' },
+      { symbol: 'R', meaning: 'Bán kính nguyên tử', unitOrType: 'pm hoặc Å', condition: 'Tăng theo số lớp electron' }
+    ]
+  },
+  {
+    keywords: /liên kết ion|cộng hóa trị|vsepr|lai hóa|hydrogen|van der waals|quy tắc octet/i,
+    concepts: [
+      {
+        term: 'Liên kết Ion & Cộng hóa trị (Quy tắc Octet)',
+        symbol: '\\Delta\\chi = |\\chi_A - \\chi_B|',
+        definition: 'Các nguyên tử liên kết với nhau để đạt lớp vỏ bền vững (thường có 8 electron lớp ngoài cùng). Kim loại nhường e cho phi kim tạo liên kết ion; các phi kim góp chung e tạo liên kết cộng hóa trị.',
+        intuition: 'Hiệu độ âm điện $\\Delta\\chi \\ge 1{,}7$ thường là liên kết ion (muối tinh thể); $\\Delta\\chi < 1{,}7$ là cộng hóa trị.'
+      },
+      {
+        term: 'Liên kết Hydrogen & Tính chất vật lí',
+        symbol: 'X-H^{\\delta+} \\cdots :Y^{\\delta-} \\quad (X, Y \\in \\{F, O, N\\})',
+        definition: 'Là lực hút tĩnh điện yếu giữa nguyên tử H (mang một phần điện tích dương) với nguyên tử F, O hoặc N của phân tử bên cạnh, làm các phân tử hút nhau chặt hơn.',
+        intuition: 'Chính liên kết hydrogen giúp nước ($H_2O$) sôi ở $100^\\circ\\text{C}$ thay vì âm mấy chục độ, và giúp ancol, đường tan tốt trong nước!'
+      }
+    ],
+    annotations: [
+      { symbol: '\\Delta\\chi', meaning: 'Hiệu độ âm điện giữa hai nguyên tử liên kết', unitOrType: 'Không đơn vị', condition: '$0 \\le \\Delta\\chi < 0{,}4$: không cực; $\\ge 1{,}7$: ion' },
+      { symbol: 'T_{\\text{sôi}}', meaning: 'Nhiệt độ sôi của chất', unitOrType: '°C hoặc K', condition: 'Tăng mạnh nếu có liên kết hydrogen' }
+    ]
+  },
+  {
     keywords: /mol|nồng độ|khí|dung dịch|chuẩn độ|ph|axit|acid|bazơ|base|điện li|muối/i,
     concepts: [
       {
         term: 'Số mol & Nồng độ mol (C_M)',
         symbol: 'n = \\frac{m}{M} = \\frac{V}{24{,}79}, \\quad C_M = \\frac{n}{V_{\\text{dd}}}',
-        definition: 'Mol đo lượng chất chứa $6{,}022\\cdot 10^{23}$ hạt vi mô; nồng độ mol cho biết số mol chất tan trong $1\\text{ lít}$ dung dịch.',
-        intuition: 'Ở điều kiện chuẩn ($25^\\circ\\text{C}, 1\\text{ bar}$), $1\\text{ mol}$ mọi chất khí chiếm $24{,}79\\text{ lít}$ (CT 2018) hoặc $22{,}4\\text{ lít}$ ở đktc (CT 2006).'
+        definition: 'Mol là đơn vị đo số hạt chất hóa học ($1\\text{ mol} = 6{,}022\\cdot 10^{23}$ hạt); nồng độ mol $C_M$ cho biết có bao nhiêu mol chất tan hòa trong $1\\text{ lít}$ dung dịch.',
+        intuition: 'Ở điều kiện chuẩn ($25^\\circ\\text{C}, 1\\text{ bar}$), $1\\text{ mol}$ mọi chất khí chiếm $24{,}79\\text{ lít}$ (GDPT 2018) hoặc $22{,}4\\text{ lít}$ ở đktc cũ (GDPT 2006).'
       },
       {
-        term: 'Thang đo pH & Cân bằng Acid–Base',
+        term: 'Thang đo pH & Tính chất Acid – Base',
         symbol: '\\text{pH} = -\\log[\\text{H}^+], \\quad [\\text{H}^+][\\text{OH}^-] = 10^{-14}',
-        definition: 'pH biểu thị độ acid hoặc base của dung dịch nước ở $25^\\circ\\text{C}$: $\\text{pH} < 7$ là môi trường acid, $\\text{pH} = 7$ trung tính, $\\text{pH} > 7$ là base.',
-        intuition: 'Khi nồng độ $\\text{H}^+$ tăng gấp $10$ lần thì $\\text{pH}$ giảm đi $1$ đơn vị.'
+        definition: 'Acid giải phóng ion $\\text{H}^+$ làm quỳ tím hóa đỏ ($\\text{pH} < 7$); Base giải phóng $\\text{OH}^-$ làm quỳ tím hóa xanh ($\\text{pH} > 7$); nước tinh khiết trung tính ($\\text{pH} = 7$).',
+        intuition: 'Dung dịch có pH càng nhỏ thì vị chua/tính acid càng mạnh; mỗi khi pH giảm 1 đơn vị thì nồng độ $\\text{H}^+$ tăng gấp 10 lần.'
       }
     ],
     annotations: [
       { symbol: 'n', meaning: 'Số mol chất', unitOrType: 'mol', condition: '$n > 0$' },
       { symbol: 'C_M', meaning: 'Nồng độ mol dung dịch', unitOrType: 'M (mol/L)', condition: '$V_{\\text{dd}}$ đổi ra lít' },
       { symbol: 'C\\%', meaning: 'Nồng độ phần trăm theo khối lượng', unitOrType: '%', condition: '$m_{\\text{dd}} = m_{\\text{ct}} + m_{\\text{dm}}$' },
-      { symbol: '\\text{pH}', meaning: 'Chỉ số độ acid/base', unitOrType: 'Không đơn vị', condition: 'Ở $25^\\circ\\text{C}$: $\\text{pH}+\\text{pOH}=14$' }
+      { symbol: '\\text{pH}', meaning: 'Chỉ số độ acid/base', unitOrType: 'Thang 0–14', condition: 'Ở $25^\\circ\\text{C}$: $\\text{pH}+\\text{pOH}=14$' }
     ]
   },
   {
     keywords: /nhiệt hóa|enthalpy|tốc độ phản ứng|cân bằng hóa học|le chatelier|chuyển dịch|xúc tác/i,
     concepts: [
       {
-        term: 'Biến thiên Enthalpy chuẩn (Δ_rH°₂₉₈)',
+        term: 'Phản ứng Tỏa nhiệt & Thu nhiệt (Δ_rH°₂₉₈)',
         symbol: '\\Delta_r H^\\circ_{298} < 0 \\text{ (tỏa nhiệt)}, \\quad > 0 \\text{ (thu nhiệt)}',
-        definition: 'Đo nhiệt lượng trao đổi của phản ứng hóa học ở điều kiện chuẩn ($1\\text{ bar}, 298\\text{ K}$).',
-        intuition: 'Phản ứng tỏa nhiệt làm môi trường nóng lên ($\\Delta_r H^\\circ < 0$); phản ứng thu nhiệt hấp thụ nhiệt xung quanh ($\\Delta_r H^\\circ > 0$).'
+        definition: 'Biến thiên Enthalpy cho biết phản ứng giải phóng nhiệt ra môi trường (tỏa nhiệt, bình nóng lên) hay hấp thụ nhiệt vào (thu nhiệt, bình lạnh đi).',
+        intuition: 'Ví dụ dễ nhớ: đốt than, tôi vôi sống là phản ứng tỏa nhiệt ($\\Delta H < 0$); nung đá vôi liên tục mới phân hủy là thu nhiệt ($\\Delta H > 0$).'
       },
       {
-        term: 'Hằng số cân bằng K_C & Nguyên lí Le Chatelier',
+        term: 'Tốc độ phản ứng & Chuyển dịch Cân bằng (Le Chatelier)',
         symbol: 'K_C = \\frac{[C]^c[D]^d}{[A]^a[B]^b}',
-        definition: '$K_C$ chỉ phụ thuộc vào nhiệt độ; hệ đang cân bằng khi bị tác động sẽ chuyển dịch theo chiều làm giảm tác động đó.',
-        intuition: 'Chất rắn nguyên chất không xuất hiện trong biểu thức $K_C$.'
+        definition: 'Tốc độ phản ứng tăng khi tăng nồng độ, nhiệt độ, diện tích tiếp xúc hoặc dùng chất xúc tác. Với phản ứng thuận nghịch, tác động từ bên ngoài làm cân bằng tự điều chỉnh theo chiều chống lại tác động đó.',
+        intuition: 'Chất xúc tác giúp phản ứng nhanh đạt cân bằng hơn (giảm năng lượng hoạt hóa $E_a$) nhưng KHÔNG làm dịch chuyển vị trí cân bằng $K_C$.'
       }
     ],
     annotations: [
       { symbol: '\\Delta_r H^\\circ', meaning: 'Biến thiên enthalpy chuẩn phản ứng', unitOrType: 'kJ hoặc kJ/mol', condition: 'Âm: tỏa nhiệt; Dương: thu nhiệt' },
-      { symbol: 'K_C', meaning: 'Hằng số cân bằng theo nồng độ', unitOrType: 'Hằng số theo T', condition: 'Không phụ thuộc nồng độ ban đầu/xúc tác' },
+      { symbol: 'K_C', meaning: 'Hằng số cân bằng theo nồng độ', unitOrType: 'Chỉ phụ thuộc $T$', condition: 'Chất rắn nguyên chất không ghi vào $K_C$' },
       { symbol: 'v', meaning: 'Tốc độ phản ứng hóa học', unitOrType: 'mol/(L·s)', condition: 'Tăng khi tăng $C, T, S$ hoặc thêm xúc tác' }
     ]
   },
   {
-    keywords: /oxi hóa|khử|pin điện|điện phân|thế điện cực|kim loại|ester|este|lipit|cacbohidrat|amin|peptit|polime|hydrocacbon|ancol|andehit|axit cacboxylic/i,
+    keywords: /halogen|clo|brom|iot|nitrogen|ammonia|nitric|sulfur|sulfuric|phi kim/i,
+    concepts: [
+      {
+        term: 'Tính chất đặc trưng của Phi kim & Halogen (F₂, Cl₂, Br₂, I₂)',
+        symbol: '\\text{Tính oxi hóa: } F_2 > Cl_2 > Br_2 > I_2',
+        definition: 'Halogen đều có 7e lớp ngoài cùng nên rất dễ nhận 1e (tính oxi hóa mạnh). Halogen đứng trên đẩy được halogen đứng dưới ra khỏi dung dịch muối halide.',
+        intuition: 'Nhận biết ion halide bằng dung dịch $\\text{AgNO}_3$: $\\text{Cl}^-$ cho kết tủa trắng $\\text{AgCl}$, $\\text{Br}^-$ vàng nhạt, $\\text{I}^-$ vàng đậm.'
+      },
+      {
+        term: 'Tính chất đặc biệt của HNO₃ và H₂SO₄ đặc',
+        symbol: '\\text{H}_2\\text{SO}_4\\text{ đặc nóng } + \\text{KL} \\to \\text{Muối} + \\text{SO}_2\\uparrow + \\text{H}_2\\text{O}',
+        definition: 'Khác với HCl chỉ tác dụng kim loại đứng trước H tạo $\\text{H}_2$, dung dịch $\\text{HNO}_3$ và $\\text{H}_2\\text{SO}_4$ đặc oxi hóa được cả Cu, Ag và sinh khí $\\text{NO}_2, \\text{NO}, \\text{SO}_2$ thay vì $\\text{H}_2$.',
+        intuition: 'Lưu ý an toàn: pha loãng $\\text{H}_2\\text{SO}_4$ đặc luôn rót từ từ axit vào nước (tuyệt đối không làm ngược lại), còn $\\text{Al, Fe, Cr}$ bị thụ động hóa trong axit đặc nguội.'
+      }
+    ],
+    annotations: [
+      { symbol: '\\text{AgX}\\downarrow', meaning: 'Kết tủa bạc halide dùng nhận biết ion $\\text{Cl}^-, \\text{Br}^-, \\text{I}^-$', unitOrType: 'Chất rắn ít tan', condition: '$\\text{AgF}$ tan trong nước' },
+      { symbol: 'H_2SO_4\\text{ đặc}', meaning: 'Axit có tính oxi hóa mạnh và háo nước mạnh', unitOrType: 'Dung dịch đậm đặc', condition: 'Làm hóa đen đường, giấy (than hóa)' }
+    ]
+  },
+  {
+    keywords: /kim loại|dãy hoạt động|luyện kim|gang|thép|ăn mòn|kiềm|kiềm thổ|nước cứng|phức chất|chuyển tiếp/i,
+    concepts: [
+      {
+        term: 'Tính chất vật lí & hóa học chung của Kim loại',
+        symbol: 'M \\to M^{n+} + ne',
+        definition: 'Kim loại có ánh kim, dẫn điện – dẫn nhiệt tốt và tính dẻo nhờ các electron tự do. Tính chất hóa học chung là tính khử: phản ứng với phi kim, acid và đẩy kim loại yếu hơn khỏi muối.',
+        intuition: 'Nhớ dãy hoạt động: Khi Nào Bạn Cần May Áo Záp Sắt Nhớ Sang Phố Hỏi Cửa Hàng Á Phi Âu (K, Na, Ba, Ca, Mg, Al, Zn, Fe, Ni, Sn, Pb, H, Cu, Ag, Pt, Au).'
+      },
+      {
+        term: 'Ăn mòn Điện hóa, Nước cứng & Phức chất',
+        symbol: 'M(\\text{anode -}) \\to M^{n+} + ne \\quad | \\quad [M(L)_n]^{q}',
+        definition: 'Ăn mòn điện hóa xảy ra khi 2 kim loại khác nhau tiếp xúc trong môi trường điện li (như vỏ tàu thép gắn kẽm để kẽm mòn thay sắt). Nước cứng chứa nhiều $\\text{Ca}^{2+}, \\text{Mg}^{2+}$; phức chất gồm ion kim loại trung tâm liên kết với các phối tử xung quanh.',
+        intuition: 'Đun sôi làm mềm được nước cứng tạm thời (chứa $\\text{HCO}_3^-$); dùng $\\text{Na}_2\\text{CO}_3$ hoặc $\\text{Na}_3\\text{PO}_4$ làm mềm được mọi loại nước cứng.'
+      }
+    ],
+    annotations: [
+      { symbol: '\\text{Ca}^{2+}, \\text{Mg}^{2+}', meaning: 'Hai ion gây ra tính cứng của nước', unitOrType: 'Cation kim loại kiềm thổ', condition: 'Gây đóng cặn ấm đun, giảm bọt xà phòng' },
+      { symbol: '[M(L)_n]', meaning: 'Công thức phức chất (M: tâm, L: phối tử)', unitOrType: 'Phức tan / có màu', condition: 'Ví dụ $[\\text{Cu}(\\text{NH}_3)_4]^{2+}$ màu xanh lam thẫm' }
+    ]
+  },
+  {
+    keywords: /oxi hóa|khử|pin điện|điện phân|thế điện cực|faraday/i,
     concepts: [
       {
         term: 'Thế điện cực chuẩn (E°) & Pin Galvani',
         symbol: 'E^\\circ_{\\text{pin}} = E^\\circ_{\\text{cathode}} - E^\\circ_{\\text{anode}} > 0',
-        definition: 'Ở anode (cực âm) xảy ra quá trình oxi hóa; ở cathode (cực dương) xảy ra quá trình khử; quy tắc $\\alpha$ dự đoán chiều phản ứng tự diễn biến.',
+        definition: 'Pin điện hóa biến đổi năng lượng phản ứng hóa học tự diễn biến thành dòng điện. Ở cực âm (anode), kim loại mạnh hơn bị oxi hóa nhường electron chạy sang cực dương (cathode).',
         intuition: 'Pin sinh điện tự nhiên ($E^\\circ_{\\text{pin}} > 0$), còn điện phân dùng dòng điện ngoài ép phản ứng không tự xảy ra.'
       },
       {
-        term: 'Bảo toàn Electron & Bảo toàn Khối lượng',
-        symbol: '\\sum n_{e\\text{ cho}} = \\sum n_{e\\text{ nhận}}',
-        definition: 'Tổng số mol electron chất khử nhường luôn bằng tổng số mol electron chất oxi hóa thu trong mọi phản ứng oxi hóa–khử.',
-        intuition: 'Dùng bảo toàn electron + bảo toàn nguyên tố giúp giải nhanh bài hỗn hợp kim loại mà không cần viết hết mọi phương trình trung gian.'
+        term: 'Bảo toàn Electron & Định luật Faraday',
+        symbol: '\\sum n_{e\\text{ cho}} = \\sum n_{e\\text{ nhận}}, \\quad m = \\frac{A \\cdot I \\cdot t}{n \\cdot F}',
+        definition: 'Tổng số mol electron chất khử nhường luôn bằng tổng số mol electron chất oxi hóa nhận. Khi điện phân, lượng chất bám ở điện cực tỉ lệ thuận với cường độ dòng điện $I$ và thời gian $t$.',
+        intuition: 'Cứ truyền $1\\text{ mol}$ electron tương ứng với điện lượng $F = 96\\,500\\text{ C}$.'
       }
     ],
     annotations: [
       { symbol: 'E^\\circ', meaning: 'Thế điện cực chuẩn cặp oxi hóa–khử', unitOrType: 'V (Volt)', condition: 'Đo ở $25^\\circ\\text{C}, 1\\text{ M}, 1\\text{ bar}$' },
       { symbol: 'F', meaning: 'Hằng số Faraday', unitOrType: '$96\\,500\\text{ C/mol}$', condition: '$n_e = \\frac{I \\cdot t}{F}$ trong điện phân' },
-      { symbol: 'k = \\frac{2C + 2 - H + N}{2}', meaning: 'Độ bất bão hòa (số vòng + liên kết $\\pi$)', unitOrType: 'Số nguyên $\\ge 0$', condition: 'Phân tử chỉ chứa C, H, O, N' }
+      { symbol: 'I, t', meaning: 'Cường độ dòng điện và thời gian điện phân', unitOrType: 'A (Ampe) · s (giây)', condition: 'Đổi phút/giờ sang giây trước khi tính' }
+    ]
+  },
+  {
+    keywords: /hiđrocacbon|hydrocacbon|alkane|alkene|alkyne|metan|etilen|benzen|ancol|alcohol|phenol|cacbonyl|aldehyde|ketone|axit cacboxylic|ester|este|lipit|chất béo/i,
+    concepts: [
+      {
+        term: 'Cấu trúc mạch Carbon & Tính chất nhóm chức Hữu cơ',
+        symbol: '\\text{Alkane (C–C)} \\;\\cdot\\; \\text{Alkene (C=C)} \\;\\cdot\\; \\text{Alcohol (-OH)} \\;\\cdot\\; \\text{Acid (-COOH)}',
+        definition: 'Tính chất hóa học của hợp chất hữu cơ do nhóm chức quyết định: nối đôi $C=C$ làm mất màu nước brom; nhóm $-OH$ phản ứng với Na giải phóng $H_2$; nhóm $-CHO$ tráng bạc; nhóm $-COOH$ có tính axit yếu.',
+        intuition: 'Nhận biết nhanh: Etilen mất màu nước brom; Giấm ($CH_3COOH$) làm sủi bọt $CO_2$ với đá vôi; Aldehyde ($-CHO$) tạo gương bạc sáng bóng.'
+      },
+      {
+        term: 'Phản ứng Este hóa & Xà phòng hóa Chất béo',
+        symbol: 'R\\text{COOH} + R\'\\text{OH} \\xrightleftharpoons[t^\\circ]{\\text{H}_2\\text{SO}_4\\text{ đ}} R\\text{COOR}\' + \\text{H}_2\\text{O}',
+        definition: 'Axit cacboxylic tác dụng ancol tạo este có mùi thơm hoa quả (thuận nghịch). Đun chất béo hoặc este với kiềm (NaOH) cho phản ứng xà phòng hóa 1 chiều tạo muối (xà phòng) và glycerol/ancol.',
+        intuition: 'Xà phòng có đầu ưa nước ($-COO^-$) và đuôi kị nước (mạch cacbon dài) giúp kéo các vết dầu mỡ hòa tan vào nước rửa trôi.'
+      }
+    ],
+    annotations: [
+      { symbol: 'k', meaning: 'Độ bất bão hòa (số vòng + liên kết $\\pi$)', unitOrType: 'Số nguyên $\\ge 0$', condition: '$k = \\frac{2C + 2 - H + N}{2}$' },
+      { symbol: 'H\\%', meaning: 'Hiệu suất phản ứng (đặc biệt phản ứng este hóa thuận nghịch)', unitOrType: '%', condition: '$H = \\frac{n_{\\text{thực tế}}}{n_{\\text{lí thuyết}}} \\times 100\\%$' }
+    ]
+  },
+  {
+    keywords: /cacbohidrat|carbohydrate|glucose|fructose|saccharose|tinh bột|cellulose|amin|amine|amino acid|peptit|peptide|protein|polime|polymer/i,
+    concepts: [
+      {
+        term: 'Carbohydrate (Đường, Tinh bột, Cellulose)',
+        symbol: '(\\text{C}_6\\text{H}_{10}\\text{O}_5)_n \\xrightarrow{+n\\text{H}_2\\text{O}} n\\text{C}_6\\text{H}_{12}\\text{O}_6',
+        definition: 'Glucose và Fructose là đường đơn có vị ngọt, tan tốt và đều cho phản ứng tráng bạc. Tinh bột bắt màu xanh tím với dung dịch iot ($I_2$); Cellulose tạo nên thành tế bào thực vật và sợi bông/gỗ.',
+        intuition: 'Phân biệt nhanh Glucose và Fructose bằng nước brom: chỉ Glucose làm mất màu nâu đỏ của nước brom.'
+      },
+      {
+        term: 'Amine, Amino Acid, Peptide & Polymer',
+        symbol: '\\text{H}_2\\text{N}-R-\\text{COOH} \\rightleftharpoons \\text{H}_3\\text{N}^+-R-\\text{COO}^-',
+        definition: 'Amine có tính base yếu (mùi khai). Amino acid vừa có nhóm $-NH_2$ (base) vừa có nhóm $-COOH$ (acid) nên có tính lưỡng tính. Nhiều mắt xích nhỏ nối lại tạo thành polymer (chất dẻo, tơ, cao su).',
+        intuition: 'Từ tripeptide trở lên (chứa $\\ge 2$ liên kết peptide) cho phản ứng màu Biuret màu tím đặc trưng với $Cu(OH)_2$.'
+      }
+    ],
+    annotations: [
+      { symbol: 'n', meaning: 'Hệ số polymer hóa (số mắt xích)', unitOrType: 'Số nguyên dương', condition: '$n = \\frac{M_{\\text{polymer}}}{M_{\\text{mắt xích}}}$' },
+      { symbol: 'pI', meaning: 'Điểm đẳng điện của amino acid', unitOrType: 'Giá trị pH', condition: 'Tại $pH = pI$, amino acid trung hòa điện' }
     ]
   }
 ];
 
 const BIOLOGY_DOMAIN_RULES: DomainKnowledgeRule[] = [
   {
-    keywords: /tế bào|màng sinh chất|bào quan|ti thể|lục lạp|enzim|atp|quang hợp|hô hấp tế bào|nguyên phân|giảm phân/i,
+    keywords: /tế bào|màng sinh chất|bào quan|ti thể|lục lạp|vận chuyển|nước|đại phân tử|enzim|enzyme|atp|quang hợp|hô hấp tế bào|nguyên phân|giảm phân/i,
     concepts: [
       {
-        term: 'Chuyển hóa năng lượng ATP',
+        term: 'Cấu trúc Tế bào & Vận chuyển qua màng sinh chất',
+        symbol: '\\text{Nhược trương} \\xrightarrow{\\text{Thẩm thấu } H_2O} \\text{Ưu trương}',
+        definition: 'Tế bào là đơn vị cấu trúc và chức năng cơ bản của mọi sinh vật. Màng sinh chất gồm lớp kép phospholipid khảm protein giúp kiểm soát chọn lọc các chất ra vào tế bào (thụ động không tốn ATP hoặc chủ động cần ATP).',
+        intuition: 'Rau bị héo ngâm vào nước sạch (môi trường nhược trương) sẽ hút nước căng tươi trở lại; còn ướp muối làm vi khuẩn mất nước co nguyên sinh nên bảo quản thực phẩm được lâu.'
+      },
+      {
+        term: 'Chuyển hóa năng lượng ATP, Quang hợp & Hô hấp',
         symbol: '\\text{ATP} \\rightleftharpoons \\text{ADP} + \\text{P}_i + \\Delta G',
-        definition: 'ATP là đồng tiền năng lượng trực tiếp của tế bào nhờ 2 liên kết cao năng giữa các nhóm phosphate dễ giải phóng năng lượng.',
-        intuition: 'Glucose giống sổ tiết kiệm năng lượng dài hạn, còn ATP giống tiền mặt tiêu dùng ngay ở mọi phản ứng tế bào.'
+        definition: 'Lục lạp ở thực vật thu nhận ánh sáng tổng hợp chất hữu cơ (quang hợp), còn ti thể phân giải chất hữu cơ tạo năng lượng ATP cung cấp trực tiếp cho mọi hoạt động sống.',
+        intuition: 'Glucose giống sổ tiết kiệm năng lượng dài hạn, còn ATP giống tiền mặt tiêu dùng ngay ở mọi phản ứng tế bào; enzyme đóng vai trò chất xúc tác sinh học đặc hiệu.'
       },
       {
         term: 'Nguyên phân & Giảm phân',
         symbol: '2n \\xrightarrow{\\text{NP}} 2\\times (2n); \\quad 2n \\xrightarrow{\\text{GP}} 4\\times (n)',
-        definition: 'Nguyên phân giữ nguyên bộ NST $2n$ giúp cơ thể lớn lên; giảm phân tạo giao tử đơn bội $n$ và tạo biến dị tổ hợp.',
+        definition: 'Nguyên phân giữ nguyên bộ NST $2n$ giúp cơ thể lớn lên và tái tạo tế bào; giảm phân giảm một nửa bộ NST tạo giao tử $n$ và tạo ra sự đa dạng di truyền.',
         intuition: 'Số tế bào con sau $k$ lần nguyên phân liên tiếp từ $1$ tế bào là $2^k$.'
       }
     ],
     annotations: [
       { symbol: '2n', meaning: 'Bộ NST lưỡng bội trong tế bào sinh dưỡng', unitOrType: 'Số chiếc NST', condition: 'Tồn tại thành từng cặp tương đồng' },
       { symbol: 'n', meaning: 'Bộ NST đơn bội trong giao tử', unitOrType: 'Số chiếc NST', condition: 'Kết hợp thụ tinh khôi phục $2n$' },
-      { symbol: '\\text{ATP}', meaning: 'Adenosine triphosphate', unitOrType: 'Phân tử cao năng', condition: '$1\\text{ mol}$ ATP thủy phân $\\approx 30{,}5\\text{ kJ}$' }
+      { symbol: '\\text{ATP}', meaning: 'Adenosine triphosphate (đồng tiền năng lượng)', unitOrType: 'Phân tử cao năng', condition: '$1\\text{ mol}$ ATP thủy phân $\\approx 30{,}5\\text{ kJ}$' }
     ]
   },
   {
-    keywords: /adn|dna|arn|rna|gen|phiên mã|dịch mã|mã di truyền|đột biến|operon/i,
+    keywords: /tuần hoàn|tim|hô hấp|tiêu hóa|bài tiết|thận|miễn dịch|vaccine|cảm ứng|thần kinh|neuron|xináp|nội tiết|hormone|hướng động|ứng động|quang chu kì|xuân hóa|thoát hơi nước/i,
+    concepts: [
+      {
+        term: 'Sinh lí Thực vật (Nước, Quang hợp, Cảm ứng)',
+        symbol: '\\text{Mạch gỗ (nước + khoáng)} \\uparrow \\quad | \\quad \\text{Mạch rây (đường)} \\downarrow',
+        definition: 'Rễ hút nước và ion khoáng nhờ thẩm thấu và thoát hơi nước ở khí khổng lá tạo lực hút kéo lên theo mạch gỗ. Cây phản ứng lại ánh sáng, trọng lực nhờ sự phân bố lại hormone thực vật (Auxin, GA, ABA...).',
+        intuition: 'Auxin tập trung ở phía tối làm tế bào phía tối mọc dài nhanh hơn, khiến ngọn cây tự uốn cong về phía có ánh sáng.'
+      },
+      {
+        term: 'Sinh lí Động vật & Cơ chế Bảo vệ cơ thể',
+        symbol: '\\text{Thụ thể} \\to \\text{Hướng tâm} \\to \\text{Trung ương} \\to \\text{Li tâm} \\to \\text{Đáp ứng}',
+        definition: 'Hệ tuần hoàn vận chuyển $O_2$, dinh dưỡng qua tim – mạch; thận lọc máu duy trì cân bằng nội môi; hệ thần kinh truyền xung điện qua cung phản xạ và hệ miễn dịch tạo kháng thể ghi nhớ mầm bệnh.',
+        intuition: 'Tiêm vaccine giúp cơ thể tạo sẵn tế bào trí nhớ miễn dịch để khi gặp virus/vi khuẩn thật sẽ tiêu diệt nhanh chóng trước khi phát bệnh.'
+      }
+    ],
+    annotations: [
+      { symbol: 'BPM', meaning: 'Nhịp đập tim trong một phút', unitOrType: 'nhịp/phút', condition: 'Người trưởng thành nghỉ ngơi ~70–75 BPM' },
+      { symbol: '\\text{Ig}', meaning: 'Kháng thể miễn dịch (Immunoglobulin)', unitOrType: 'Protein đặc hiệu', condition: 'Do tương bào biệt hóa từ Lympho B tiết ra' }
+    ]
+  },
+  {
+    keywords: /adn|dna|arn|rna|gen|phiên mã|dịch mã|mã di truyền|đột biến|operon|pcr|crispr|công nghệ gen/i,
     concepts: [
       {
         term: 'Cấu trúc xoắn kép DNA & Chiều dài phân tử',
         symbol: 'N = 2A + 2G, \\quad L = \\frac{N}{2} \\cdot 3{,}4\\text{ \\AA}',
-        definition: 'Hai mạch DNA bổ sung nhau theo nguyên tắc A liên kết T (2 liên kết H), G liên kết C/X (3 liên kết H); mỗi chu kì xoắn dài $34\\text{ \\AA}$ gồm $10$ cặp nuclêôtit.',
-        intuition: 'Biết số nuclêôtit $N$ suy ra ngay chiều dài $L$, khối lượng $M = N \\cdot 300\\text{ đvC}$ và số liên kết hiđrô $H = 2A + 3G$.'
+        definition: 'Hai mạch DNA bổ sung nhau theo nguyên tắc A liên kết T (2 liên kết H), G liên kết C (3 liên kết H); mỗi chu kì xoắn dài $34\\text{ \\AA}$ gồm $10$ cặp nuclêôtit.',
+        intuition: 'Biết số nuclêôtit $N$ suy ra ngay chiều dài $L$, khối lượng $M = N \\cdot 300\\text{ amu}$ và số liên kết hiđrô $H = 2A + 3G$.'
       },
       {
-        term: 'Phiên mã (DNA → mRNA) & Dịch mã (mRNA → Chuỗi pôlipeptit)',
-        symbol: '1\\text{ codon} = 3\\text{ ribônuclêôtit} \\to 1\\text{ aa}',
-        definition: 'Thông tin di truyền từ mạch khuôn $3\'\\to 5\'$ của gen được phiên mã thành mRNA ($5\'\\to 3\'$), sau đó ribôxôm dịch mã bộ ba thành chuỗi axit amin.',
-        intuition: 'Trong $64$ bộ ba có $3$ bộ ba kết thúc (UAA, UAG, UGA) không mã hóa axit amin.'
+        term: 'Phiên mã, Dịch mã & Điều hòa biểu hiện Gen',
+        symbol: '1\\text{ codon} = 3\\text{ ribônuclêôtit} \\to 1\\text{ axit amin}',
+        definition: 'Gen trên DNA được phiên mã thành mRNA ($5\'\\to 3\'$), sau đó ribôxôm đọc từng bộ ba (codon) trên mRNA để lắp ráp axit amin thành protein. Tế bào bật/tắt gen đúng lúc (như Operon Lac) để tiết kiệm năng lượng.',
+        intuition: 'Đột biến thêm hoặc mất 1 cặp nuclêôtit làm lệch toàn bộ khung đọc từ điểm đột biến trở đi, còn đột biến thay thế có thể tạo protein bình thường nhờ tính thoái hóa mã.'
       }
     ],
     annotations: [
@@ -519,25 +673,25 @@ const BIOLOGY_DOMAIN_RULES: DomainKnowledgeRule[] = [
     ]
   },
   {
-    keywords: /menden|menđen|phân li|hoán vị|liên kết gen|quần thể|hardy|tiến hóa|sinh thái|quần xã|hệ sinh thái|tuần hoàn|hô hấp|thần kinh|cảm ứng/i,
+    keywords: /menden|menđen|phân li|hoán vị|liên kết gen|phả hệ|di truyền người|quần thể|hardy|tiến hóa|sinh thái|quần xã|hệ sinh thái|sinh địa hóa/i,
     concepts: [
       {
-        term: 'Quy luật Menđen & Hoán vị gen',
+        term: 'Quy luật Di truyền Menđen, Liên kết & Hoán vị gen',
         symbol: 'f_{\\text{hoán vị}} \\le 50\\%',
-        definition: 'Phân li độc lập cho tỉ lệ giao tử bằng nhau khi các gen nằm trên các cặp NST khác nhau; hoán vị gen tạo giao tử tái tổ hợp có tổng tỉ lệ bằng tần số hoán vị $f$.',
-        intuition: 'Mỗi loại giao tử hoán vị chiếm tỉ lệ $\\frac{f}{2}$, mỗi loại giao tử liên kết chiếm $\\frac{1 - f}{2}$.'
+        definition: 'Khi các cặp gen nằm trên các cặp NST khác nhau, chúng phân li độc lập ($3:1$ hoặc $9:3:3:1$). Khi cùng nằm trên 1 NST, chúng di truyền liên kết với nhau hoặc trao đổi chéo tạo hoán vị gen với tần số $f$.',
+        intuition: 'Mỗi loại giao tử hoán vị chiếm tỉ lệ $\\frac{f}{2}$, mỗi loại giao tử liên kết chiếm $\\frac{1 - f}{2}$; còn sơ đồ phả hệ giúp truy dấu gen bệnh trội/lặn nằm trên NST thường hay X.'
       },
       {
-        term: 'Cân bằng Di truyền Quần thể (Hardy–Weinberg)',
+        term: 'Cân bằng Quần thể (Hardy–Weinberg) & Hệ sinh thái',
         symbol: 'p^2 AA + 2pq Aa + q^2 aa = 1 \\quad (p + q = 1)',
-        definition: 'Trong quần thể ngẫu phối lớn không chịu tác động của các nhân tố tiến hóa, tần số alen và thành phần kiểu gen duy trì không đổi qua các thế hệ.',
+        definition: 'Trong quần thể ngẫu phối lớn ổn định, tỉ lệ kiểu gen không đổi qua các thế hệ. Trong hệ sinh thái, năng lượng truyền qua các bậc dinh dưỡng bị thất thoát ~90% (chỉ giữ lại ~10%) nên chuỗi thức ăn thường không quá 4–5 mắt xích.',
         intuition: 'Kiểm tra cân bằng nhanh: $\\sqrt{d_{\\text{AA}}} + \\sqrt{r_{\\text{aa}}} = 1$.'
       }
     ],
     annotations: [
       { symbol: 'p, q', meaning: 'Tần số tương đối của alen trội ($p$) và lặn ($q$)', unitOrType: 'Tỉ lệ $\\in [0; 1]$', condition: '$p + q = 1$' },
       { symbol: 'f', meaning: 'Tần số hoán vị gen', unitOrType: '% (0% < f ≤ 50%)', condition: 'Tỉ lệ thuận khoảng cách giữa 2 gen (cM)' },
-      { symbol: 'k', meaning: 'Hiệu suất sinh thái chuyển bậc dinh dưỡng', unitOrType: '%', condition: 'Thường thất thoát ~90%, truyền lên ~10%' }
+      { symbol: 'H', meaning: 'Hiệu suất sinh thái chuyển bậc dinh dưỡng', unitOrType: '%', condition: 'Thường truyền lên bậc sau ~10%' }
     ]
   }
 ];

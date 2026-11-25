@@ -20,7 +20,10 @@ import {
   Play,
   Pause,
   Scissors,
+  Camera,
+  RotateCw,
 } from 'lucide-react';
+import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
 import { useLanguage } from '../../context/LanguageContext';
 import { MathFormula } from '../common/MathRenderer';
 import { ViewportPortal } from '../common/ViewportPortal';
@@ -134,8 +137,12 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   // Animation & hardware cutaway state
   const [isAnimating, setIsAnimating] = useState(true);
   const [showCutaway, setShowCutaway] = useState(false);
+  const [cutawayOffset, setCutawayOffset] = useState(0.15);
+  const [autoOrbit, setAutoOrbit] = useState(false);
   const isAnimatingRef = useRef<boolean>(true);
   isAnimatingRef.current = isAnimating;
+  const autoOrbitRef = useRef<boolean>(false);
+  autoOrbitRef.current = autoOrbit;
 
   // WebGL context safety
   const [contextLost, setContextLost] = useState(false);
@@ -150,6 +157,13 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
   const needsRenderRef = useRef<boolean>(true);
   const isSoftwareGlRef = useRef<boolean>(false);
+  const camPresetFnRef = useRef<((preset: 'iso' | 'oxy' | 'oxz' | 'oyz') => void) | null>(null);
+  const capturePngFnRef = useRef<(() => void) | null>(null);
+
+  const { isRecording, seconds: recSeconds, toggleRecording } = useCanvasRecorder(
+    () => rendererRef.current?.domElement || null,
+    `synapse-math3d-${mode}`
+  );
 
   // Escape key to exit fullscreen
   useEffect(() => {
@@ -385,6 +399,19 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       lastHolo = curHolo;
 
       let activeSim = false;
+      if (autoOrbitRef.current) {
+        applySphericalOrbitDelta(
+          camera,
+          controls.target,
+          dt * 0.42,
+          0,
+          0,
+          controls.minDistance,
+          controls.maxDistance
+        );
+        controls.update();
+        activeSim = true;
+      }
       if (isAnimatingRef.current && mathTickRef.current) {
         mathElapsed += dt;
         mathTickRef.current(dt, mathElapsed, camera);
@@ -475,9 +502,38 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       }
     });
 
+    camPresetFnRef.current = (preset) => {
+      appliedHoloOffset.set(0, 0, 0);
+      if (preset === 'iso') {
+        camera.position.set(7, 6, 8);
+      } else if (preset === 'oxy') {
+        camera.position.set(0.01, 11.2, 0.01);
+      } else if (preset === 'oxz') {
+        camera.position.set(0, 2.0, 11.5);
+      } else {
+        camera.position.set(11.5, 2.0, 0);
+      }
+      controls.target.set(0, 0, 0);
+      camera.updateProjectionMatrix();
+      controls.update();
+      needsRenderRef.current = true;
+    };
+
+    capturePngFnRef.current = () => {
+      updateBillboardLabels(dynamicGroup, camera);
+      if (!isSoftwareGl && pipeline) {
+        pipeline.render(0);
+      } else {
+        renderer.render(scene, camera);
+      }
+      captureCanvasPng(renderer.domElement, `synapse-math3d-${Date.now()}.png`);
+    };
+
     return () => {
       alive = false;
       unsubRemote();
+      camPresetFnRef.current = null;
+      capturePngFnRef.current = null;
       cancelAnimationFrame(frameId);
       clearTimeout(frameId);
       controls.removeEventListener('change', markDirty);
@@ -764,7 +820,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     // MODE 2: Mặt Cầu & Mặt Phẳng Thiết Diện 3D
     // -------------------------------------------------------------
     else if (mode === 'sphere_plane') {
-      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.15)] : [];
+      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), cutawayOffset)] : [];
       // Optical Glass Sphere
       const sphereGeo = new THREE.SphereGeometry(sphereRadius, 48, 36);
       const sphereMat = new THREE.MeshPhysicalMaterial({
@@ -1003,7 +1059,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     // MODE 4: Khối Tròn Xoay & Tích Phân Thể Tích 3D
     // -------------------------------------------------------------
     else if (mode === 'revolution_solid') {
-      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.08)] : [];
+      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), cutawayOffset)] : [];
       const points: THREE.Vector2[] = [];
       const profilePts: THREE.Vector3[] = [];
       const N = 40;
@@ -1104,7 +1160,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
     // MODE 5: Ba Đường Conic Từ Thiết Diện Mặt Nón Đôi (Lớp 10)
     // -------------------------------------------------------------
     else if (mode === 'conic_sections_3d') {
-      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.2)] : [];
+      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), cutawayOffset)] : [];
       const coneH = 3.2;
       const coneR = 2.4;
       const coneMat = new THREE.MeshPhysicalMaterial({
@@ -1443,7 +1499,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
       const center = new THREE.Vector3(0, 2.2, 0);
 
       // Crystal Glass Sphere (O; R) with optional cutaway
-      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.15)] : [];
+      const cutClip = showCutaway ? [new THREE.Plane(new THREE.Vector3(0, 0, -1), cutawayOffset)] : [];
       const spGeo = new THREE.SphereGeometry(R, 40, 32);
       const spMat = new THREE.MeshPhysicalMaterial({
         color: 0x0ea5e9,
@@ -1959,6 +2015,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   }, [
     mode,
     showCutaway,
+    cutawayOffset,
     ux,
     uy,
     uz,
@@ -2071,6 +2128,40 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
               ))}
             </div>
 
+            <div className="hidden xl:flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-900/95 border border-slate-700/80 shadow-lg shrink-0">
+              {(
+                [
+                  { id: 'iso', label: 'Iso' },
+                  { id: 'oxy', label: 'Oxy' },
+                  { id: 'oxz', label: 'Oxz' },
+                  { id: 'oyz', label: 'Oyz' },
+                ] as const
+              ).map((cp) => (
+                <button
+                  key={cp.id}
+                  type="button"
+                  onClick={() => camPresetFnRef.current?.(cp.id)}
+                  className="px-2 py-1 rounded text-[10px] font-mono font-bold text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer"
+                  title={`Góc nhìn ${cp.label}`}
+                >
+                  {cp.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setAutoOrbit((o) => !o)}
+              className={`sim-btn-math p-2 rounded-lg border shadow-lg cursor-pointer shrink-0 ${
+                autoOrbit
+                  ? 'bg-indigo-600 border-indigo-400 text-white'
+                  : 'bg-slate-900/95 border-slate-700/80 text-slate-300 hover:text-white'
+              }`}
+              title={autoOrbit ? 'Tắt tự xoay 360°' : 'Tự xoay bàn xoay 360°'}
+            >
+              <RotateCw className={`w-4 h-4 ${autoOrbit ? 'animate-spin' : ''}`} />
+            </button>
+
             <button
               onClick={() => setIsAnimating((p) => !p)}
               className="sim-btn-math p-2 rounded-lg bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white shadow-lg cursor-pointer shrink-0"
@@ -2093,6 +2184,22 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
                 <span className="hidden sm:inline">Mặt cắt</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => capturePngFnRef.current?.()}
+              className="sim-btn-math p-2 rounded-lg bg-slate-900/95 border border-slate-700/80 text-slate-300 hover:text-white shadow-lg cursor-pointer shrink-0"
+              title="Chụp ảnh không gian 3D (.png)"
+            >
+              <Camera className="w-4 h-4 text-sky-400" />
+            </button>
+
+            <RecordVideoButton
+              isRecording={isRecording}
+              seconds={recSeconds}
+              onClick={toggleRecording}
+              compact
+            />
 
             <HologramModeControls
               mode={hologramMode}
@@ -2129,10 +2236,22 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
         <div className="relative z-20 p-2.5 sm:p-3 lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 w-full lg:w-[96%] lg:max-w-3xl lg:pointer-events-none bg-slate-950/95 lg:bg-transparent border-t border-slate-800/80 lg:border-t-0 shrink-0">
           <div className="pointer-events-auto bg-slate-900/96 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-3 sm:p-4 text-white space-y-2.5 sm:space-y-3 max-h-[34dvh] sm:max-h-[240px] lg:max-h-none overflow-y-auto transition-all duration-300">
           {/* Header Row of Dock */}
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
               <Sliders className="w-3.5 h-3.5 text-indigo-400" />
               <span>Bảng Điều Khiển Tương Tác 3D</span>
+              <div className="flex xl:hidden items-center gap-1 ml-1">
+                {(['iso', 'oxy', 'oxz', 'oyz'] as const).map((cp) => (
+                  <button
+                    key={cp}
+                    type="button"
+                    onClick={() => camPresetFnRef.current?.(cp)}
+                    className="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-indigo-600 text-[10px] font-mono text-slate-300 hover:text-white cursor-pointer"
+                  >
+                    {cp.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
             <button
               onClick={() => setIsControlsExpanded(!isControlsExpanded)}
@@ -2142,6 +2261,24 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
               {isControlsExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
             </button>
           </div>
+
+          {showCutaway && (mode === 'sphere_plane' || mode === 'revolution_solid' || mode === 'conic_sections_3d' || mode === 'circle_theorems_3d') && (
+            <div className="flex items-center gap-3 px-2.5 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/35 text-[11px]">
+              <span className="font-semibold text-emerald-300 whitespace-nowrap">Độ sâu mặt cắt Z:</span>
+              <input
+                type="range"
+                min="-2.6"
+                max="2.6"
+                step="0.05"
+                value={cutawayOffset}
+                onChange={(e) => setCutawayOffset(Number(e.target.value))}
+                className="flex-1 accent-emerald-400 h-1.5 cursor-pointer"
+              />
+              <span className="font-mono font-bold text-emerald-200 tabular-nums w-12 text-right">
+                {cutawayOffset.toFixed(2)}
+              </span>
+            </div>
+          )}
 
           {/* Body of Dock */}
           {isControlsExpanded && (

@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { Grid3X3, RotateCcw } from 'lucide-react';
+import { Camera, Grid3X3, Orbit, RotateCcw } from 'lucide-react';
 import { PaperSimKind, PaperToSimParam, SimEngineKind } from '../../types';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { captureCanvasPng } from '../common/SimProToolkit';
 
 export type UnifiedSimKind = SimEngineKind | PaperSimKind;
 
@@ -48,8 +49,12 @@ export const StemSim3DViewport: React.FC<StemSim3DViewportProps> = ({
   const { perfMode } = useBackgroundTheme();
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [wireframe, setWireframe] = useState(false);
+  const [autoOrbit, setAutoOrbit] = useState(false);
+  const [localSpeed, setLocalSpeed] = useState<number>(speedMultiplier);
   const wireframeRef = useRef(false);
   wireframeRef.current = wireframe;
+  const autoOrbitRef = useRef(false);
+  autoOrbitRef.current = autoOrbit;
 
   const simKindRef = useRef(simKind);
   simKindRef.current = simKind;
@@ -57,14 +62,19 @@ export const StemSim3DViewport: React.FC<StemSim3DViewportProps> = ({
   paramsRef.current = params;
   const playingRef = useRef(playing);
   playingRef.current = playing;
-  const speedRef = useRef(speedMultiplier);
-  speedRef.current = speedMultiplier;
+  const speedRef = useRef(localSpeed);
+  speedRef.current = localSpeed;
+
+  useEffect(() => {
+    setLocalSpeed(speedMultiplier);
+  }, [speedMultiplier]);
 
   const [hudReadout, setHudReadout] = useState('WEBGL 3D');
   const [contextLost, setContextLost] = useState(false);
 
   const simTimeRef = useRef(0);
-  const resetCamRef = useRef<(() => void) | null>(null);
+  const resetCamRef = useRef<((preset?: 'iso' | 'front' | 'top') => void) | null>(null);
+  const snapshotRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     simTimeRef.current = 0;
@@ -333,10 +343,23 @@ export const StemSim3DViewport: React.FC<StemSim3DViewportProps> = ({
     pyramidWire.position.y = 1.4;
     oxyzGroup.add(pyramidWire);
 
-    resetCamRef.current = () => {
-      camera.position.set(0, 4.4, 9.8);
-      controls.target.set(0, 1.2, 0);
+    resetCamRef.current = (preset = 'iso') => {
+      if (preset === 'front') {
+        camera.position.set(0, 2.2, 10.6);
+        controls.target.set(0, 1.4, 0);
+      } else if (preset === 'top') {
+        camera.position.set(0.01, 11.4, 2.4);
+        controls.target.set(0, 0.8, 0);
+      } else {
+        camera.position.set(5.4, 4.4, 8.8);
+        controls.target.set(0, 1.2, 0);
+      }
       controls.update();
+    };
+
+    snapshotRef.current = () => {
+      renderer.render(scene, camera);
+      captureCanvasPng(renderer.domElement, `synapse-stem-${simKindRef.current}`);
     };
 
     const ro = new ResizeObserver(() => {
@@ -553,6 +576,13 @@ export const StemSim3DViewport: React.FC<StemSim3DViewportProps> = ({
         nextReadout = `3D OXYZ SOLID · r=${r.toFixed(1)} · h=${h.toFixed(1)}`;
       }
 
+      if (autoOrbitRef.current) {
+        const ang = dt * 0.42;
+        const dx = camera.position.x - controls.target.x;
+        const dz = camera.position.z - controls.target.z;
+        camera.position.x = controls.target.x + dx * Math.cos(ang) - dz * Math.sin(ang);
+        camera.position.z = controls.target.z + dx * Math.sin(ang) + dz * Math.cos(ang);
+      }
       controls.update();
       renderer.render(scene, camera);
 
@@ -606,7 +636,44 @@ export const StemSim3DViewport: React.FC<StemSim3DViewportProps> = ({
       </div>
 
       {/* Top-Right Compact 3D Utility Controls */}
-      <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
+      <div className="absolute top-2.5 right-2.5 z-10 flex flex-wrap items-center justify-end gap-1">
+        {(['iso', 'front', 'top'] as const).map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => resetCamRef.current?.(p)}
+            className="px-1.5 py-1 rounded border border-slate-700 bg-slate-950/88 hover:border-sky-400 text-[10px] font-mono font-bold uppercase text-slate-200 cursor-pointer"
+            title={`Camera ${p}`}
+          >
+            {p}
+          </button>
+        ))}
+        {([0.5, 1, 2] as const).map((sp) => (
+          <button
+            key={sp}
+            type="button"
+            onClick={() => setLocalSpeed(sp)}
+            className={`px-1.5 py-1 rounded border text-[10px] font-mono font-bold cursor-pointer ${
+              localSpeed === sp
+                ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                : 'bg-slate-950/88 border-slate-700 text-slate-300'
+            }`}
+          >
+            {sp}x
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => setAutoOrbit((o) => !o)}
+          className={`px-2 py-1 rounded border text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer ${
+            autoOrbit
+              ? 'bg-cyan-500 text-slate-950 border-cyan-300'
+              : 'bg-slate-950/88 border-slate-700 text-slate-200'
+          }`}
+          title="Auto-Orbit 3D"
+        >
+          <Orbit className="w-3 h-3" />
+        </button>
         <button
           type="button"
           onClick={() => setWireframe((w) => !w)}
@@ -622,7 +689,15 @@ export const StemSim3DViewport: React.FC<StemSim3DViewportProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => resetCamRef.current?.()}
+          onClick={() => snapshotRef.current?.()}
+          className="p-1.5 rounded border border-slate-700 bg-slate-950/88 hover:border-sky-400 text-sky-300 cursor-pointer"
+          title="PNG Snapshot"
+        >
+          <Camera className="w-3 h-3" />
+        </button>
+        <button
+          type="button"
+          onClick={() => resetCamRef.current?.('iso')}
           className="p-1.5 rounded border border-slate-700 bg-slate-950/88 text-slate-200 cursor-pointer"
           title="Reset Camera"
         >

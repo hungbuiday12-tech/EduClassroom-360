@@ -16,9 +16,14 @@ import {
   Minimize2,
   Sliders,
   Table as TableIcon,
-  ArrowLeft
+  ArrowLeft,
+  Play,
+  Pause,
+  Download,
+  TrendingUp
 } from 'lucide-react';
 import { ViewportPortal } from '../common/ViewportPortal';
+import { exportRowsToCsv, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
 
 const PRESET_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#0891b2'];
 
@@ -99,8 +104,15 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
 
   const [activeFuncId, setActiveFuncId] = useState<string>('f1');
   const [showTable, setShowTable] = useState<boolean>(false);
+  const [showDerivative, setShowDerivative] = useState<boolean>(false);
+  const [isSweepingTangent, setIsSweepingTangent] = useState<boolean>(false);
   const [hoverCoord, setHoverCoord] = useState<{ x: number; y: number } | null>(null);
   const [resizeTick, setResizeTick] = useState(0);
+
+  const { isRecording, seconds: recSeconds, toggleRecording } = useCanvasRecorder(
+    () => canvasRef.current,
+    'synapse-function-graph'
+  );
 
   useEffect(() => {
     if (!initialConfig) return;
@@ -164,6 +176,35 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
   }, [isFullScreen]);
 
   const activeFunc = functions.find((f) => f.id === activeFuncId) || functions[0];
+
+  // Auto-sweep tangent contact point x0 along [-4, 4]
+  useEffect(() => {
+    if (!isSweepingTangent || !activeFunc?.showTangent) return;
+    let rafId = 0;
+    let last = performance.now();
+    let dir = 1;
+    const stepSweep = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      setFunctions((list) =>
+        list.map((fn) => {
+          if (fn.id !== activeFuncId) return fn;
+          let nextX = (fn.tangentX0 ?? 0) + dir * dt * 1.45;
+          if (nextX >= 4) {
+            nextX = 4;
+            dir = -1;
+          } else if (nextX <= -4) {
+            nextX = -4;
+            dir = 1;
+          }
+          return { ...fn, tangentX0: Number(nextX.toFixed(3)) };
+        })
+      );
+      rafId = requestAnimationFrame(stepSweep);
+    };
+    rafId = requestAnimationFrame(stepSweep);
+    return () => cancelAnimationFrame(rafId);
+  }, [isSweepingTangent, activeFuncId, activeFunc?.showTangent]);
 
   // Evaluate function at x
   const evaluateFunc = useCallback((fn: FunctionPlotConfig, x: number): number | null => {
@@ -394,7 +435,7 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
         const lo = Math.min(intA, intB);
         const hi = Math.max(intA, intB);
         if (hi > lo) {
-          const slices = 60;
+          const slices = 120;
           const dxStep = (hi - lo) / slices;
           let signedIntegral = 0;
           let unsignedArea = 0;
@@ -403,13 +444,18 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
           for (let i = 0; i < slices; i++) {
             const x0 = lo + i * dxStep;
             const x1 = x0 + dxStep;
+            const xm = 0.5 * (x0 + x1);
             const y0 = evaluateFunc(fn, x0);
             const y1 = evaluateFunc(fn, x1);
+            const ym = evaluateFunc(fn, xm);
             if (y0 === null || y1 === null || !isFinite(y0) || !isFinite(y1)) continue;
 
-            const trapArea = 0.5 * (y0 + y1) * dxStep;
-            signedIntegral += trapArea;
-            unsignedArea += Math.abs(trapArea);
+            const simpsonSlice =
+              ym !== null && isFinite(ym)
+                ? ((y0 + 4 * ym + y1) / 6) * dxStep
+                : 0.5 * (y0 + y1) * dxStep;
+            signedIntegral += simpsonSlice;
+            unsignedArea += Math.abs(simpsonSlice);
 
             const px0 = toPxX(x0);
             const px1 = toPxX(x1);
@@ -418,8 +464,8 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
             const pyAxis = toPxY(0);
 
             const posGrad = ctx.createLinearGradient(0, Math.min(py0, py1), 0, pyAxis);
-            posGrad.addColorStop(0, trapArea >= 0 ? 'rgba(16, 185, 129, 0.36)' : 'rgba(244, 63, 94, 0.36)');
-            posGrad.addColorStop(1, trapArea >= 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)');
+            posGrad.addColorStop(0, simpsonSlice >= 0 ? 'rgba(16, 185, 129, 0.36)' : 'rgba(244, 63, 94, 0.36)');
+            posGrad.addColorStop(1, simpsonSlice >= 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)');
             ctx.fillStyle = posGrad;
             ctx.beginPath();
             ctx.moveTo(px0, pyAxis);
@@ -555,6 +601,39 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
       ctx.stroke();
       ctx.restore();
 
+      // Optional f'(x) dashed derivative curve overlay
+      if (showDerivative) {
+        ctx.save();
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        let dDrawing = false;
+        let lastDY: number | null = null;
+        for (let px = 0; px <= width; px += 2) {
+          const x = toMathX(px);
+          const dy = evaluateDerivative(fn, x);
+          if (dy === null || !isFinite(dy)) {
+            dDrawing = false;
+            lastDY = null;
+            continue;
+          }
+          const py = toPxY(dy);
+          if (lastDY !== null && Math.abs(py - lastDY) > height * 0.75) {
+            dDrawing = false;
+          }
+          if (!dDrawing) {
+            ctx.moveTo(px, py);
+            dDrawing = true;
+          } else {
+            ctx.lineTo(px, py);
+          }
+          lastDY = py;
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
       // Tangent line if active
       if (fn.showTangent && fn.tangentX0 !== undefined) {
         const x0 = fn.tangentX0;
@@ -606,6 +685,19 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
       }
     });
 
+    if (showDerivative) {
+      ctx.save();
+      ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.9)';
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 1;
+      ctx.fillRect(10, 10, 134, 24);
+      ctx.strokeRect(10, 10, 134, 24);
+      ctx.fillStyle = '#a855f7';
+      ctx.font = 'bold 11px "JetBrains Mono", monospace';
+      ctx.fillText("--- Đạo hàm f'(x)", 18, 26);
+      ctx.restore();
+    }
+
     // 4. Cursor crosshair if hovering
     if (hoverCoord) {
       ctx.save();
@@ -622,7 +714,7 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
       ctx.stroke();
       ctx.restore();
     }
-  }, [viewport, functions, evaluateFunc, evaluateDerivative, hoverCoord, resizeTick]);
+  }, [viewport, functions, evaluateFunc, evaluateDerivative, hoverCoord, resizeTick, showDerivative]);
 
   // Pointer (mouse + touch + stylus) pan handlers
   const handleMouseDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -781,6 +873,18 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
                 <RotateCcw className="w-4 h-4" />
               </button>
               <button
+                onClick={() => setShowDerivative((d) => !d)}
+                title="Bật/tắt đồ thị đạo hàm f'(x)"
+                className={`sim-btn-math min-h-[38px] flex items-center gap-1 px-2.5 py-1.5 rounded-[3px] border text-xs font-mono font-bold shrink-0 cursor-pointer ${
+                  showDerivative
+                    ? 'sim-btn-active bg-purple-600 border-purple-400 text-white'
+                    : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>f&apos;(x)</span>
+              </button>
+              <button
                 onClick={() => setShowTable(!showTable)}
                 title="Bảng giá trị biến thiên"
                 className={`sim-btn-math min-w-[38px] min-h-[38px] flex items-center justify-center p-1.5 rounded-[3px] border shrink-0 cursor-pointer ${showTable ? 'sim-btn-active bg-indigo-100 border-indigo-400 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
@@ -794,6 +898,12 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
               >
                 <Camera className="w-4 h-4" />
               </button>
+              <RecordVideoButton
+                isRecording={isRecording}
+                seconds={recSeconds}
+                onClick={toggleRecording}
+                compact
+              />
               <button
                 onClick={() => setIsFullScreen(!isFullScreen)}
                 title={isFullScreen ? 'Thu nhỏ (Esc)' : 'Toàn màn hình (Full Screen)'}
@@ -829,9 +939,26 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
             {/* Table Slide-Over (Below canvas on mobile < sm, floating top-right on sm+) */}
             {showTable && (
               <div className="relative sm:absolute sm:top-3 sm:right-3 w-full sm:w-64 max-h-56 sm:max-h-[90%] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t sm:border border-slate-200 dark:border-slate-800 sm:rounded-lg p-3 shadow-lg overflow-y-auto z-10">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 mb-2">
-                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Bảng giá trị: {activeFunc?.name}</span>
-                  <button onClick={() => setShowTable(false)} className="text-slate-400 hover:text-slate-600 text-xs">✕</button>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800 mb-2 gap-2">
+                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">Bảng giá trị: {activeFunc?.name}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        exportRowsToCsv(
+                          `bang_gia_tri_${activeFunc?.name || 'fx'}.csv`,
+                          ['x', 'f(x)', "f'(x)"],
+                          tableData.map((r) => [r.x, r.y, r.dy])
+                        )
+                      }
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold cursor-pointer"
+                      title="Xuất bảng giá trị CSV"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>CSV</span>
+                    </button>
+                    <button onClick={() => setShowTable(false)} className="text-slate-400 hover:text-slate-600 text-xs cursor-pointer">✕</button>
+                  </div>
                 </div>
                 <table className="w-full text-xs font-mono tabular-nums">
                   <thead>
@@ -1139,23 +1266,39 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
               </label>
 
               {activeFunc.showTangent && (
-                <div className="mt-2.5 bg-amber-50 dark:bg-amber-950/20 p-2.5 rounded-lg border border-amber-200/60 dark:border-amber-800/40">
-                  <div className="flex items-center justify-between text-xs mb-1 gap-2">
+                <div className="mt-2.5 bg-amber-50 dark:bg-amber-950/20 p-2.5 rounded-lg border border-amber-200/60 dark:border-amber-800/40 space-y-2">
+                  <div className="flex items-center justify-between text-xs gap-2">
                     <span className="text-amber-800 dark:text-amber-200 font-medium">Hoành độ x₀</span>
-                    <input
-                      type="number"
-                      step="any"
-                      value={activeFunc.tangentX0 ?? 0}
-                      onChange={(e) => {
-                        const x0 = parseFloat(e.target.value);
-                        if (Number.isFinite(x0)) {
-                          setFunctions((list) =>
-                            list.map((fn) => (fn.id === activeFuncId ? { ...fn, tangentX0: x0 } : fn))
-                          );
-                        }
-                      }}
-                      className="w-24 px-2 py-0.5 text-right text-xs font-mono tabular-nums rounded-md bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
-                    />
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsSweepingTangent((s) => !s)}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer ${
+                          isSweepingTangent
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200'
+                        }`}
+                        title="Tự động trượt tiếp điểm x₀ qua lại"
+                      >
+                        {isSweepingTangent ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                        <span>{isSweepingTangent ? 'Dừng quét' : 'Quét x₀'}</span>
+                      </button>
+                      <input
+                        type="number"
+                        step="any"
+                        value={activeFunc.tangentX0 ?? 0}
+                        onChange={(e) => {
+                          setIsSweepingTangent(false);
+                          const x0 = parseFloat(e.target.value);
+                          if (Number.isFinite(x0)) {
+                            setFunctions((list) =>
+                              list.map((fn) => (fn.id === activeFuncId ? { ...fn, tangentX0: x0 } : fn))
+                            );
+                          }
+                        }}
+                        className="w-20 px-2 py-0.5 text-right text-xs font-mono tabular-nums rounded-md bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      />
+                    </div>
                   </div>
                   <input
                     type="range"
@@ -1164,6 +1307,7 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
                     step="0.1"
                     value={Math.max(-8, Math.min(8, activeFunc.tangentX0 ?? 0))}
                     onChange={(e) => {
+                      setIsSweepingTangent(false);
                       const x0 = parseFloat(e.target.value);
                       setFunctions((list) =>
                         list.map((fn) => (fn.id === activeFuncId ? { ...fn, tangentX0: x0 } : fn))

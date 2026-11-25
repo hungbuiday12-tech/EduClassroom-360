@@ -2,10 +2,12 @@ import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'rea
 import {
   ArrowLeft,
   BookOpen,
+  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Command,
   Compass,
   Cpu,
   Hand,
@@ -13,14 +15,18 @@ import {
   Maximize2,
   Minimize2,
   QrCode,
+  Search,
   Sparkles,
+  Star,
+  X,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useRemoteController } from '../../context/RemoteControllerContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 import { FutureLabTabId, SubjectType } from '../../types';
-import { PRE_STUDIOS } from '../../data/preLabsData';
+import { PRE_SIDEBAR_GROUPS, PRE_STUDIOS, PreSidebarGroupId } from '../../data/preLabsData';
+import { RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
 import { SynapseV2Studio } from '../synapsev2/SynapseV2Studio';
 import { NeuralGalaxyTwin3D } from './NeuralGalaxyTwin3D';
 import { TextToSimStudio } from './TextToSimStudio';
@@ -85,19 +91,82 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
 
   const [isStudioFullscreen, setIsStudioFullscreen] = useState<boolean>(false);
   const [showStudioIntro, setShowStudioIntro] = useState(true);
+  const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
+  const [switcherQuery, setSwitcherQuery] = useState('');
+  const [switcherGroup, setSwitcherGroup] = useState<'all' | 'pinned' | PreSidebarGroupId>('all');
+  const [pinnedStudios, setPinnedStudios] = useState<FutureLabTabId[]>(() => {
+    try {
+      const raw = localStorage.getItem('synapse_pre_pinned_v1');
+      return raw ? (JSON.parse(raw) as FutureLabTabId[]) : ['what_if_physics_3d', 'quantum_holodeck_3d', 'solar_system_3d'];
+    } catch {
+      return ['what_if_physics_3d', 'quantum_holodeck_3d', 'solar_system_3d'];
+    }
+  });
+  const [exploredStudios, setExploredStudios] = useState<FutureLabTabId[]>(() => {
+    try {
+      const raw = localStorage.getItem('synapse_pre_explored_v1');
+      return raw ? (JSON.parse(raw) as FutureLabTabId[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const studioStageRef = useRef<HTMLDivElement | null>(null);
   const enteredNativeFsRef = useRef<boolean>(false);
+
+  const {
+    isRecording: isStudioRecording,
+    recordSeconds: studioRecordSeconds,
+    toggleRecording: toggleStudioRecording,
+    stopRecording: stopStudioRecording,
+    supported: studioVideoSupported,
+  } = useCanvasRecorder(
+    () => studioStageRef.current?.querySelector('canvas') as HTMLCanvasElement | null,
+    `synapse-pre-${activeView}`
+  );
+
+  useEffect(() => {
+    if (!activeView) return;
+    setExploredStudios((prev) => {
+      if (prev.includes(activeView)) return prev;
+      const next = [...prev, activeView];
+      try {
+        localStorage.setItem('synapse_pre_explored_v1', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, [activeView]);
+
+  const togglePinStudio = (id: FutureLabTabId) => {
+    setPinnedStudios((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try {
+        localStorage.setItem('synapse_pre_pinned_v1', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.documentElement.classList.toggle('pre-fullscreen-active', isStudioFullscreen);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isStudioFullscreen) {
-        enteredNativeFsRef.current = false;
-        setIsStudioFullscreen(false);
-        try {
-          if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
-        } catch {}
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setQuickSwitcherOpen((v) => !v);
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (quickSwitcherOpen) {
+          setQuickSwitcherOpen(false);
+          return;
+        }
+        if (isStudioFullscreen) {
+          enteredNativeFsRef.current = false;
+          setIsStudioFullscreen(false);
+          try {
+            if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+          } catch {}
+        }
       }
     };
     const onFsChange = () => {
@@ -113,7 +182,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('fullscreenchange', onFsChange);
     };
-  }, [isStudioFullscreen]);
+  }, [isStudioFullscreen, quickSwitcherOpen]);
 
   const toggleStudioFullscreen = () => {
     if (!isStudioFullscreen) {
@@ -146,6 +215,8 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
       : 'bg-white/82 dark:bg-slate-950/72';
 
   const openModulePage = (tab: FutureLabTabId) => {
+    stopStudioRecording();
+    setQuickSwitcherOpen(false);
     navigate({
       subject: 'synapse_v2',
       futureTab: tab,
@@ -362,6 +433,33 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             <button
               type="button"
               data-ripple="true"
+              onClick={() => setQuickSwitcherOpen(true)}
+              className="pre-grand-btn min-h-[38px] inline-flex items-center gap-1.5 px-3 py-1.5 border border-cyan-500/45 bg-cyan-500/12 hover:bg-cyan-500/25 text-xs font-bold text-cyan-700 dark:text-cyan-200 cursor-pointer whitespace-nowrap"
+              title={isEn ? 'Quick Studio Switcher (Ctrl+K)' : 'Chuyển nhanh Phòng Lab Pre (Ctrl+K)'}
+            >
+              <Command className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">
+                {isEn ? 'Switch Lab' : 'Kho Pre'} ({exploredStudios.length}/{PRE_STUDIOS.length})
+              </span>
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => togglePinStudio(activeView)}
+              className={`pre-grand-btn min-h-[38px] inline-flex items-center justify-center px-2.5 py-1.5 border text-xs font-bold cursor-pointer whitespace-nowrap ${
+                pinnedStudios.includes(activeView)
+                  ? 'border-amber-400/70 bg-amber-500/20 text-amber-600 dark:text-amber-300'
+                  : 'border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-300'
+              }`}
+              title={pinnedStudios.includes(activeView) ? (isEn ? 'Unpin Lab' : 'Bỏ ghim phòng Lab') : isEn ? 'Pin Favorite' : 'Ghim phòng Lab'}
+            >
+              <Star className={`w-3.5 h-3.5 ${pinnedStudios.includes(activeView) ? 'fill-amber-400 text-amber-400' : ''}`} />
+            </button>
+
+            <button
+              type="button"
+              data-ripple="true"
               onClick={() => openModulePage(prevStudio.id)}
               className="pre-grand-btn min-h-[38px] inline-flex items-center gap-1 px-3 py-1.5 border border-slate-300 dark:border-slate-700 bg-white/90 dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer whitespace-nowrap"
               title={isEn ? prevStudio.titleEn : prevStudio.titleVi}
@@ -380,6 +478,15 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               <span className="hidden sm:inline">{isEn ? 'Next' : 'Tiếp'}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
+
+            <RecordVideoButton
+              isRecording={isStudioRecording}
+              recordSeconds={studioRecordSeconds}
+              onToggle={toggleStudioRecording}
+              supported={studioVideoSupported}
+              isEn={isEn}
+              className="!min-h-[38px] !border-slate-300 dark:!border-slate-700 !bg-white/90 dark:!bg-slate-900/90 !text-slate-800 dark:!text-slate-200"
+            />
 
             <button
               type="button"
@@ -669,6 +776,119 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
           </Suspense>
         )}
       </div>
+
+      {/* Quick Studio Switcher Spotlight Modal (Ctrl+K) */}
+      {quickSwitcherOpen && (
+        <div
+          className="fixed inset-0 z-[180] bg-slate-950/80 backdrop-blur-md flex items-start justify-center p-3 sm:p-8 pt-10 sm:pt-16"
+          onClick={() => setQuickSwitcherOpen(false)}
+        >
+          <div
+            className="w-full max-w-3xl rounded-2xl border border-cyan-500/40 bg-white dark:bg-[#071124] text-slate-900 dark:text-white shadow-2xl overflow-hidden flex flex-col max-h-[82vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-3.5 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
+              <Search className="w-4 h-4 text-cyan-500 shrink-0" />
+              <input
+                type="text"
+                autoFocus
+                value={switcherQuery}
+                onChange={(e) => setSwitcherQuery(e.target.value)}
+                placeholder={
+                  isEn
+                    ? 'Search all 24 Synapse Pre studios, megastructures, sandboxes...'
+                    : 'Tìm nhanh trong 24 phòng Lab, Mô phỏng & Sandboxes Synapse Pre...'
+                }
+                className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setQuickSwitcherOpen(false)}
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-1.5 bg-slate-50 dark:bg-slate-950/60">
+              {(
+                [
+                  { id: 'all', label: isEn ? `All (${PRE_STUDIOS.length})` : `Tất cả (${PRE_STUDIOS.length})` },
+                  { id: 'pinned', label: isEn ? `Pinned (${pinnedStudios.length})` : `Đã ghim (${pinnedStudios.length})` },
+                  ...PRE_SIDEBAR_GROUPS.map((g) => ({
+                    id: g.id,
+                    label: isEn ? g.labelEn : g.labelVi,
+                  })),
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSwitcherGroup(tab.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-bold cursor-pointer transition-colors ${
+                    switcherGroup === tab.id
+                      ? 'bg-cyan-500 text-slate-950'
+                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-3 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {PRE_STUDIOS.filter((st) => {
+                if (switcherGroup === 'pinned' && !pinnedStudios.includes(st.id)) return false;
+                if (switcherGroup !== 'all' && switcherGroup !== 'pinned' && st.sidebarGroup !== switcherGroup) return false;
+                const q = switcherQuery.trim().toLowerCase();
+                if (!q) return true;
+                return `${st.titleVi} ${st.titleEn} ${st.metaVi} ${st.keywords}`.toLowerCase().includes(q);
+              }).map((st) => {
+                const IconComp = st.icon;
+                const isActive = st.id === activeView;
+                const isPinned = pinnedStudios.includes(st.id);
+                const isExplored = exploredStudios.includes(st.id);
+                return (
+                  <div
+                    key={st.id}
+                    className={`flex items-center gap-2 rounded-xl border p-2.5 transition-colors ${
+                      isActive
+                        ? 'border-cyan-500 bg-cyan-500/10'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-cyan-400/60 bg-slate-50/70 dark:bg-slate-900/60'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => openModulePage(st.id)}
+                      className="flex-1 min-w-0 flex items-center gap-2.5 text-left cursor-pointer"
+                    >
+                      <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${st.iconBgClass}`}>
+                        <IconComp className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                          <span>{st.indexLabel}</span>
+                          {isExplored && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+                        </div>
+                        <div className="text-xs font-bold truncate text-slate-900 dark:text-white">
+                          {isEn ? st.titleEn : st.titleVi}
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => togglePinStudio(st.id)}
+                      className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 cursor-pointer shrink-0"
+                    >
+                      <Star className={`w-3.5 h-3.5 ${isPinned ? 'fill-amber-400 text-amber-400' : ''}`} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

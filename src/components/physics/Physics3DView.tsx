@@ -29,8 +29,10 @@ import {
   Camera,
   Download,
   Trash2,
+  RotateCw,
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { MiniTelemetryChart, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { PHYSICS_3D_SIMS, getDomainFor3DSim } from '../../data/physicsDomainsData';
 import { Physics3DMode as SharedPhysics3DMode } from '../../types';
@@ -331,6 +333,13 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   const isRunningRef = useRef<boolean>(isRunning);
   const simSpeedRef = useRef<number>(simSpeed);
   const stepTriggerRef = useRef<number>(0);
+  const [autoOrbit3D, setAutoOrbit3D] = useState(false);
+  const autoOrbit3DRef = useRef(false);
+  autoOrbit3DRef.current = autoOrbit3D;
+  const { isRecording, seconds: recSeconds, toggleRecording } = useCanvasRecorder(
+    () => rendererRef.current?.domElement || null,
+    `synapse-physics3d-${mode}`
+  );
   useEffect(() => {
     isRunningRef.current = isRunning;
   }, [isRunning]);
@@ -619,6 +628,17 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         ) {
           cameraLerpRef.current = null;
         }
+      }
+      if (autoOrbit3DRef.current) {
+        applySphericalOrbitDelta(
+          camera,
+          controls.target,
+          dt * 0.36,
+          0,
+          0,
+          controls.minDistance,
+          controls.maxDistance
+        );
       }
       controls.update();
 
@@ -3212,6 +3232,20 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
 
               <button
                 type="button"
+                onClick={() => setAutoOrbit3D((o) => !o)}
+                className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold border transition-colors cursor-pointer whitespace-nowrap ${
+                  autoOrbit3D
+                    ? 'bg-amber-600 border-amber-400 text-white'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
+                title={autoOrbit3D ? 'Tắt xoay tự động 360°' : 'Bật xoay bàn 360° quanh mô hình'}
+              >
+                <RotateCw className={`w-3 h-3 ${autoOrbit3D ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Xoay 360°</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleCapture3DScreenshot}
                 className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors cursor-pointer whitespace-nowrap"
                 title="Chụp ảnh mô phỏng 3D (.png)"
@@ -3219,6 +3253,13 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
                 <Camera className="w-3 h-3 text-sky-400" />
                 <span className="hidden sm:inline">Chụp PNG</span>
               </button>
+
+              <RecordVideoButton
+                isRecording={isRecording}
+                seconds={recSeconds}
+                onClick={toggleRecording}
+                compact
+              />
 
               <div className="flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-md border border-slate-800">
                 {[0.25, 0.5, 1, 2].map((spd) => (
@@ -3810,6 +3851,23 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
               </button>
             </div>
           </div>
+          {loggedSamples3D.length >= 2 && (() => {
+            const firstNumeric = loggedSamples3D.map((r) => {
+              const m = (r.instruments + ' ' + r.summary).match(/-?\d+(\.\d+)?/);
+              return m ? parseFloat(m[0]) : 0;
+            });
+            const timeNumeric = loggedSamples3D.map((r) => parseFloat(r.timeSec) || r.idx);
+            return (
+              <MiniTelemetryChart
+                title={`Biểu đồ biến thiên theo thời gian (${loggedSamples3D.length} mẫu)`}
+                height={104}
+                series={[
+                  { label: 'Đại lượng đo #1', color: '#38bdf8', data: firstNumeric },
+                  { label: 'Thời gian t (s)', color: '#fbbf24', data: timeNumeric },
+                ]}
+              />
+            );
+          })()}
           <div className="overflow-x-auto max-h-40">
             <table className="w-full text-left border-collapse text-[11px] font-mono">
               <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">

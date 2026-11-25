@@ -2,8 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { Atom, Cpu, Play, RotateCcw, Sparkles, Volume2, VolumeX, Zap } from 'lucide-react';
+import { Atom, Camera, Cpu, Download, Play, RotateCcw, Volume2, VolumeX, Zap } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { captureCanvasPng, exportJsonFile } from '../common/SimProToolkit';
 
 interface QuantumHolodeck3DLabProps {
   onEarnXP?: (xp: number) => void;
@@ -98,6 +99,8 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
   const [soundOn, setSoundOn] = useState<boolean>(true);
   const [showCryostat, setShowCryostat] = useState<boolean>(true);
   const [dockCollapsed, setDockCollapsed] = useState<boolean>(false);
+  const [rotAngleDeg, setRotAngleDeg] = useState<number>(45);
+  const snapRef = useRef<(() => void) | null>(null);
 
   const bloch = useMemo(() => blochFromState(qubit), [qubit]);
   const stateRef = useRef({ bloch, entangled: qubit.entangled, showCryostat, collapseFlash: 0 });
@@ -180,6 +183,41 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
       setGateHistory((h) => (gate === 'RESET' ? ['|0⟩'] : [...h.slice(-9), gate]));
       playQuantumTone(gate === 'CNOT' ? 660 : gate === 'H' ? 528 : 440);
       onEarnXP?.(4);
+    },
+    [onEarnXP, playQuantumTone]
+  );
+
+  const applyRotationGate = useCallback(
+    (axis: 'Rx' | 'Ry' | 'Rz', deg: number) => {
+      const th = (deg * Math.PI) / 180;
+      const c = Math.cos(th / 2);
+      const s = Math.sin(th / 2);
+      setQubit((prev) => {
+        let nextA = prev.a;
+        let nextB = prev.b;
+        if (axis === 'Rx') {
+          // Rx(θ) = [[cos(θ/2), -i sin(θ/2)], [-i sin(θ/2), cos(θ/2)]]
+          nextA = cAdd({ re: c * prev.a.re, im: c * prev.a.im }, cMul({ re: 0, im: -s }, prev.b));
+          nextB = cAdd(cMul({ re: 0, im: -s }, prev.a), { re: c * prev.b.re, im: c * prev.b.im });
+        } else if (axis === 'Ry') {
+          // Ry(θ) = [[cos(θ/2), -sin(θ/2)], [sin(θ/2), cos(θ/2)]]
+          nextA = cSub({ re: c * prev.a.re, im: c * prev.a.im }, { re: s * prev.b.re, im: s * prev.b.im });
+          nextB = cAdd({ re: s * prev.a.re, im: s * prev.a.im }, { re: c * prev.b.re, im: c * prev.b.im });
+        } else {
+          // Rz(θ) = [[e^{-iθ/2}, 0], [0, e^{iθ/2}]]
+          nextA = cMul({ re: c, im: -s }, prev.a);
+          nextB = cMul({ re: c, im: s }, prev.b);
+        }
+        return {
+          ...prev,
+          a: nextA,
+          b: nextB,
+          lastGate: `${axis}(${deg}°)`
+        };
+      });
+      setGateHistory((h) => [...h.slice(-9), `${axis}(${deg}°)`]);
+      playQuantumTone(510);
+      onEarnXP?.(5);
     },
     [onEarnXP, playQuantumTone]
   );
@@ -310,6 +348,11 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
     controls.target.set(0, 1.3, 0);
     controls.minDistance = 4.0;
     controls.maxDistance = 16;
+
+    snapRef.current = () => {
+      renderer.render(scene, camera);
+      captureCanvasPng(renderer.domElement, 'synapse-quantum-bloch');
+    };
 
     const hemi = new THREE.HemisphereLight(0x93c5fd, 0x090d1e, 1.0);
     scene.add(hemi);
@@ -638,14 +681,47 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
               <Atom className="w-4 h-4 shrink-0" />
               <span>{isEn ? 'Quantum Bloch Holodeck' : 'Máy Tính Lượng Tử & Bloch 3D'}</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setSoundOn((v) => !v)}
-              className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded bg-slate-900 border border-slate-700 text-slate-200 hover:border-cyan-400 cursor-pointer"
-              title={isEn ? 'Toggle Sound' : 'Bật/Tắt Âm thanh'}
-            >
-              {soundOn ? <Volume2 className="w-3.5 h-3.5 text-cyan-300" /> : <VolumeX className="w-3.5 h-3.5" />}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => snapRef.current?.()}
+                className="min-h-[34px] px-2 flex items-center gap-1 rounded bg-slate-900 border border-slate-700 text-sky-300 hover:border-cyan-400 text-[10px] font-mono font-bold cursor-pointer"
+                title={isEn ? 'Save 3D Snapshot PNG' : 'Chụp ảnh Bloch 3D'}
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>PNG</span>
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  exportJsonFile('quantum-circuit-qasm', {
+                    openQASM: 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];',
+                    circuit: gateHistory,
+                    blochCoordinates: {
+                      x: Number(bloch.x.toFixed(4)),
+                      y: Number(bloch.y.toFixed(4)),
+                      z: Number(bloch.z.toFixed(4)),
+                    },
+                    amplitudes: { alpha: qubit.a, beta: qubit.b },
+                    probabilities: { p0: bloch.p0, p1: bloch.p1 },
+                    measurementCounts: counts,
+                  })
+                }
+                className="min-h-[34px] px-2 flex items-center gap-1 rounded bg-slate-900 border border-slate-700 text-emerald-300 hover:border-emerald-400 text-[10px] font-mono font-bold cursor-pointer"
+                title={isEn ? 'Export Quantum Circuit JSON' : 'Xuất Mạch Lượng Tử JSON'}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>QASM</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSoundOn((v) => !v)}
+                className="min-h-[34px] min-w-[34px] flex items-center justify-center rounded bg-slate-900 border border-slate-700 text-slate-200 hover:border-cyan-400 cursor-pointer"
+                title={isEn ? 'Toggle Sound' : 'Bật/Tắt Âm thanh'}
+              >
+                {soundOn ? <Volume2 className="w-3.5 h-3.5 text-cyan-300" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] font-mono tabular-nums text-slate-200">
             <span>θ = {(bloch.theta * (180 / Math.PI)).toFixed(1)}°</span>
@@ -655,6 +731,9 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
             <span className="text-sky-300">P(|0⟩) = {(bloch.p0 * 100).toFixed(1)}%</span>
             <span>·</span>
             <span className="text-rose-300">P(|1⟩) = {(bloch.p1 * 100).toFixed(1)}%</span>
+          </div>
+          <div className="text-[10px] font-mono text-cyan-200/85 tabular-nums truncate">
+            |ψ⟩ = ({qubit.a.re.toFixed(2)}{qubit.a.im >= 0 ? '+' : ''}{qubit.a.im.toFixed(2)}i)|0⟩ + ({qubit.b.re.toFixed(2)}{qubit.b.im >= 0 ? '+' : ''}{qubit.b.im.toFixed(2)}i)|1⟩
           </div>
           <div className="text-[10px] font-mono text-purple-300 truncate">
             {isEn ? 'Circuit: ' : 'Mạch cổng: '}
@@ -756,6 +835,36 @@ export const QuantumHolodeck3DLab: React.FC<QuantumHolodeck3DLabProps> = ({ onEa
                   <Play className="w-3.5 h-3.5" />
                   <span>{isEn ? 'Run 1000 Shots' : 'Chạy 1000 Lần'}</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Parametric Continuous Rotation Gates Rx / Ry / Rz(θ) */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80 text-[11px]">
+              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                <span className="font-mono font-bold text-cyan-300 whitespace-nowrap">
+                  {isEn ? 'Bloch Rotation θ:' : 'Góc xoay θ:'} {rotAngleDeg}°
+                </span>
+                <input
+                  type="range"
+                  min={-180}
+                  max={180}
+                  step={5}
+                  value={rotAngleDeg}
+                  onChange={(e) => setRotAngleDeg(Number(e.target.value))}
+                  className="w-full max-w-[220px] accent-cyan-400 cursor-pointer"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                {(['Rx', 'Ry', 'Rz'] as const).map((ax) => (
+                  <button
+                    key={ax}
+                    type="button"
+                    onClick={() => applyRotationGate(ax, rotAngleDeg)}
+                    className="px-2.5 py-1 rounded bg-indigo-500/20 border border-indigo-400/50 hover:bg-indigo-500/35 text-indigo-200 font-mono font-bold text-[11px] cursor-pointer"
+                  >
+                    {ax}({rotAngleDeg}°)
+                  </button>
+                ))}
               </div>
             </div>
 

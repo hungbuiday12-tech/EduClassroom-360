@@ -6,10 +6,12 @@ import {
   ArrowLeft,
   Binary,
   Box,
+  Camera,
   ChevronLeft,
   ChevronRight,
   Code2,
   Cuboid,
+  Download,
   GitBranch,
   GitFork,
   Grid3X3,
@@ -21,9 +23,16 @@ import {
   Play,
   QrCode,
   RotateCcw,
+  RotateCw,
   Shuffle,
   Workflow
 } from 'lucide-react';
+import {
+  captureCanvasPng,
+  exportJsonFile,
+  RecordVideoButton,
+  useCanvasRecorder
+} from '../common/SimProToolkit';
 import { useLanguage } from '../../context/LanguageContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 import { useRemoteController } from '../../context/RemoteControllerContext';
@@ -1166,13 +1175,24 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
   const [stepIdx, setStepIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [speedMult, setSpeedMult] = useState<0.5 | 1 | 2>(1);
+  const [autoOrbit, setAutoOrbit] = useState(false);
+  const autoOrbitRef = useRef(false);
+  autoOrbitRef.current = autoOrbit;
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [contextLost, setContextLost] = useState(false);
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const resetCamRef = useRef<(() => void) | null>(null);
+  const camPresetRef = useRef<((preset: 'iso' | 'top' | 'front') => void) | null>(null);
+  const capturePngRef = useRef<(() => void) | null>(null);
   const enteredNativeFsRef = useRef<boolean>(false);
+
+  const { isRecording, seconds: recSeconds, toggleRecording } = useCanvasRecorder(
+    () => canvasElRef.current,
+    `synapse-cs3d-${mode}`
+  );
 
   useEffect(() => {
     setMode(initialMode);
@@ -1299,6 +1319,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
 
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
+    canvasElRef.current = renderer.domElement;
 
     const onLost = (e: Event) => {
       e.preventDefault();
@@ -1914,6 +1935,26 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       controls.update();
     };
 
+    camPresetRef.current = (preset) => {
+      if (preset === 'iso') {
+        camera.position.set(5.4, 5.2, 7.6);
+      } else if (preset === 'top') {
+        camera.position.set(0.01, 10.6, 0.01);
+      } else {
+        camera.position.set(0, 3.1, 9.8);
+      }
+      controls.target.set(0, 1.25, 0);
+      camera.updateProjectionMatrix();
+      controls.update();
+    };
+
+    capturePngRef.current = () => {
+      updateBillboardLabels(scene, camera);
+      if (pipeline) pipeline.render(0);
+      else renderer.render(scene, camera);
+      captureCanvasPng(renderer.domElement, `synapse-cs3d-${modeRef.current}-${Date.now()}.png`);
+    };
+
     const ro = new ResizeObserver(() => {
       const w = container.clientWidth || 760;
       const h = container.clientHeight || 420;
@@ -2500,6 +2541,17 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
       }
 
       csParticlePool.update(dt, 0);
+      if (autoOrbitRef.current) {
+        applySphericalOrbitDelta(
+          camera,
+          controls.target,
+          dt * 0.36,
+          0,
+          0,
+          controls.minDistance || 2,
+          controls.maxDistance || 40
+        );
+      }
       controls.update();
       updateBillboardLabels(scene, camera);
 
@@ -2541,6 +2593,10 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
     return () => {
       unsubRemote();
       alive = false;
+      canvasElRef.current = null;
+      resetCamRef.current = null;
+      camPresetRef.current = null;
+      capturePngRef.current = null;
       cancelAnimationFrame(rafId);
       clearTimeout(rafId);
       ro.disconnect();
@@ -2684,18 +2740,59 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
               </div>
             )}
 
-            <div className="pointer-events-none absolute top-2.5 left-2.5 z-10 max-w-[calc(100%-56px)] truncate px-2.5 py-1 rounded bg-slate-950/88 border border-emerald-400/35 text-[11px] font-mono font-bold text-emerald-300">
+            <div className="pointer-events-none absolute top-2.5 left-2.5 z-10 max-w-[calc(100%-220px)] truncate px-2.5 py-1 rounded bg-slate-950/88 border border-emerald-400/35 text-[11px] font-mono font-bold text-emerald-300">
               {isEn ? activeMeta.titleEn : activeMeta.titleVi} · {activeMeta.tag}
             </div>
 
-            <button
-              type="button"
-              onClick={() => resetCamRef.current?.()}
-              className="absolute top-2.5 right-2.5 z-10 min-w-[34px] min-h-[34px] flex items-center justify-center p-1.5 rounded border border-slate-700 bg-slate-950/88 text-slate-200 cursor-pointer"
-              title="Reset 3D Camera"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
+            <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
+              <div className="hidden sm:flex items-center gap-0.5 p-0.5 rounded border border-slate-700 bg-slate-950/90">
+                {(['iso', 'top', 'front'] as const).map((cp) => (
+                  <button
+                    key={cp}
+                    type="button"
+                    onClick={() => camPresetRef.current?.(cp)}
+                    className="px-1.5 py-1 rounded text-[10px] font-mono font-bold text-slate-300 hover:bg-slate-800 hover:text-emerald-300 cursor-pointer"
+                    title={`Góc nhìn ${cp.toUpperCase()}`}
+                  >
+                    {cp.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setAutoOrbit((o) => !o)}
+                className={`min-w-[34px] min-h-[34px] flex items-center justify-center p-1.5 rounded border cursor-pointer ${
+                  autoOrbit
+                    ? 'bg-emerald-600 border-emerald-400 text-white'
+                    : 'border-slate-700 bg-slate-950/88 text-slate-200 hover:text-white'
+                }`}
+                title={autoOrbit ? 'Tắt xoay tự động' : 'Tự xoay 360°'}
+              >
+                <RotateCw className={`w-3.5 h-3.5 ${autoOrbit ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                type="button"
+                onClick={() => capturePngRef.current?.()}
+                className="min-w-[34px] min-h-[34px] flex items-center justify-center p-1.5 rounded border border-slate-700 bg-slate-950/88 text-sky-300 hover:text-white cursor-pointer"
+                title="Chụp ảnh mô phỏng 3D (.png)"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+              <RecordVideoButton
+                isRecording={isRecording}
+                seconds={recSeconds}
+                onClick={toggleRecording}
+                compact
+              />
+              <button
+                type="button"
+                onClick={() => resetCamRef.current?.()}
+                className="min-w-[34px] min-h-[34px] flex items-center justify-center p-1.5 rounded border border-slate-700 bg-slate-950/88 text-slate-200 cursor-pointer"
+                title="Reset 3D Camera"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Step Playback Bar */}
@@ -2760,6 +2857,22 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
                 <span className="font-mono text-[11px] text-slate-400 ml-1 tabular-nums">
                   {safeStepIdx + 1}/{steps.length}
                 </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportJsonFile(`synapse-cs3d-${mode}-trace.json`, {
+                      mode,
+                      title: activeMeta.titleVi,
+                      totalSteps: steps.length,
+                      steps
+                    })
+                  }
+                  className="ml-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-300 text-[10px] font-mono font-bold inline-flex items-center gap-1 cursor-pointer"
+                  title="Xuất toàn bộ kịch bản bước chạy 3D (JSON)"
+                >
+                  <Download className="w-3 h-3" />
+                  <span>Trace JSON</span>
+                </button>
               </div>
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">

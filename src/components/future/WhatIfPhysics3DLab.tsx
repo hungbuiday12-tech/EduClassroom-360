@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { AlertTriangle, Atom, Orbit, Pause, Play, RotateCcw, Sparkles, Zap } from 'lucide-react';
+import { AlertTriangle, Atom, Camera, Orbit, Pause, Play, RotateCcw, Sparkles } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { MiniTelemetryChart, captureCanvasPng, exportRowsToCsv } from '../common/SimProToolkit';
 
 interface WhatIfPhysics3DLabProps {
   onEarnXP?: (xp: number) => void;
@@ -67,18 +68,24 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
   const [preset, setPreset] = useState<PresetId>('standard');
   const [params, setParams] = useState<SimParams>(PRESETS.standard.params);
   const [running, setRunning] = useState(true);
+  const [autoOrbit, setAutoOrbit] = useState(false);
   const [resetTick, setResetTick] = useState(0);
   const [telemetry, setTelemetry] = useState({
     speed: 1.85,
     radius: 3.2,
     status: 'stable' as 'stable' | 'collapse' | 'escape' | 'quantum',
   });
+  const [orbitLog, setOrbitLog] = useState<{ t: number; speed: number; radius: number }[]>([]);
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   const paramsRef = useRef<SimParams>(params);
   const runningRef = useRef<boolean>(running);
+  const autoOrbitRef = useRef<boolean>(autoOrbit);
+  const camPresetFnRef = useRef<((mode: 'iso' | 'top' | 'side') => void) | null>(null);
+  const snapFnRef = useRef<(() => void) | null>(null);
   paramsRef.current = params;
   runningRef.current = running;
+  autoOrbitRef.current = autoOrbit;
 
   const xpAwardedRef = useRef(false);
 
@@ -294,6 +301,22 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
     controls.minDistance = 4;
     controls.maxDistance = 24;
 
+    camPresetFnRef.current = (mode) => {
+      if (mode === 'top') {
+        camera.position.set(0.01, 13.5, 0.8);
+      } else if (mode === 'side') {
+        camera.position.set(11.5, 1.4, 0.2);
+      } else {
+        camera.position.set(0, 6.5, 9.8);
+      }
+      controls.target.set(0, 0, 0);
+      controls.update();
+    };
+    snapFnRef.current = () => {
+      renderer.render(scene, camera);
+      captureCanvasPng(renderer.domElement, `synapse-whatif-${preset}`);
+    };
+
     const ro = new ResizeObserver(() => {
       if (!mount) return;
       const nw = mount.clientWidth || 720;
@@ -389,7 +412,19 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
               ? 'escape'
               : 'stable';
           setTelemetry({ speed: +v0.toFixed(2), radius: +r0.toFixed(2), status });
+          setOrbitLog((prev) => [
+            ...prev.slice(-47),
+            { t: Number(clock.elapsedTime.toFixed(1)), speed: +v0.toFixed(2), radius: +r0.toFixed(2) },
+          ]);
         }
+      }
+
+      if (autoOrbitRef.current) {
+        const ang = rawDt * 0.32;
+        const cx = camera.position.x - controls.target.x;
+        const cz = camera.position.z - controls.target.z;
+        camera.position.x = controls.target.x + cx * Math.cos(ang) - cz * Math.sin(ang);
+        camera.position.z = controls.target.z + cx * Math.sin(ang) + cz * Math.cos(ang);
       }
 
       controls.update();
@@ -437,7 +472,41 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
           ))}
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex items-center rounded-lg bg-slate-800 border border-slate-700 p-0.5 text-[11px] font-mono">
+            {([0.25, 0.5, 1, 2] as const).map((sp) => (
+              <button
+                key={sp}
+                type="button"
+                onClick={() => setParams((p) => ({ ...p, timeScale: sp }))}
+                className={`px-2 py-1 rounded font-bold cursor-pointer ${
+                  Math.abs(params.timeScale - sp) < 0.05 ? 'bg-sky-500 text-slate-950' : 'text-slate-300'
+                }`}
+              >
+                {sp}x
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setAutoOrbit((o) => !o)}
+            className={`min-h-[38px] inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold cursor-pointer ${
+              autoOrbit
+                ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200'
+                : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
+            }`}
+          >
+            <Orbit className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{isEn ? 'Orbit' : 'Tự xoay'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => snapFnRef.current?.()}
+            className="min-h-[38px] inline-flex items-center gap-1 rounded-lg bg-slate-800 border border-slate-700 px-2.5 py-1.5 text-xs font-bold text-sky-300 hover:border-sky-400 cursor-pointer"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>PNG</span>
+          </button>
           <button
             type="button"
             onClick={() => setRunning((r) => !r)}
@@ -448,7 +517,10 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
           </button>
           <button
             type="button"
-            onClick={() => setResetTick((t) => t + 1)}
+            onClick={() => {
+              setOrbitLog([]);
+              setResetTick((t) => t + 1);
+            }}
             className="min-h-[38px] inline-flex items-center gap-1 rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -460,40 +532,80 @@ export const WhatIfPhysics3DLab: React.FC<WhatIfPhysics3DLabProps> = ({ onEarnXP
       {/* Main 3D Stage + Constant Control Panel */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         {/* 3D Viewport (Stacked HUD above canvas on phones, floating on sm+) */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#040712] lg:col-span-8 flex flex-col sm:block">
-          {/* Telemetry HUD */}
-          <div className="relative sm:pointer-events-none sm:absolute sm:left-3 sm:top-3 z-10 sm:rounded-xl border-b sm:border border-slate-700/80 bg-slate-950/94 px-3 py-2 text-xs">
-            <div className="flex items-center gap-1.5 font-bold text-sky-300">
-              <Orbit className="h-3.5 w-3.5 shrink-0" />
-              <span>What-If Physics Sandbox 3D</span>
-            </div>
-            <div className="mt-1 font-mono text-[11px] text-slate-300">
-              F = G·M·m / r^{params.distancePower.toFixed(2)} · G = {params.gravityMult.toFixed(2)}× · c = {params.lightSpeedMult.toFixed(2)}c
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px]">
-              <span className="text-slate-400">v = {telemetry.speed} km/s</span>
-              <span className="text-slate-400">r = {telemetry.radius} AU</span>
-              <span
-                className={`font-bold ${
-                  telemetry.status === 'stable'
-                    ? 'text-emerald-400'
+        <div className="lg:col-span-8 space-y-3">
+          <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#040712] flex flex-col sm:block">
+            {/* Telemetry HUD */}
+            <div className="relative sm:pointer-events-none sm:absolute sm:left-3 sm:top-3 z-10 sm:rounded-xl border-b sm:border border-slate-700/80 bg-slate-950/94 px-3 py-2 text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-sky-300">
+                <Orbit className="h-3.5 w-3.5 shrink-0" />
+                <span>What-If Physics Sandbox 3D</span>
+              </div>
+              <div className="mt-1 font-mono text-[11px] text-slate-300">
+                F = G·M·m / r^{params.distancePower.toFixed(2)} · G = {params.gravityMult.toFixed(2)}× · c = {params.lightSpeedMult.toFixed(2)}c
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px]">
+                <span className="text-slate-400">v = {telemetry.speed} km/s</span>
+                <span className="text-slate-400">r = {telemetry.radius} AU</span>
+                <span
+                  className={`font-bold ${
+                    telemetry.status === 'stable'
+                      ? 'text-emerald-400'
+                      : telemetry.status === 'quantum'
+                      ? 'text-violet-400'
+                      : 'text-rose-400'
+                  }`}
+                >
+                  {telemetry.status === 'stable'
+                    ? '● Ổn định'
                     : telemetry.status === 'quantum'
-                    ? 'text-violet-400'
-                    : 'text-rose-400'
-                }`}
-              >
-                {telemetry.status === 'stable'
-                  ? '● Ổn định'
-                  : telemetry.status === 'quantum'
-                  ? '● Hỗn loạn lượng tử'
-                  : telemetry.status === 'collapse'
-                  ? '● Sụp đổ quỹ đạo!'
-                  : '● Thoát ly vũ trụ!'}
-              </span>
+                    ? '● Hỗn loạn lượng tử'
+                    : telemetry.status === 'collapse'
+                    ? '● Sụp đổ quỹ đạo!'
+                    : '● Thoát ly vũ trụ!'}
+                </span>
+              </div>
             </div>
+
+            {/* Camera Angle Presets Top-Right */}
+            <div className="hidden sm:flex items-center gap-1 absolute right-3 top-3 z-10">
+              {(['iso', 'top', 'side'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => camPresetFnRef.current?.(m)}
+                  className="px-2 py-1 rounded-md bg-slate-950/90 border border-slate-700 hover:border-sky-400 text-[10px] font-mono font-bold uppercase text-slate-200 cursor-pointer"
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+
+            <div ref={mountRef} className="h-[300px] sm:h-[400px] lg:h-[460px] w-full cursor-grab active:cursor-grabbing touch-none" />
           </div>
 
-          <div ref={mountRef} className="h-[300px] sm:h-[400px] lg:h-[460px] w-full cursor-grab active:cursor-grabbing touch-none" />
+          <MiniTelemetryChart
+            title={isEn ? 'Live Orbital Kinematics Telemetry' : 'Dao động ký Quỹ đạo Thời gian thực'}
+            darkSurface={true}
+            height={86}
+            onExportCsv={() =>
+              exportRowsToCsv(
+                `whatif-orbit-${preset}`,
+                ['Time (s)', 'Speed (km/s)', 'Radius (AU)', 'G', 'Exponent n', 'c'],
+                orbitLog.map((pt) => [
+                  pt.t,
+                  pt.speed,
+                  pt.radius,
+                  params.gravityMult,
+                  params.distancePower,
+                  params.lightSpeedMult,
+                ])
+              )
+            }
+            series={[
+              { id: 'v', label: 'v', unit: 'km/s', color: '#38bdf8', values: orbitLog.map((d) => d.speed) },
+              { id: 'r', label: 'r', unit: 'AU', color: '#fbbf24', values: orbitLog.map((d) => d.radius) },
+            ]}
+          />
         </div>
 
         {/* Sliders & Analysis */}

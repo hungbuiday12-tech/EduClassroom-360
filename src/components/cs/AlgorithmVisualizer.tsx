@@ -52,8 +52,11 @@ import {
   RotateCcw,
   Search,
   SlidersHorizontal,
-  Terminal
+  Terminal,
+  Download,
+  FileJson
 } from 'lucide-react';
+import { exportJsonFile, exportRowsToCsv } from '../common/SimProToolkit';
 
 interface AlgorithmVisualizerProps {
   initialAlgoId?: AlgoId;
@@ -1907,11 +1910,31 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
 
             <div className="relative z-10 overflow-x-auto max-w-full scrollbar-none">{renderVisualStage()}</div>
 
-            <div className="relative z-10 mt-3 pt-2 border-t border-cyan-500/15 flex items-center justify-between font-mono text-[10px] text-slate-400">
+            <div className="relative z-10 mt-3 pt-2 border-t border-cyan-500/15 flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] text-slate-400">
               <span className="text-emerald-300/85 font-bold truncate">
                 {activePalette.codeTag} · INTERACTIVE TRACE STAGE
               </span>
-              <span className="text-cyan-300/85 tabular-nums shrink-0">{currentMeta.complexity}</span>
+              <div className="flex flex-wrap items-center gap-3 tabular-nums shrink-0">
+                <span>
+                  Tiến độ:{' '}
+                  <strong className="text-emerald-300">
+                    {Math.round(((Math.min(stepIdx + 1, Math.max(1, steps.length))) / Math.max(1, steps.length)) * 100)}%
+                  </strong>
+                </span>
+                <span>
+                  Dòng lệnh:{' '}
+                  <strong className="text-amber-300">
+                    {currentStep.activeCodeLine !== undefined && currentStep.activeCodeLine >= 0
+                      ? `#${currentStep.activeCodeLine + 1}`
+                      : '—'}
+                  </strong>
+                </span>
+                <span>
+                  Biến Watch:{' '}
+                  <strong className="text-cyan-300">{currentStep.variables?.length || 0}</strong>
+                </span>
+                <span className="text-cyan-300/85">{currentMeta.complexity}</span>
+              </div>
             </div>
           </div>
 
@@ -2010,6 +2033,45 @@ export const AlgorithmVisualizer: React.FC<AlgorithmVisualizerProps> = ({
                 <span className="text-xs font-mono font-bold text-cyan-200 tabular-nums">
                   Bước {Math.min(stepIdx + 1, Math.max(1, steps.length))} / {Math.max(1, steps.length)}
                 </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportRowsToCsv(
+                      `synapse-algo-${algoId}-trace.csv`,
+                      ['Step', 'Title', 'Description', 'Formula', 'ActiveLine', 'Variables'],
+                      steps.map((s) => [
+                        s.stepIndex + 1,
+                        s.title,
+                        s.description,
+                        s.formula || '',
+                        s.activeCodeLine !== undefined ? s.activeCodeLine + 1 : '',
+                        (s.variables || []).map((v) => `${v.name}=${v.value}`).join('; ')
+                      ])
+                    )
+                  }
+                  className="px-2 py-1 rounded-lg border border-cyan-500/25 bg-[#020710] text-[10px] font-mono font-bold text-emerald-300 hover:border-emerald-400/60 inline-flex items-center gap-1 cursor-pointer"
+                  title="Xuất bảng lịch sử các bước chạy CSV"
+                >
+                  <Download className="w-3 h-3" />
+                  <span>CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    exportJsonFile(`synapse-algo-${algoId}-trace.json`, {
+                      algoId,
+                      title: currentMeta.titleVi,
+                      complexity: currentMeta.complexity,
+                      totalSteps: steps.length,
+                      steps
+                    })
+                  }
+                  className="px-2 py-1 rounded-lg border border-cyan-500/25 bg-[#020710] text-[10px] font-mono font-bold text-cyan-300 hover:border-cyan-400/60 inline-flex items-center gap-1 cursor-pointer"
+                  title="Xuất toàn bộ Execution Trace dạng JSON"
+                >
+                  <FileJson className="w-3 h-3" />
+                  <span>JSON</span>
+                </button>
               </div>
             </div>
 

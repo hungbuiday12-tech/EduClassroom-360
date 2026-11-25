@@ -3,9 +3,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {
+  Activity,
   ArrowLeft,
   ArrowRight,
   Atom,
+  Award,
   Camera,
   CheckCircle2,
   ChevronDown,
@@ -19,6 +21,7 @@ import {
   EyeOff,
   Flame,
   Gauge,
+  GitCompareArrows,
   Grid,
   Infinity as InfinityIcon,
   Layers,
@@ -34,6 +37,7 @@ import {
   Radio,
   Rocket,
   RotateCcw,
+  Ruler,
   Satellite,
   Scissors,
   Search,
@@ -42,10 +46,12 @@ import {
   ShieldCheck,
   Sliders,
   Sparkles,
+  Star,
   Sun,
   Volume2,
   VolumeX,
   Waves,
+  X,
   Zap
 } from 'lucide-react';
 import { SubjectType } from '../../types';
@@ -73,6 +79,12 @@ import { FuturisticThumbPreview } from './FuturisticThumbPreview';
 import { FuturisticCosmicBackdrop } from './FuturisticCosmicBackdrop';
 import { SpatialVoiceMentor } from '../spatial3d/SpatialVoiceMentor';
 import { WonderStageVoiceCommand } from '../../lib/voiceIntentEngine';
+import {
+  MiniTelemetryChart,
+  RecordVideoButton,
+  exportRowsToCsv,
+  useCanvasRecorder
+} from '../common/SimProToolkit';
 
 interface SynapseV2StudioProps {
   onBack?: () => void;
@@ -84,10 +96,18 @@ interface SynapseV2StudioProps {
 type CameraPresetId = 'overview' | 'core' | 'zenith' | 'drone' | 'side' | 'lowAngle';
 type RenderStyleId = 'pbr' | 'wireframe' | 'xray';
 type LightingMoodId = 'cosmic' | 'studio' | 'solar';
+type SliceAxisId = 'x' | 'y' | 'z';
 type SynapseResScale = 0.5 | 0.65 | 0.85 | 1.0 | 1.35;
 type SynapseFpsCap = 30 | 60;
 
 const SYNAPSE_PERF_KEY = 'synapse_v2_perf_prefs_v1';
+const SYNAPSE_PINNED_KEY = 'synapse_v2_pinned_v1';
+const SYNAPSE_MISSIONS_KEY = 'synapse_v2_missions_v1';
+
+function parseLeadingFloat(str: string): number {
+  const m = String(str || '').match(/-?\d+(?:\.\d+)?/);
+  return m ? parseFloat(m[0]) : 0;
+}
 
 function loadSynapsePerfPrefs(perfMode: PerformanceMode): {
   resolutionScale: SynapseResScale;
@@ -251,8 +271,20 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     ? location.synapseMonumentId
     : 'dyson') as MonumentId;
 
-  const [categoryFilter, setCategoryFilter] = useState<'all' | MonumentCategory>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'pinned' | MonumentCategory>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [pinnedWonders, setPinnedWonders] = useState<MonumentId[]>(() => {
+    try {
+      const raw = localStorage.getItem(SYNAPSE_PINNED_KEY);
+      return raw ? (JSON.parse(raw) as MonumentId[]) : ['dyson', 'tokamak'];
+    } catch {
+      return ['dyson', 'tokamak'];
+    }
+  });
+  const [compareOpen, setCompareOpen] = useState<boolean>(false);
+  const [compareIdA, setCompareIdA] = useState<MonumentId>('dyson');
+  const [compareIdB, setCompareIdB] = useState<MonumentId>('tokamak');
+  const [compareRegime, setCompareRegime] = useState<'nominal' | 'max'>('nominal');
 
   const mountRef = useRef<HTMLDivElement | null>(null);
   const activeDef = useMemo(
@@ -273,6 +305,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const [lightingMood, setLightingMood] = useState<LightingMoodId>('cosmic');
   const [sliceEnabled, setSliceEnabled] = useState<boolean>(false);
   const [sliceHeight, setSliceHeight] = useState<number>(3.5);
+  const [sliceAxis, setSliceAxis] = useState<SliceAxisId>('y');
+  const [sliceInvert, setSliceInvert] = useState<boolean>(false);
   const [showPlatform, setShowPlatform] = useState<boolean>(true);
   const [cameraPreset, setCameraPreset] = useState<CameraPresetId>('drone');
   const [isDockOpen, setIsDockOpen] = useState<boolean>(false);
@@ -284,6 +318,20 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const [contextLost, setContextLost] = useState<boolean>(false);
   const [webglError, setWebglError] = useState<boolean>(false);
   const [visitedWonders, setVisitedWonders] = useState<MonumentId[]>(['dyson']);
+  const [measureMode, setMeasureMode] = useState<boolean>(false);
+  const [measurePoints, setMeasurePoints] = useState<{ x: number; y: number; z: number }[]>([]);
+  const [showTelemetryChart, setShowTelemetryChart] = useState<boolean>(false);
+  const [telemetryHistory, setTelemetryHistory] = useState<
+    { t: string; m1: number; m2: number; m3: number }[]
+  >([]);
+  const [completedMissions, setCompletedMissions] = useState<MonumentId[]>(() => {
+    try {
+      const raw = localStorage.getItem(SYNAPSE_MISSIONS_KEY);
+      return raw ? (JSON.parse(raw) as MonumentId[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [perfPrefs, setPerfPrefs] = useState<{
     resolutionScale: SynapseResScale;
     targetFps: SynapseFpsCap;
@@ -329,10 +377,24 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     return () => window.removeEventListener('educlassroom:synapse-reset', onSynapseReset);
   }, []);
 
+  const togglePinWonder = useCallback((id: MonumentId) => {
+    setPinnedWonders((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try {
+        localStorage.setItem(SYNAPSE_PINNED_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
   const filteredCatalog = useMemo(() => {
     const kw = searchQuery.trim().toLowerCase();
     return MONUMENT_CATALOG.filter((m) => {
-      if (categoryFilter !== 'all' && m.category !== categoryFilter) return false;
+      if (categoryFilter === 'pinned') {
+        if (!pinnedWonders.includes(m.id)) return false;
+      } else if (categoryFilter !== 'all' && m.category !== categoryFilter) {
+        return false;
+      }
       if (kw) {
         const hay =
           `${m.code} ${m.titleVi} ${m.titleEn} ${m.subtitleVi} ${m.subtitleEn} ${m.descriptionVi}`.toLowerCase();
@@ -340,7 +402,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       }
       return true;
     });
-  }, [categoryFilter, searchQuery]);
+  }, [categoryFilter, searchQuery, pinnedWonders]);
 
   const handleSelectMonument = (nextId: MonumentId, openStage = false) => {
     const def = MONUMENT_CATALOG.find((m) => m.id === nextId) || MONUMENT_CATALOG[0];
@@ -348,6 +410,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     setSecondaryParam(def.secondaryRange[2]);
     setExplodeFactor(0);
     setIsPaused(false);
+    setMeasurePoints([]);
+    setTelemetryHistory([]);
 
     if (openStage || studioMode === 'stage') {
       navigate(
@@ -424,7 +488,10 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     setLightingMood('cosmic');
     setSliceEnabled(false);
     setSliceHeight(3.5);
+    setSliceAxis('y');
+    setSliceInvert(false);
     setShowPlatform(true);
+    setMeasurePoints([]);
     setIsPaused(false);
     applyCameraPreset('drone');
   }, [activeDef]);
@@ -481,6 +548,10 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const monumentSlotRef = useRef<THREE.Group | null>(null);
   const activeBuiltRef = useRef<BuiltMonument | null>(null);
   const bgStarFieldRef = useRef<THREE.Points | null>(null);
+  const sliceGuideRef = useRef<THREE.Group | null>(null);
+  const measureGroupRef = useRef<THREE.Group | null>(null);
+  const measureModeRef = useRef<boolean>(measureMode);
+  measureModeRef.current = measureMode;
   const isSoftwareGlRef = useRef<boolean>(false);
   const perfPrefsRef = useRef(perfPrefs);
   perfPrefsRef.current = perfPrefs;
@@ -636,7 +707,64 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     monumentSlot.add(initialBuilt.root);
     activeBuiltRef.current = initialBuilt;
 
+    // Cross-section laser guide plane (visible only when sliceEnabled is true)
+    const sliceGuideGroup = new THREE.Group();
+    const slicePlaneGeo = new THREE.PlaneGeometry(11, 11);
+    const slicePlaneMat = new THREE.MeshBasicMaterial({
+      color: 0xf43f5e,
+      transparent: true,
+      opacity: 0.12,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const slicePlaneMesh = new THREE.Mesh(slicePlaneGeo, slicePlaneMat);
+    slicePlaneMesh.rotation.x = -Math.PI / 2;
+    const sliceEdgesGeo = new THREE.EdgesGeometry(slicePlaneGeo);
+    const sliceEdgesMat = new THREE.LineBasicMaterial({
+      color: 0xfb7185,
+      transparent: true,
+      opacity: 0.72
+    });
+    const sliceEdges = new THREE.LineSegments(sliceEdgesGeo, sliceEdgesMat);
+    sliceEdges.rotation.x = -Math.PI / 2;
+    sliceGuideGroup.add(slicePlaneMesh, sliceEdges);
+    sliceGuideGroup.visible = false;
+    scene.add(sliceGuideGroup);
+    sliceGuideRef.current = sliceGuideGroup;
+
+    // Spatial 3D ruler measurement group
+    const measureGroup = new THREE.Group();
+    scene.add(measureGroup);
+    measureGroupRef.current = measureGroup;
+
     const canvasEl = renderer.domElement;
+    const raycaster = new THREE.Raycaster();
+    const pointerDownPos = { x: 0, y: 0 };
+    const onPointerDown = (ev: PointerEvent) => {
+      pointerDownPos.x = ev.clientX;
+      pointerDownPos.y = ev.clientY;
+    };
+    const onPointerUp = (ev: PointerEvent) => {
+      if (!measureModeRef.current || !monumentSlotRef.current) return;
+      const distMoved = Math.hypot(ev.clientX - pointerDownPos.x, ev.clientY - pointerDownPos.y);
+      if (distMoved > 5) return;
+      const rect = canvasEl.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const ndc = new THREE.Vector2(
+        ((ev.clientX - rect.left) / rect.width) * 2 - 1,
+        -((ev.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      raycaster.setFromCamera(ndc, camera);
+      const hits = raycaster.intersectObjects(monumentSlotRef.current.children, true);
+      if (hits.length > 0) {
+        const pt = hits[0].point;
+        const sample = { x: pt.x, y: pt.y, z: pt.z };
+        setMeasurePoints((prev) => (prev.length >= 2 ? [sample] : [...prev, sample]));
+      }
+    };
+    canvasEl.addEventListener('pointerdown', onPointerDown);
+    canvasEl.addEventListener('pointerup', onPointerUp);
+
     const onContextLost = (e: Event) => {
       e.preventDefault();
       setContextLost(true);
@@ -785,6 +913,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       if (paceTimer !== null) window.clearTimeout(paceTimer);
       controls.removeEventListener('start', cancelLerp);
       window.removeEventListener('resize', handleResize);
+      canvasEl.removeEventListener('pointerdown', onPointerDown);
+      canvasEl.removeEventListener('pointerup', onPointerUp);
       canvasEl.removeEventListener('webglcontextlost', onContextLost);
       canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
       resizeObserver?.disconnect();
@@ -798,6 +928,18 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       glowTex.dispose();
       bgStarGeo.dispose();
       bgStarMat.dispose();
+      slicePlaneGeo.dispose();
+      slicePlaneMat.dispose();
+      sliceEdgesGeo.dispose();
+      sliceEdgesMat.dispose();
+      if (measureGroupRef.current) {
+        measureGroupRef.current.children.forEach((child) => {
+          const obj = child as THREE.Mesh;
+          obj.geometry?.dispose();
+          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
+          else obj.material?.dispose();
+        });
+      }
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -805,6 +947,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       monumentSlotRef.current = null;
       activeBuiltRef.current = null;
       bgStarFieldRef.current = null;
+      sliceGuideRef.current = null;
+      measureGroupRef.current = null;
       rendererRef.current = null;
       cameraRef.current = null;
       citadelGroupRef.current = null;
@@ -905,9 +1049,67 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   useEffect(() => {
     const r = rendererRef.current;
     if (!r) return;
-    clipPlaneRef.current.constant = sliceHeight;
+    const sign = sliceInvert ? 1 : -1;
+    if (sliceAxis === 'x') {
+      clipPlaneRef.current.normal.set(sign, 0, 0);
+      clipPlaneRef.current.constant = sliceInvert ? -sliceHeight : sliceHeight;
+    } else if (sliceAxis === 'z') {
+      clipPlaneRef.current.normal.set(0, 0, sign);
+      clipPlaneRef.current.constant = sliceInvert ? -sliceHeight : sliceHeight;
+    } else {
+      clipPlaneRef.current.normal.set(0, sign, 0);
+      clipPlaneRef.current.constant = sliceInvert ? -sliceHeight : sliceHeight;
+    }
     r.clippingPlanes = sliceEnabled ? [clipPlaneRef.current] : [];
-  }, [sliceEnabled, sliceHeight, studioMode]);
+
+    if (sliceGuideRef.current) {
+      sliceGuideRef.current.visible = sliceEnabled;
+      sliceGuideRef.current.position.set(0, 0, 0);
+      sliceGuideRef.current.rotation.set(0, 0, 0);
+      if (sliceAxis === 'x') {
+        sliceGuideRef.current.rotation.z = Math.PI / 2;
+        sliceGuideRef.current.position.x = sliceHeight;
+      } else if (sliceAxis === 'z') {
+        sliceGuideRef.current.rotation.x = Math.PI / 2;
+        sliceGuideRef.current.position.z = sliceHeight;
+      } else {
+        sliceGuideRef.current.position.y = sliceHeight;
+      }
+    }
+  }, [sliceEnabled, sliceHeight, sliceAxis, sliceInvert, studioMode]);
+
+  useEffect(() => {
+    const grp = measureGroupRef.current;
+    if (!grp) return;
+    while (grp.children.length > 0) {
+      const child = grp.children[0] as THREE.Mesh;
+      grp.remove(child);
+      child.geometry?.dispose();
+      if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose());
+      else child.material?.dispose();
+    }
+    if (measurePoints.length === 0) return;
+
+    measurePoints.forEach((pt, idx) => {
+      const sGeo = new THREE.SphereGeometry(0.16, 16, 16);
+      const sMat = new THREE.MeshBasicMaterial({
+        color: idx === 0 ? 0x38bdf8 : 0x34d399
+      });
+      const marker = new THREE.Mesh(sGeo, sMat);
+      marker.position.set(pt.x, pt.y, pt.z);
+      grp.add(marker);
+    });
+
+    if (measurePoints.length === 2) {
+      const [p1, p2] = measurePoints;
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(p1.x, p1.y, p1.z),
+        new THREE.Vector3(p2.x, p2.y, p2.z)
+      ]);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x34d399 });
+      grp.add(new THREE.Line(lineGeo, lineMat));
+    }
+  }, [measurePoints, studioMode]);
 
   useEffect(() => {
     if (citadelGroupRef.current) {
@@ -970,6 +1172,14 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     a.click();
   };
 
+  const {
+    isRecording: isRecording3D,
+    recordSeconds: recordSeconds3D,
+    toggleRecording: toggleRecording3D,
+    stopRecording: stopRecording3D,
+    supported: videoRecSupported
+  } = useCanvasRecorder(() => rendererRef.current?.domElement, `synapse-3d-${activeDef.id}`);
+
   const telemetry = useMemo(
     () =>
       computeTelemetry(activeId, {
@@ -981,16 +1191,90 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     [activeId, primaryParam, secondaryParam, explodeFactor, timeScale]
   );
 
+  // Append telemetry history points when parameters change or live tick runs
+  useEffect(() => {
+    if (studioMode !== 'stage') return;
+    const stamp = new Date().toLocaleTimeString('vi-VN', {
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    const m1 = parseLeadingFloat(telemetry.metric1Value);
+    const m2 = parseLeadingFloat(telemetry.metric2Value);
+    const m3 = parseLeadingFloat(telemetry.metric3Value);
+    setTelemetryHistory((prev) => [...prev.slice(-47), { t: stamp, m1, m2, m3 }]);
+  }, [telemetry, studioMode]);
+
+  // Engineering Mission per monument: reach high-output peak regime OR cutaway inspection
+  const primaryNorm =
+    (primaryParam - activeDef.primaryRange[0]) /
+    Math.max(1e-4, activeDef.primaryRange[1] - activeDef.primaryRange[0]);
+  const secondaryNorm =
+    (secondaryParam - activeDef.secondaryRange[0]) /
+    Math.max(1e-4, activeDef.secondaryRange[1] - activeDef.secondaryRange[0]);
+  const missionDoneNow = primaryNorm >= 0.72 && secondaryNorm >= 0.62 && explodeFactor >= 0.3;
+
+  useEffect(() => {
+    if (studioMode !== 'stage' || !missionDoneNow) return;
+    if (!completedMissions.includes(activeId)) {
+      const next = [...completedMissions, activeId];
+      setCompletedMissions(next);
+      try {
+        localStorage.setItem(SYNAPSE_MISSIONS_KEY, JSON.stringify(next));
+      } catch {}
+      onEarnXP?.(35);
+    }
+  }, [missionDoneNow, activeId, studioMode, completedMissions, onEarnXP]);
+
+  const handleExportTelemetryCsv = () => {
+    const rows = (telemetryHistory.length > 0
+      ? telemetryHistory
+      : [
+          {
+            t: new Date().toLocaleTimeString('vi-VN'),
+            m1: parseLeadingFloat(telemetry.metric1Value),
+            m2: parseLeadingFloat(telemetry.metric2Value),
+            m3: parseLeadingFloat(telemetry.metric3Value)
+          }
+        ]
+    ).map((pt, idx) => [
+      idx + 1,
+      pt.t,
+      activeDef.code,
+      primaryParam,
+      secondaryParam,
+      Math.round(explodeFactor * 100),
+      pt.m1,
+      pt.m2,
+      pt.m3
+    ]);
+    exportRowsToCsv(
+      `synapse-telemetry-${activeDef.id}`,
+      [
+        'Sample',
+        'Time',
+        'Code',
+        isEn ? activeDef.primaryLabelEn : activeDef.primaryLabelVi,
+        isEn ? activeDef.secondaryLabelEn : activeDef.secondaryLabelVi,
+        'Explode %',
+        isEn ? telemetry.metric1LabelEn : telemetry.metric1LabelVi,
+        isEn ? telemetry.metric2LabelEn : telemetry.metric2LabelVi,
+        isEn ? telemetry.metric3LabelEn : telemetry.metric3LabelVi
+      ],
+      rows
+    );
+  };
+
   const primaryDisplay =
     activeId === 'neural_aero' ? (primaryParam / 10).toFixed(1) : Math.round(primaryParam);
 
   // =========================================================================
-  // VIEW 1: FUTURISTIC 20-CARD VIRTUAL CAMPUS LECTURE GALLERY
+  // VIEW 1: FUTURISTIC 30-CARD VIRTUAL CAMPUS LECTURE GALLERY
   // =========================================================================
   if (studioMode === 'catalog') {
     const totalChambers = MONUMENT_CATALOG.length;
-    const categories: { id: 'all' | MonumentCategory; vi: string; en: string }[] = [
+    const categories: { id: 'all' | 'pinned' | MonumentCategory; vi: string; en: string }[] = [
       { id: 'all', vi: `Tất cả ${totalChambers} Công trình`, en: `All ${totalChambers} Chambers` },
+      { id: 'pinned', vi: `Đã ghim (${pinnedWonders.length})`, en: `Pinned (${pinnedWonders.length})` },
       { id: 'cosmos', vi: 'Khoa học Vũ trụ', en: 'Space Science' },
       { id: 'cs', vi: 'Khoa học Vi tính', en: 'Computer Science' },
       { id: 'physics', vi: 'Vật lí & Năng lượng', en: 'Physics & Energy' },
@@ -1124,8 +1408,17 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => setCompareOpen(true)}
+                  className="px-4 py-2 rounded-md bg-sky-500/15 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap"
+                >
+                  <GitCompareArrows className="w-4 h-4 text-sky-300" />
+                  <span>{isEn ? 'Compare 2 Megastructures' : 'So sánh 2 Đại Công Trình'}</span>
+                </button>
+
                 <div className="text-xs font-mono text-sky-200/90 text-right tabular-nums">
-                  +25 XP {isEn ? 'per newly explored chamber' : 'khi mở mỗi công trình mới'}
+                  +25 XP {isEn ? 'explore' : 'khám phá'} · +35 XP {isEn ? 'mission' : 'nhiệm vụ'}
                 </div>
               </div>
             </div>
@@ -1169,10 +1462,12 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             </div>
           </section>
 
-          {/* 12 Futuristic Holographic Lecture Cards Grid */}
+          {/* 30 Futuristic Holographic Lecture Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {filteredCatalog.map((item) => {
               const isExplored = visitedWonders.includes(item.id);
+              const isPinned = pinnedWonders.includes(item.id);
+              const isMissionDone = completedMissions.includes(item.id);
               return (
                 <div
                   key={item.id}
@@ -1186,6 +1481,20 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 >
                   {/* Rotating Holographic Conic Plasma Perimeter Ring */}
                   <div aria-hidden="true" className="holo-conic-ring" />
+
+                  {/* Pin Favorite Star Button (sibling outside launch button so no nested <button>) */}
+                  <button
+                    type="button"
+                    onClick={() => togglePinWonder(item.id)}
+                    title={isPinned ? (isEn ? 'Unpin' : 'Bỏ ghim') : isEn ? 'Pin Favorite' : 'Ghim yêu thích'}
+                    className={`absolute top-3 right-3 z-20 w-8 h-8 rounded-lg border flex items-center justify-center transition-colors cursor-pointer ${
+                      isPinned
+                        ? 'bg-amber-400/90 border-amber-200 text-slate-950 shadow-md'
+                        : 'bg-slate-950/75 border-white/20 text-slate-300 hover:border-amber-300 hover:text-amber-300'
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 ${isPinned ? 'fill-slate-950' : ''}`} />
+                  </button>
 
                   {/* Card Inner Futuristic Container */}
                   <button
@@ -1214,14 +1523,22 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                             </span>
                           </div>
 
-                          {isExplored ? (
-                            <span className="inline-flex items-center gap-1 text-emerald-400 font-bold shrink-0">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              {isEn ? 'Unlocked' : 'Đã mở'}
-                            </span>
-                          ) : (
-                            <span className="text-amber-300 font-bold shrink-0">+25 XP</span>
-                          )}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {isMissionDone && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-bold">
+                                <Award className="w-3 h-3" />
+                                PRO
+                              </span>
+                            )}
+                            {isExplored ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {isEn ? 'Unlocked' : 'Đã mở'}
+                              </span>
+                            ) : (
+                              <span className="text-amber-300 font-bold">+25 XP</span>
+                            )}
+                          </div>
                         </div>
 
                         <h3 className="font-display text-base sm:text-lg font-extrabold text-white group-hover:text-sky-300 transition-colors leading-snug">
@@ -1270,6 +1587,144 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             })}
           </div>
         </div>
+
+        {/* Side-by-Side Megastructure Spec Comparator Modal */}
+        {compareOpen && (
+          <div className="fixed inset-0 z-[150] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6">
+            <div className="w-full max-w-4xl rounded-2xl border border-sky-400/45 bg-[#08152e] text-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+              <div className="px-5 py-4 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-slate-950/70">
+                <div className="flex items-center gap-2.5">
+                  <GitCompareArrows className="w-5 h-5 text-sky-400" />
+                  <h2 className="font-display text-base sm:text-lg font-extrabold">
+                    {isEn ? 'Side-by-Side Megastructure Comparator' : 'So sánh Thông số 2 Đại Công Trình'}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex rounded-lg border border-white/15 bg-white/5 p-0.5 text-xs font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setCompareRegime('nominal')}
+                      className={`px-2.5 py-1 rounded-md cursor-pointer ${
+                        compareRegime === 'nominal' ? 'bg-sky-500 text-slate-950' : 'text-slate-300'
+                      }`}
+                    >
+                      {isEn ? 'Nominal' : 'Chuẩn'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCompareRegime('max')}
+                      className={`px-2.5 py-1 rounded-md cursor-pointer ${
+                        compareRegime === 'max' ? 'bg-amber-400 text-slate-950' : 'text-slate-300'
+                      }`}
+                    >
+                      {isEn ? 'Peak Max' : 'Cực đại'}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCompareOpen(false)}
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-5 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { id: compareIdA, setId: setCompareIdA, slot: 'A', accent: 'border-sky-400/50' },
+                  { id: compareIdB, setId: setCompareIdB, slot: 'B', accent: 'border-emerald-400/50' }
+                ].map(({ id, setId, slot, accent }) => {
+                  const def = MONUMENT_CATALOG.find((m) => m.id === id) || MONUMENT_CATALOG[0];
+                  const idxVal = compareRegime === 'max' ? 1 : 2;
+                  const t = computeTelemetry(def.id, {
+                    primaryParam: def.primaryRange[idxVal],
+                    secondaryParam: def.secondaryRange[idxVal],
+                    explodeFactor: 0,
+                    timeScale: 1
+                  });
+                  return (
+                    <div key={slot} className={`rounded-xl border ${accent} bg-slate-950/70 p-4 space-y-3`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-mono font-bold text-sky-300">
+                          {isEn ? `MEGASTRUCTURE ${slot}` : `CÔNG TRÌNH ${slot}`} · {def.code}
+                        </span>
+                        <select
+                          value={id}
+                          onChange={(e) => setId(e.target.value as MonumentId)}
+                          className="max-w-[210px] rounded-lg bg-slate-900 border border-white/20 px-2.5 py-1.5 text-xs font-bold text-white"
+                        >
+                          {MONUMENT_CATALOG.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              #{m.index} {isEn ? m.titleEn : m.titleVi}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {renderMonumentIcon(def.id, 'w-5 h-5 shrink-0')}
+                        <h3 className="font-display text-base font-extrabold text-white">
+                          {isEn ? def.titleEn : def.titleVi}
+                        </h3>
+                      </div>
+
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        {isEn ? def.descriptionEn : def.descriptionVi}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <div className="rounded-lg bg-white/[0.04] border border-white/10 p-2">
+                          <div className="text-[10px] text-slate-400">
+                            {isEn ? def.primaryLabelEn : def.primaryLabelVi}
+                          </div>
+                          <div className="font-bold text-sky-300">
+                            {def.primaryRange[idxVal]} {def.primaryUnit}
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-white/[0.04] border border-white/10 p-2">
+                          <div className="text-[10px] text-slate-400">
+                            {isEn ? def.secondaryLabelEn : def.secondaryLabelVi}
+                          </div>
+                          <div className="font-bold text-amber-300">
+                            {def.secondaryRange[idxVal]} {def.secondaryUnit}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 rounded-lg bg-slate-900/90 border border-white/10 p-3 text-xs font-mono">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">{isEn ? t.metric1LabelEn : t.metric1LabelVi}</span>
+                          <span className="font-bold text-cyan-300">{t.metric1Value}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">{isEn ? t.metric2LabelEn : t.metric2LabelVi}</span>
+                          <span className="font-bold text-amber-300">{t.metric2Value}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">{isEn ? t.metric3LabelEn : t.metric3LabelVi}</span>
+                          <span className="font-bold text-emerald-300">{t.metric3Value}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCompareOpen(false);
+                          handleSelectMonument(def.id, true);
+                        }}
+                        className="w-full py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-slate-950" />
+                        <span>{isEn ? 'Launch This 3D Stage' : 'Mở Công Trình Này'}</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -1354,6 +1809,7 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
               <button
                 type="button"
                 onClick={() => {
+                  stopRecording3D();
                   setIsFullscreen(false);
                   navigate({ subject: 'synapse_v2', futureTab: 'megastructures', synapseMode: 'catalog' });
                 }}
@@ -1591,6 +2047,31 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
               <button
                 type="button"
+                onClick={() => {
+                  setMeasureMode((v) => !v);
+                  if (measureMode) setMeasurePoints([]);
+                }}
+                className={`flex items-center gap-1 min-h-[36px] px-2.5 py-1.5 rounded-md border text-xs font-bold cursor-pointer whitespace-nowrap ${
+                  measureMode
+                    ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200'
+                    : 'bg-white/5 border-white/15 hover:border-sky-400/60 text-slate-200'
+                }`}
+                title={isEn ? '3D Spatial Laser Ruler (click 2 points)' : 'Thước đo Laser 3D (chạm 2 điểm trên mô hình)'}
+              >
+                <Ruler className="w-3.5 h-3.5 text-emerald-300" />
+                <span className="hidden lg:inline">{isEn ? '3D Ruler' : 'Đo 3D'}</span>
+              </button>
+
+              <RecordVideoButton
+                isRecording={isRecording3D}
+                recordSeconds={recordSeconds3D}
+                onToggle={toggleRecording3D}
+                supported={videoRecSupported}
+                isEn={isEn}
+              />
+
+              <button
+                type="button"
                 onClick={handleCaptureSnapshot}
                 className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-md bg-white/5 border border-white/15 hover:border-sky-400/60 text-slate-200 cursor-pointer"
                 title={isEn ? 'Save 3D Snapshot PNG' : 'Chụp ảnh PNG'}
@@ -1624,6 +2105,40 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
               </button>
             </div>
           </div>
+
+          {measureMode && (
+            <div className="pointer-events-auto self-start flex flex-wrap items-center gap-2.5 rounded-lg bg-slate-950/95 border border-emerald-400/60 px-3 py-1.5 text-xs font-mono shadow-lg">
+              <span className="inline-flex items-center gap-1.5 font-bold text-emerald-300">
+                <Ruler className="w-3.5 h-3.5" />
+                {measurePoints.length === 0
+                  ? isEn
+                    ? 'Click 1st point on 3D model'
+                    : 'Chạm điểm thứ 1 trên mô hình 3D'
+                  : measurePoints.length === 1
+                  ? isEn
+                    ? 'Click 2nd point on 3D model'
+                    : 'Chạm điểm thứ 2 để đo khoảng cách'
+                  : (() => {
+                      const [a, b] = measurePoints;
+                      const dx = b.x - a.x;
+                      const dy = b.y - a.y;
+                      const dz = b.z - a.z;
+                      const dist = Math.hypot(dx, dy, dz);
+                      const elev = (Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI;
+                      return `d = ${dist.toFixed(2)} m · Δx=${dx.toFixed(2)} · Δy=${dy.toFixed(2)} · Δz=${dz.toFixed(2)} · α=${elev.toFixed(1)}°`;
+                    })()}
+              </span>
+              {measurePoints.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setMeasurePoints([])}
+                  className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[11px] font-bold text-slate-200 cursor-pointer"
+                >
+                  {isEn ? 'Clear' : 'Đo lại'}
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Toggleable Quick Strip of All 30 Futuristic Chambers (hidden by default to keep 3D viewport unobstructed) */}
           {isWonderStripOpen && (
@@ -1770,6 +2285,19 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
                 <button
                   type="button"
+                  onClick={() => setShowTelemetryChart((v) => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer border whitespace-nowrap ${
+                    showTelemetryChart
+                      ? 'bg-emerald-500/25 border-emerald-400/60 text-emerald-200'
+                      : 'bg-white/10 border-transparent text-slate-200 hover:bg-white/20'
+                  }`}
+                >
+                  <Activity className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>{isEn ? 'Telemetry Graph' : 'Đồ thị Telemetry'}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setIsAdvancedDockOpen((v) => !v)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer border whitespace-nowrap ${
                     isAdvancedDockOpen
@@ -1812,6 +2340,63 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Engineering Mission Bar + Telemetry Graph Toggleable */}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/[0.03] border border-white/10 px-3 py-2 text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <Award
+                  className={`w-4 h-4 shrink-0 ${
+                    completedMissions.includes(activeId) ? 'text-emerald-400' : 'text-amber-300'
+                  }`}
+                />
+                <span className="font-semibold text-slate-200 truncate">
+                  {completedMissions.includes(activeId)
+                    ? isEn
+                      ? 'Engineering Mission Completed (+35 XP): Peak Output & Cutaway Verified'
+                      : 'Hoàn thành Nhiệm vụ Kỹ sư (+35 XP): Đã kiểm thử tải cao & tách lớp 3D'
+                    : isEn
+                    ? 'Mission (+35 XP): Push Primary >= 72%, Secondary >= 62%, Explode >= 30%'
+                    : 'Nhiệm vụ Kỹ sư (+35 XP): Đẩy Thông số 1 >= 72%, Thông số 2 >= 62% & Tách lớp >= 30%'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleExportTelemetryCsv}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-emerald-200 text-[11px] font-bold cursor-pointer shrink-0"
+              >
+                <Download className="w-3 h-3" />
+                <span>{isEn ? 'Export CSV Report' : 'Xuất Báo cáo CSV'}</span>
+              </button>
+            </div>
+
+            {showTelemetryChart && (
+              <MiniTelemetryChart
+                title={isEn ? `${activeDef.code} · Live Telemetry Oscilloscope` : `${activeDef.code} · Dao động ký Telemetry Thời gian thực`}
+                darkSurface={true}
+                onExportCsv={handleExportTelemetryCsv}
+                exportLabel="CSV"
+                series={[
+                  {
+                    id: 'm1',
+                    label: isEn ? telemetry.metric1LabelEn : telemetry.metric1LabelVi,
+                    color: '#38bdf8',
+                    values: telemetryHistory.map((p) => p.m1)
+                  },
+                  {
+                    id: 'm2',
+                    label: isEn ? telemetry.metric2LabelEn : telemetry.metric2LabelVi,
+                    color: '#fbbf24',
+                    values: telemetryHistory.map((p) => p.m2)
+                  },
+                  {
+                    id: 'm3',
+                    label: isEn ? telemetry.metric3LabelEn : telemetry.metric3LabelVi,
+                    color: '#34d399',
+                    values: telemetryHistory.map((p) => p.m3)
+                  }
+                ]}
+              />
+            )}
 
             {/* Primary Simulation Sliders & Telemetry */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
@@ -2034,8 +2619,8 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   </div>
                 </div>
 
-                {/* Cross-Section Slice Plane & Citadel Floor */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2.5 space-y-1">
+                {/* 3-Axis Cross-Section Slice Plane & Citadel Floor */}
+                <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2.5 space-y-1.5">
                   <div className="flex items-center justify-between text-[10px]">
                     <button
                       type="button"
@@ -2045,23 +2630,58 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                       }`}
                     >
                       <Scissors className="w-3 h-3" />
-                      <span>{sliceEnabled ? `${sliceHeight.toFixed(1)}m` : isEn ? 'Slice OFF' : 'Mặt cắt TẮT'}</span>
+                      <span>
+                        {sliceEnabled
+                          ? `${sliceAxis.toUpperCase()}=${sliceHeight.toFixed(1)}m`
+                          : isEn
+                          ? 'Slice OFF'
+                          : 'Mặt cắt TẮT'}
+                      </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowPlatform((v) => !v)}
-                      className={`inline-flex items-center gap-1 font-bold cursor-pointer ${
-                        showPlatform ? 'text-emerald-300' : 'text-slate-500'
-                      }`}
-                      title={isEn ? 'Toggle Citadel Floor' : 'Bật/Tắt Sàn Đài 3D'}
-                    >
-                      <Grid className="w-3 h-3" />
-                      <span>{showPlatform ? (isEn ? 'Floor' : 'Sàn') : isEn ? 'No Floor' : 'Ẩn sàn'}</span>
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {(['x', 'y', 'z'] as const).map((ax) => (
+                        <button
+                          key={ax}
+                          type="button"
+                          onClick={() => {
+                            setSliceAxis(ax);
+                            if (!sliceEnabled) setSliceEnabled(true);
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase cursor-pointer ${
+                            sliceAxis === ax && sliceEnabled
+                              ? 'bg-rose-500 text-white'
+                              : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                          }`}
+                        >
+                          {ax}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSliceInvert((v) => !v);
+                          if (!sliceEnabled) setSliceEnabled(true);
+                        }}
+                        className="px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[9px] font-mono text-slate-200 cursor-pointer"
+                        title={isEn ? 'Flip slice direction' : 'Đảo chiều cắt'}
+                      >
+                        {sliceInvert ? '+' : '-'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowPlatform((v) => !v)}
+                        className={`inline-flex items-center gap-0.5 ml-1 font-bold cursor-pointer ${
+                          showPlatform ? 'text-emerald-300' : 'text-slate-500'
+                        }`}
+                        title={isEn ? 'Toggle Citadel Floor' : 'Bật/Tắt Sàn Đài 3D'}
+                      >
+                        <Grid className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                   <input
                     type="range"
-                    min={-1.5}
+                    min={-4.5}
                     max={6.5}
                     step={0.1}
                     value={sliceHeight}

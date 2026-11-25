@@ -3,8 +3,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {
+  Camera,
   ChevronDown,
   ChevronUp,
+  Navigation,
   Orbit,
   Pause,
   Play,
@@ -18,6 +20,7 @@ import {
   SOLAR_PLANETS,
   yearToJulianCenturies,
 } from './solar/solarEphemeris';
+import { captureCanvasPng } from '../common/SimProToolkit';
 
 interface SolarSystem3DLabProps {
   onEarnXP?: (xp: number) => void;
@@ -59,6 +62,9 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
   const [showOrbits, setShowOrbits] = useState<boolean>(true);
   const [showSaturnRings, setShowSaturnRings] = useState<boolean>(true);
   const [dockCollapsed, setDockCollapsed] = useState<boolean>(false);
+  const [hohmannOpen, setHohmannOpen] = useState<boolean>(false);
+  const [depPlanetId, setDepPlanetId] = useState<string>('earth');
+  const [arrPlanetId, setArrPlanetId] = useState<string>('mars');
 
   const epochYearRef = useRef<number>(epochYear);
   const isPlayingRef = useRef<boolean>(isPlaying);
@@ -67,6 +73,7 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
   const showOrbitsRef = useRef<boolean>(showOrbits);
   const showSaturnRingsRef = useRef<boolean>(showSaturnRings);
   const xpAwardedRef = useRef<boolean>(false);
+  const snapFnRef = useRef<(() => void) | null>(null);
 
   epochYearRef.current = epochYear;
   isPlayingRef.current = isPlaying;
@@ -83,6 +90,24 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       onEarnXP(40);
     }
   }, [onEarnXP]);
+
+  const hohmannStats = useMemo(() => {
+    const T = yearToJulianCenturies(epochYear);
+    const p1 = SOLAR_PLANETS.find((p) => p.id === depPlanetId) || SOLAR_PLANETS[2];
+    const p2 = SOLAR_PLANETS.find((p) => p.id === arrPlanetId) || SOLAR_PLANETS[3];
+    const r1 = computePlanetPosition(p1, T).heliocentricAU;
+    const r2 = computePlanetPosition(p2, T).heliocentricAU;
+    const aTrans = (r1 + r2) / 2;
+    const transferYears = 0.5 * Math.pow(aTrans, 1.5);
+    const transferDays = transferYears * 365.25;
+    const muSunKm = 29.78 * 29.78; // AU * (km/s)^2 normalization at 1 AU
+    const v1 = Math.sqrt(muSunKm / Math.max(0.2, r1));
+    const v2 = Math.sqrt(muSunKm / Math.max(0.2, r2));
+    const vTrans1 = Math.sqrt(muSunKm * (2 / Math.max(0.2, r1) - 1 / aTrans));
+    const vTrans2 = Math.sqrt(muSunKm * (2 / Math.max(0.2, r2) - 1 / aTrans));
+    const deltaV = Math.abs(vTrans1 - v1) + Math.abs(v2 - vTrans2);
+    return { p1, p2, aTrans, transferDays, deltaV };
+  }, [depPlanetId, arrPlanetId, epochYear]);
 
   const telemetry = useMemo(() => {
     const T = yearToJulianCenturies(epochYear);
@@ -155,6 +180,11 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
     controls.addEventListener('start', () => {
       cameraTweenRef.current.active = false;
     });
+
+    snapFnRef.current = () => {
+      renderer.render(scene, camera);
+      captureCanvasPng(renderer.domElement, `synapse-solar-${Math.round(epochYearRef.current)}`);
+    };
 
     // Lighting rig (Solar key + deep space cool fill)
     const sunPoint = new THREE.PointLight(0xfff1d6, 3.2, 220, 0.35);
@@ -431,8 +461,8 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
       <div ref={mountRef} className="w-full h-full" />
 
       {/* Minimal Top-Left Ephemeris Header & Telemetry */}
-      <div className="pointer-events-none absolute top-3 left-3 z-10 flex flex-col gap-1.5 max-w-[340px]">
-        <div className="pointer-events-auto rounded-lg bg-slate-950/85 border border-slate-700/70 px-3 py-2">
+      <div className="pointer-events-none absolute top-3 left-3 right-3 z-10 flex flex-wrap items-start justify-between gap-2">
+        <div className="pointer-events-auto rounded-lg bg-slate-950/88 border border-slate-700/70 px-3 py-2 max-w-[340px]">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
             <Orbit className="w-4 h-4 shrink-0" />
             <span>
@@ -454,6 +484,80 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
               <div className="font-bold text-emerald-300">{telemetry.speedKmS.toFixed(1)} km/s</div>
             </div>
           </div>
+        </div>
+
+        <div className="pointer-events-auto flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setHohmannOpen((v) => !v)}
+              className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                hohmannOpen
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-300'
+                  : 'bg-slate-950/88 border-slate-700 text-emerald-300 hover:border-emerald-400'
+              }`}
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Hohmann Transfer' : 'Quỹ đạo Hohmann'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => snapFnRef.current?.()}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-950/88 border border-slate-700 hover:border-sky-400 text-sky-300 text-xs font-mono font-bold flex items-center gap-1 cursor-pointer"
+              title="PNG Snapshot"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>PNG</span>
+            </button>
+          </div>
+
+          {hohmannOpen && (
+            <div className="w-64 rounded-lg bg-slate-950/94 border border-emerald-500/40 p-2.5 text-[11px] space-y-2 shadow-xl">
+              <div className="font-bold text-emerald-300 flex items-center justify-between">
+                <span>{isEn ? 'Hohmann Mission Planner' : 'Tính toán Chuyển quỹ đạo'}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                <select
+                  value={depPlanetId}
+                  onChange={(e) => setDepPlanetId(e.target.value)}
+                  className="rounded bg-slate-900 border border-slate-700 px-1.5 py-1 text-[11px] text-white"
+                >
+                  {SOLAR_PLANETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {isEn ? p.nameEn : p.nameVi.split(' (')[0]}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={arrPlanetId}
+                  onChange={(e) => setArrPlanetId(e.target.value)}
+                  className="rounded bg-slate-900 border border-slate-700 px-1.5 py-1 text-[11px] text-white"
+                >
+                  {SOLAR_PLANETS.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {isEn ? p.nameEn : p.nameVi.split(' (')[0]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-0.5 font-mono text-[10px] text-slate-300 pt-1 border-t border-slate-800">
+                <div className="flex justify-between">
+                  <span>a_trans:</span>
+                  <span className="text-sky-300 font-bold">{hohmannStats.aTrans.toFixed(2)} AU</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{isEn ? 'Flight Time:' : 'Thời gian bay:'}</span>
+                  <span className="text-amber-300 font-bold">
+                    {Math.round(hohmannStats.transferDays)} d ({(hohmannStats.transferDays / 30.4).toFixed(1)} mo)
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Δv:</span>
+                  <span className="text-emerald-300 font-bold">{hohmannStats.deltaV.toFixed(2)} km/s</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -577,6 +681,31 @@ export const SolarSystem3DLab: React.FC<SolarSystem3DLabProps> = ({ onEarnXP }) 
                   <span>{isEn ? 'Rings' : 'Vành đai'}</span>
                 </button>
               </div>
+            </div>
+
+            {/* Historic Astronomical Epoch Presets */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800/80 text-[11px]">
+              <span className="text-slate-400 font-semibold">{isEn ? 'Epochs:' : 'Mốc lịch sử:'}</span>
+              {(
+                [
+                  { yr: 1977.65, label: 'Voyager Grand Tour (1977)' },
+                  { yr: 1986.1, label: 'Halley Comet (1986)' },
+                  { yr: 2026.0, label: 'J2026 Present' },
+                  { yr: 2035.7, label: 'Mars Opposition (2035)' },
+                ] as const
+              ).map((ep) => (
+                <button
+                  key={ep.yr}
+                  type="button"
+                  onClick={() => {
+                    setEpochYear(ep.yr);
+                    epochYearRef.current = ep.yr;
+                  }}
+                  className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-200 font-mono text-[10px] cursor-pointer"
+                >
+                  {ep.label}
+                </button>
+              ))}
             </div>
           </div>
         )}

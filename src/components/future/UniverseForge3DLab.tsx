@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { Check, Copy, Orbit, Pause, Play, RotateCcw, Share2 } from 'lucide-react';
+import { Camera, Check, Copy, Orbit, Pause, Play, RotateCcw, Share2 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+import { captureCanvasPng } from '../common/SimProToolkit';
 
 interface UniverseForge3DLabProps {
   onEarnXP?: (xp: number) => void;
@@ -45,6 +46,11 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
   const [shareCopied, setShareCopied] = useState<boolean>(false);
   const [codeInput, setCodeInput] = useState<string>('');
   const [codeNotice, setCodeNotice] = useState<string | null>(null);
+  const [camMode, setCamMode] = useState<'overview' | 'follow' | 'top'>('overview');
+  const [clockStats, setClockStats] = useState<{ earth: number; ship: number }>({ earth: 0, ship: 0 });
+  const camModeRef = useRef(camMode);
+  camModeRef.current = camMode;
+  const snapFnRef = useRef<(() => void) | null>(null);
 
   const universeCode = useMemo(
     () => `SYN-U1:${gravityG.toFixed(2)}:${forceExp.toFixed(2)}:${Math.round(speedOfLight)}:${betaFrac.toFixed(2)}`,
@@ -149,6 +155,10 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
     controls.target.set(0, 0.2, 0);
     controls.minDistance = 4;
     controls.maxDistance = 28;
+    snapFnRef.current = () => {
+      renderer.render(scene, camera);
+      captureCanvasPng(renderer.domElement, 'synapse-universe-forge');
+    };
 
     scene.add(new THREE.HemisphereLight(0x93c5fd, 0x090b18, 0.9));
     const key = new THREE.DirectionalLight(0xfff4df, 1.9);
@@ -275,6 +285,9 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
     const clock = new THREE.Clock();
     let frameId = 0;
     let disposed = false;
+    let earthTime = 0;
+    let shipTime = 0;
+    let clockReportTimer = 0;
 
     const afterDraw = (cb: () => void) => {
       const gl = renderer.getContext() as WebGL2RenderingContext;
@@ -381,6 +394,26 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
       starMesh.instanceMatrix.needsUpdate = true;
       if (starMesh.instanceColor) starMesh.instanceColor.needsUpdate = true;
 
+      if (!cfg.paused) {
+        const gamma = 1 / Math.sqrt(Math.max(0.02, 1 - cfg.betaFrac * cfg.betaFrac));
+        earthTime += dt;
+        shipTime += dt / gamma;
+        clockReportTimer += dt;
+        if (clockReportTimer >= 0.2) {
+          clockReportTimer = 0;
+          setClockStats({ earth: earthTime, ship: shipTime });
+        }
+      }
+
+      if (camModeRef.current === 'follow') {
+        controls.target.lerp(probeGroup.position, 1 - Math.exp(-5 * dt));
+      } else if (camModeRef.current === 'top') {
+        controls.target.lerp(_vTmp.set(0, 0, 0), 1 - Math.exp(-5 * dt));
+        camera.position.lerp(_vDir.set(0.05, 16.5, 2.2), 1 - Math.exp(-4 * dt));
+      } else {
+        controls.target.lerp(_vTmp.set(0, 0.2, 0), 1 - Math.exp(-5 * dt));
+      }
+
       controls.update();
       renderer.render(scene, camera);
 
@@ -426,8 +459,8 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
   return (
     <div className="relative w-full lg:h-[700px] rounded-2xl overflow-hidden border border-amber-500/40 bg-[#030612] text-white shadow-2xl flex flex-col lg:block">
       {/* Top-Left Relativistic Telemetry (Stacked on < lg, floating on lg+) */}
-      <div className="relative z-20 p-2.5 sm:p-3 lg:pointer-events-none lg:absolute lg:top-3 lg:left-3 bg-[#030612]/95 lg:bg-transparent border-b border-amber-500/20 lg:border-b-0 max-w-full lg:max-w-md shrink-0">
-        <div className="pointer-events-auto rounded-lg bg-[#050a18]/92 border border-amber-500/40 px-3.5 py-2.5 space-y-1 shadow-lg">
+      <div className="relative z-20 p-2.5 sm:p-3 lg:pointer-events-none lg:absolute lg:top-3 lg:left-3 lg:right-3 flex flex-wrap items-start justify-between gap-2 bg-[#030612]/95 lg:bg-transparent border-b border-amber-500/20 lg:border-b-0 shrink-0">
+        <div className="pointer-events-auto rounded-lg bg-[#050a18]/92 border border-amber-500/40 px-3.5 py-2.5 space-y-1 shadow-lg max-w-full lg:max-w-md">
           <div className="flex items-center gap-2 text-xs font-extrabold text-amber-300">
             <Orbit className="w-4 h-4 shrink-0" />
             <span>{isEn ? 'Universe Forge · Custom Relativity' : 'Lò Rèn Vũ Trụ & Tương Đối Tính 3D'}</span>
@@ -439,6 +472,41 @@ export const UniverseForge3DLab: React.FC<UniverseForge3DLabProps> = ({ onEarnXP
             <span>·</span>
             <span className="text-sky-300">F ∝ {gravityG.toFixed(2)} / r^{forceExp.toFixed(2)}</span>
           </div>
+          <div className="flex flex-wrap gap-x-3 text-[10px] font-mono tabular-nums text-emerald-300">
+            <span>t_Earth = {clockStats.earth.toFixed(1)}s</span>
+            <span>τ_Ship = {clockStats.ship.toFixed(1)}s (×{(1 / lorentzGamma).toFixed(2)})</span>
+          </div>
+        </div>
+
+        <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-lg bg-[#050a18]/92 border border-amber-500/35 px-2.5 py-1.5 shadow-lg">
+          {(
+            [
+              ['overview', isEn ? 'Overview' : 'Toàn cảnh'],
+              ['follow', isEn ? 'Follow Ship' : 'Theo Tàu'],
+              ['top', isEn ? 'Top Funnel' : 'Đỉnh Phễu'],
+            ] as const
+          ).map(([id, lbl]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setCamMode(id)}
+              className={`px-2 py-1 rounded text-[10px] font-bold cursor-pointer ${
+                camMode === id
+                  ? 'bg-amber-400 text-slate-950'
+                  : 'bg-slate-900 text-slate-300 hover:text-white'
+              }`}
+            >
+              {lbl}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => snapFnRef.current?.()}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-900 border border-slate-700 hover:border-sky-400 text-[10px] font-mono font-bold text-sky-300 cursor-pointer"
+          >
+            <Camera className="w-3 h-3" />
+            <span>PNG</span>
+          </button>
         </div>
       </div>
 

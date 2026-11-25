@@ -14,11 +14,13 @@ import {
   Compass,
   Copy,
   Crown,
+  Dna,
   Download,
   Eye,
   FileText,
   Flag,
   Flame,
+  FlaskConical,
   GraduationCap,
   Image as ImageIcon,
   Layers,
@@ -102,7 +104,7 @@ const ARENA_SFX_KEY = 'educlassroom_arena_sfx_v1';
 
 const SPRINT_DURATION_SEC = 90;
 
-type RankFilterTab = 'overall' | 'math' | 'physics' | 'cs';
+type RankFilterTab = 'overall' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 type RankSortMode = 'overallAvg' | 'bestTotal' | 'fastest' | 'attempts';
 type LobbySubTab = 'arena' | 'achievements' | 'speedrun';
 
@@ -230,6 +232,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   const [userAttemptsToday, setUserAttemptsToday] = useState<Record<ArenaSubject, ArenaAttempt | null>>({
     math: null,
     physics: null,
+    chemistry: null,
+    biology: null,
     cs: null
   });
   const [userWeekAttempts, setUserWeekAttempts] = useState<ArenaAttempt[]>([]);
@@ -300,6 +304,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   const [selectedLobbyMode, setSelectedLobbyMode] = useState<Record<ArenaSubject, ArenaMode>>({
     math: 'mcq',
     physics: 'mcq',
+    chemistry: 'mcq',
+    biology: 'mcq',
     cs: 'mcq'
   });
 
@@ -329,7 +335,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
     try {
       const raw = localStorage.getItem(LOCAL_ATTEMPTS_KEY);
       if (!raw) {
-        setUserAttemptsToday({ math: null, physics: null, cs: null });
+        setUserAttemptsToday({ math: null, physics: null, chemistry: null, biology: null, cs: null });
         setUserWeekAttempts([]);
         setAllMyAttempts([]);
       } else {
@@ -340,9 +346,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         const mineToday: Record<ArenaSubject, ArenaAttempt | null> = {
           math: null,
           physics: null,
+          chemistry: null,
+          biology: null,
           cs: null
         };
-        for (const subj of ['math', 'physics', 'cs'] as ArenaSubject[]) {
+        for (const subj of ['math', 'physics', 'chemistry', 'biology', 'cs'] as ArenaSubject[]) {
           mineToday[subj] =
             mineAll.find(
               (a) =>
@@ -395,6 +403,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         setUserAttemptsToday((prev) => ({
           math: data.userAttemptsToday.math || prev.math,
           physics: data.userAttemptsToday.physics || prev.physics,
+          chemistry: data.userAttemptsToday.chemistry || prev.chemistry,
+          biology: data.userAttemptsToday.biology || prev.biology,
           cs: data.userAttemptsToday.cs || prev.cs
         }));
       }
@@ -496,6 +506,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
     if (rankTab === 'math') list = list.filter((r) => r.mathAvg !== null);
     else if (rankTab === 'physics') list = list.filter((r) => r.physicsAvg !== null);
+    else if (rankTab === 'chemistry') list = list.filter((r) => r.chemistryAvg !== null && r.chemistryAvg !== undefined);
+    else if (rankTab === 'biology') list = list.filter((r) => r.biologyAvg !== null && r.biologyAvg !== undefined);
     else if (rankTab === 'cs') list = list.filter((r) => r.csAvg !== null);
 
     if (searchQuery.trim()) {
@@ -511,8 +523,18 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
     list.sort((a, b) => {
       if (rankSort === 'bestTotal') {
-        const aBest = (a.mathBest ?? 0) + (a.physicsBest ?? 0) + (a.csBest ?? 0);
-        const bBest = (b.mathBest ?? 0) + (b.physicsBest ?? 0) + (b.csBest ?? 0);
+        const aBest =
+          (a.mathBest ?? 0) +
+          (a.physicsBest ?? 0) +
+          (a.chemistryBest ?? 0) +
+          (a.biologyBest ?? 0) +
+          (a.csBest ?? 0);
+        const bBest =
+          (b.mathBest ?? 0) +
+          (b.physicsBest ?? 0) +
+          (b.chemistryBest ?? 0) +
+          (b.biologyBest ?? 0) +
+          (b.csBest ?? 0);
         if (bBest !== aBest) return bBest - aBest;
       } else if (rankSort === 'fastest') {
         const aPace = a.totalAttempts > 0 ? a.totalTimeSec / a.totalAttempts : 9999;
@@ -524,6 +546,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
 
       if (rankTab === 'math') return (b.mathAvg ?? 0) - (a.mathAvg ?? 0) || (b.mathBest ?? 0) - (a.mathBest ?? 0);
       if (rankTab === 'physics') return (b.physicsAvg ?? 0) - (a.physicsAvg ?? 0) || (b.physicsBest ?? 0) - (a.physicsBest ?? 0);
+      if (rankTab === 'chemistry') return (b.chemistryAvg ?? 0) - (a.chemistryAvg ?? 0) || (b.chemistryBest ?? 0) - (a.chemistryBest ?? 0);
+      if (rankTab === 'biology') return (b.biologyAvg ?? 0) - (a.biologyAvg ?? 0) || (b.biologyBest ?? 0) - (a.biologyBest ?? 0);
       if (rankTab === 'cs') return (b.csAvg ?? 0) - (a.csAvg ?? 0) || (b.csBest ?? 0) - (a.csBest ?? 0);
 
       if (b.overallAvg !== a.overallAvg) return b.overallAvg - a.overallAvg;
@@ -626,7 +650,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
   };
 
   const handleExportCsv = () => {
-    const header = ['Hang', 'Ten Hien Thi', 'Username', 'Toan TB', 'Vat Li TB', 'Tin Hoc TB', 'TB Chung', 'So Luot', 'Thoi Gian (s)'];
+    const header = ['Hang', 'Ten Hien Thi', 'Username', 'Toan TB', 'Vat Li TB', 'Hoa Hoc TB', 'Sinh Hoc TB', 'Tin Hoc TB', 'TB Chung', 'So Luot', 'Thoi Gian (s)'];
     const lines = [header.join(',')];
     mergedLeaderboard.forEach((row, idx) => {
       const safeName = `"${row.displayName.replace(/"/g, '""')}"`;
@@ -637,6 +661,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
           row.username,
           row.mathAvg ?? '',
           row.physicsAvg ?? '',
+          row.chemistryAvg ?? '',
+          row.biologyAvg ?? '',
           row.csAvg ?? '',
           row.overallAvg,
           row.totalAttempts,
@@ -839,6 +865,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       };
       const m = calcSubj('math');
       const p = calcSubj('physics');
+      const ch = calcSubj('chemistry');
+      const bi = calcSubj('biology');
       const c = calcSubj('cs');
       const overallAvg =
         mineWeek.length > 0
@@ -856,6 +884,12 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
         physicsBest: p.best,
         physicsAvg: p.avg,
         physicsAttempts: p.count,
+        chemistryBest: ch.best,
+        chemistryAvg: ch.avg,
+        chemistryAttempts: ch.count,
+        biologyBest: bi.best,
+        biologyAvg: bi.avg,
+        biologyAttempts: bi.count,
         csBest: c.best,
         csAvg: c.avg,
         csAttempts: c.count,
@@ -913,6 +947,12 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
             physicsBest: me.physicsBest,
             physicsAvg: me.physicsAvg,
             physicsAttempts: me.physicsAttempts,
+            chemistryBest: me.chemistryBest ?? null,
+            chemistryAvg: me.chemistryAvg ?? null,
+            chemistryAttempts: me.chemistryAttempts ?? 0,
+            biologyBest: me.biologyBest ?? null,
+            biologyAvg: me.biologyAvg ?? null,
+            biologyAttempts: me.biologyAttempts ?? 0,
             csBest: me.csBest,
             csAvg: me.csAvg,
             csAttempts: me.csAttempts,
@@ -1226,6 +1266,18 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       labelEn: 'Physics',
       accent: 'text-amber-600 dark:text-amber-400',
       icon: <Zap className="w-5 h-5 text-amber-600 dark:text-amber-400 icon-anim-zap" />
+    },
+    chemistry: {
+      label: 'Hóa học',
+      labelEn: 'Chemistry',
+      accent: 'text-teal-600 dark:text-teal-400',
+      icon: <FlaskConical className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+    },
+    biology: {
+      label: 'Sinh học',
+      labelEn: 'Biology',
+      accent: 'text-rose-600 dark:text-rose-400',
+      icon: <Dna className="w-5 h-5 text-rose-600 dark:text-rose-400" />
     },
     cs: {
       label: 'Tin học',
@@ -2326,12 +2378,12 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               </p>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj) => (
+              {(['math', 'physics', 'chemistry', 'biology', 'cs'] as ArenaSubject[]).map((subj) => (
                 <button
                   key={subj}
                   type="button"
                   onClick={() => startArenaMatch(subj, 'mcq', true)}
-                  className="arena-btn px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold flex items-center gap-1 cursor-pointer"
+                  className="arena-btn px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0"
                 >
                   <Flame className="w-3.5 h-3.5" />
                   <span>Đấu {subjectMeta[subj].label}</span>
@@ -2389,7 +2441,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
       {lobbySubTab === 'arena' && (
         <>
           {/* My Weekly Performance KPI Strip */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="rm-card-interactive arena-frame arena-card-hover bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 rounded-md p-4 shadow-sm">
               <div className="h-[2.5px] w-12 bg-indigo-500 roadmap-shimmer-bar mb-2" />
               <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -2403,22 +2455,38 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               </div>
             </div>
 
-            {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj) => {
+            {(['math', 'physics', 'chemistry', 'biology', 'cs'] as ArenaSubject[]).map((subj) => {
               const avg =
                 subj === 'math'
                   ? myLeaderboardRow.entry?.mathAvg
                   : subj === 'physics'
                   ? myLeaderboardRow.entry?.physicsAvg
+                  : subj === 'chemistry'
+                  ? myLeaderboardRow.entry?.chemistryAvg
+                  : subj === 'biology'
+                  ? myLeaderboardRow.entry?.biologyAvg
                   : myLeaderboardRow.entry?.csAvg;
               const best =
                 subj === 'math'
                   ? myLeaderboardRow.entry?.mathBest
                   : subj === 'physics'
                   ? myLeaderboardRow.entry?.physicsBest
+                  : subj === 'chemistry'
+                  ? myLeaderboardRow.entry?.chemistryBest
+                  : subj === 'biology'
+                  ? myLeaderboardRow.entry?.biologyBest
                   : myLeaderboardRow.entry?.csBest;
               const meta = subjectMeta[subj];
               const topBarColor =
-                subj === 'math' ? 'bg-blue-500' : subj === 'physics' ? 'bg-amber-500' : 'bg-emerald-500';
+                subj === 'math'
+                  ? 'bg-blue-500'
+                  : subj === 'physics'
+                  ? 'bg-amber-500'
+                  : subj === 'chemistry'
+                  ? 'bg-teal-500'
+                  : subj === 'biology'
+                  ? 'bg-rose-500'
+                  : 'bg-emerald-500';
               return (
                 <div
                   key={subj}
@@ -2441,8 +2509,8 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
           </div>
 
           {/* Daily Arena Subject Cards + Unlimited Speedrun 90s */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {(['math', 'physics', 'cs'] as ArenaSubject[]).map((subj) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {(['math', 'physics', 'chemistry', 'biology', 'cs'] as ArenaSubject[]).map((subj) => {
               const meta = subjectMeta[subj];
               const todayAttempt = userAttemptsToday[subj];
               const chosenMode = selectedLobbyMode[subj];
@@ -2451,6 +2519,10 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   ? 'from-blue-500 via-cyan-400 to-indigo-500'
                   : subj === 'physics'
                   ? 'from-amber-500 via-orange-400 to-yellow-400'
+                  : subj === 'chemistry'
+                  ? 'from-teal-500 via-cyan-400 to-emerald-500'
+                  : subj === 'biology'
+                  ? 'from-rose-500 via-pink-400 to-amber-400'
                   : 'from-emerald-500 via-teal-400 to-cyan-500';
 
               return (
@@ -2587,9 +2659,11 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
               <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
                 {[
                   { id: 'overall' as RankFilterTab, label: 'Trung Bình Chung' },
-                  { id: 'math' as RankFilterTab, label: 'Môn Toán' },
-                  { id: 'physics' as RankFilterTab, label: 'Môn Vật Lí' },
-                  { id: 'cs' as RankFilterTab, label: 'Môn Tin Học' }
+                  { id: 'math' as RankFilterTab, label: 'Toán' },
+                  { id: 'physics' as RankFilterTab, label: 'Vật Lí' },
+                  { id: 'chemistry' as RankFilterTab, label: 'Hóa Học' },
+                  { id: 'biology' as RankFilterTab, label: 'Sinh Học' },
+                  { id: 'cs' as RankFilterTab, label: 'Tin Học' }
                 ].map((t) => (
                   <button
                     key={t.id}
@@ -2682,7 +2756,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                   className="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 cursor-pointer"
                 >
                   <option value="overallAvg">Xếp theo: Điểm TB</option>
-                  <option value="bestTotal">Xếp theo: Tổng Best 3 môn</option>
+                  <option value="bestTotal">Xếp theo: Tổng Best 5 môn</option>
                   <option value="fastest">Xếp theo: Tốc độ trung bình</option>
                   <option value="attempts">Xếp theo: Số lượt thi</option>
                 </select>
@@ -2750,7 +2824,7 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     : `Chưa có thí sinh nào nộp bài trong tuần ${activeScopedWeekId.split('_')[0]}`}
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Hoàn thành 1 lượt thi Toán, Vật lí hoặc Tin học phía trên để ghi danh vào Bảng Xếp Hạng!
+                  Hoàn thành 1 lượt thi Toán, Lí, Hóa, Sinh hoặc Tin học phía trên để ghi danh vào Bảng Xếp Hạng!
                 </p>
               </div>
             ) : (
@@ -2760,11 +2834,13 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs font-mono">
                       <th className="py-2.5 px-3 font-semibold">Hạng</th>
                       <th className="py-2.5 px-3 font-semibold">Thí sinh</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Toán (TB)</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Vật lí (TB)</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Tin học (TB)</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Toán</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Lí</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Hóa</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Sinh</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Tin</th>
                       <th className="py-2.5 px-3 font-semibold text-right">TB Chung</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Lượt / Thời gian</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Lượt / T.Gian</th>
                       <th className="py-2.5 px-3 font-semibold text-right">Hành động</th>
                     </tr>
                   </thead>
@@ -2818,6 +2894,12 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                           </td>
                           <td className="py-3 px-3 text-right font-mono tabular-nums">
                             {row.physicsAvg !== null ? `${row.physicsAvg}đ` : '—'}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono tabular-nums">
+                            {row.chemistryAvg !== null && row.chemistryAvg !== undefined ? `${row.chemistryAvg}đ` : '—'}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono tabular-nums">
+                            {row.biologyAvg !== null && row.biologyAvg !== undefined ? `${row.biologyAvg}đ` : '—'}
                           </td>
                           <td className="py-3 px-3 text-right font-mono tabular-nums">
                             {row.csAvg !== null ? `${row.csAvg}đ` : '—'}
@@ -2958,6 +3040,16 @@ export const ArenaHub: React.FC<ArenaHubProps> = ({
                     label: 'Vật lí (TB)',
                     mine: myLeaderboardRow.entry?.physicsAvg ?? 0,
                     theirs: h2hEntry.physicsAvg ?? 0
+                  },
+                  {
+                    label: 'Hóa học (TB)',
+                    mine: myLeaderboardRow.entry?.chemistryAvg ?? 0,
+                    theirs: h2hEntry.chemistryAvg ?? 0
+                  },
+                  {
+                    label: 'Sinh học (TB)',
+                    mine: myLeaderboardRow.entry?.biologyAvg ?? 0,
+                    theirs: h2hEntry.biologyAvg ?? 0
                   },
                   {
                     label: 'Tin học (TB)',

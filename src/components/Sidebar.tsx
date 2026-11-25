@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Crown,
   FlaskConical,
+  Dna,
   Sparkles,
   Video,
   HelpCircle,
@@ -36,6 +37,8 @@ import { useNavigation } from '../context/NavigationContext';
 import { usePremium } from '../context/PremiumContext';
 import { BrandLogo } from './common/BrandLogo';
 import { getPhysicsSimCounts } from '../data/physicsDomainsData';
+import { CHEMISTRY_2D_SIMS, CHEMISTRY_3D_SIMS } from '../data/chemistryDomainsData';
+import { BIOLOGY_2D_SIMS, BIOLOGY_3D_SIMS } from '../data/biologyDomainsData';
 import { PRE_SIDEBAR_GROUPS, PRE_STUDIOS, PreSidebarGroupId } from '../data/preLabsData';
 
 interface SidebarProps {
@@ -255,10 +258,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [physicsSimTotal, setPhysicsSimTotal] = useState<number>(() => getPhysicsSimCounts().total);
 
   const [isSubjectsOpen, setIsSubjectsOpen] = useState<boolean>(
-    () => currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs'
+    () =>
+      currentSubject === 'math' ||
+      currentSubject === 'physics' ||
+      currentSubject === 'chemistry' ||
+      currentSubject === 'biology' ||
+      currentSubject === 'cs'
   );
   const [isVirtualLabsOpen, setIsVirtualLabsOpen] = useState<boolean>(
-    () => currentSubject === 'physics_sims' || currentSubject === 'math_sims' || currentSubject === 'cs_sims'
+    () =>
+      currentSubject === 'physics_sims' ||
+      currentSubject === 'math_sims' ||
+      currentSubject === 'chemistry_sims' ||
+      currentSubject === 'biology_sims' ||
+      currentSubject === 'cs_sims'
   );
   const [openPreGroups, setOpenPreGroups] = useState<Record<PreSidebarGroupId, boolean>>({
     labs: false,
@@ -267,10 +280,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   });
 
   useEffect(() => {
-    if (currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs') {
+    if (
+      currentSubject === 'math' ||
+      currentSubject === 'physics' ||
+      currentSubject === 'chemistry' ||
+      currentSubject === 'biology' ||
+      currentSubject === 'cs'
+    ) {
       setIsSubjectsOpen(true);
     }
-    if (currentSubject === 'physics_sims' || currentSubject === 'math_sims' || currentSubject === 'cs_sims') {
+    if (
+      currentSubject === 'physics_sims' ||
+      currentSubject === 'math_sims' ||
+      currentSubject === 'chemistry_sims' ||
+      currentSubject === 'biology_sims' ||
+      currentSubject === 'cs_sims'
+    ) {
       setIsVirtualLabsOpen(true);
     }
     if ((currentSubject === 'synapse_v2' || currentSubject === 'future_lab') && location.futureTab) {
@@ -598,7 +623,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         setIsVirtualLabsOpen((v) => !v);
                       }
                     }}
-                    title={isEn ? 'Virtual Labs (Physics · Math · Code)' : 'Phòng lab ảo (Lí · Toán · Code)'}
+                    title={
+                      isEn
+                        ? 'Virtual Labs (Physics · Math · Chemistry · Biology · Code)'
+                        : 'Phòng lab ảo (Lí · Toán · Hóa · Sinh · Code)'
+                    }
                     className={`group cs-deck-btn w-full min-h-[46px] flex items-center ${
                       isRail
                         ? 'justify-center px-2.5 py-3'
@@ -606,6 +635,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     } rounded text-[13.5px] font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
                       currentSubject === 'physics_sims' ||
                       currentSubject === 'math_sims' ||
+                      currentSubject === 'chemistry_sims' ||
+                      currentSubject === 'biology_sims' ||
                       currentSubject === 'cs_sims'
                         ? 'bg-gradient-to-r from-amber-500 to-cyan-600 border border-amber-300 text-white shadow-md'
                         : 'bg-amber-50/85 dark:bg-slate-900/85 border border-amber-300/80 dark:border-amber-500/35 text-slate-900 dark:text-amber-100 hover:border-amber-400'
@@ -619,7 +650,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </span>
                     {!isRail && (
                       <span className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[11px] font-mono opacity-80">3</span>
+                        <span className="text-[11px] font-mono opacity-80">5</span>
                         <ChevronDown
                           className={`w-4 h-4 transition-transform duration-150 ${
                             isVirtualLabsOpen ? 'rotate-180' : ''
@@ -643,6 +674,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           label: isEn ? 'Math 2D/3D & Draw' : 'Mô phỏng & Vẽ Toán',
                           badge: '2D·3D',
                           icon: <Compass className="w-4 h-4 shrink-0 text-blue-400" />,
+                        },
+                        {
+                          id: 'chemistry_sims' as SubjectType,
+                          label: isEn ? 'Chemistry 2D/3D Labs' : 'Mô phỏng Hóa 2D/3D',
+                          badge: String(CHEMISTRY_2D_SIMS.length + CHEMISTRY_3D_SIMS.length),
+                          icon: <FlaskConical className="w-4 h-4 shrink-0 text-emerald-400" />,
+                        },
+                        {
+                          id: 'biology_sims' as SubjectType,
+                          label: isEn ? 'Biology 2D/3D Labs' : 'Mô phỏng Sinh 2D/3D',
+                          badge: String(BIOLOGY_2D_SIMS.length + BIOLOGY_3D_SIMS.length),
+                          icon: <Dna className="w-4 h-4 shrink-0 text-teal-400" />,
                         },
                         {
                           id: 'cs_sims' as SubjectType,
@@ -696,13 +739,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         setIsSubjectsOpen((v) => !v);
                       }
                     }}
-                    title={isEn ? 'Subjects (Math · Physics · CS)' : 'Môn học (Toán · Vật lí · Tin học)'}
+                    title={isEn ? 'Subjects (Math · Physics · Chemistry · Biology · CS)' : 'Môn học (Toán · Lí · Hóa · Sinh · Tin)'}
                     className={`group cs-deck-btn w-full min-h-[46px] flex items-center ${
                       isRail
                         ? 'justify-center px-2.5 py-3'
                         : 'justify-between gap-2.5 px-3 py-2.5'
                     } rounded text-[13.5px] font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
-                      currentSubject === 'math' || currentSubject === 'physics' || currentSubject === 'cs'
+                      currentSubject === 'math' ||
+                      currentSubject === 'physics' ||
+                      currentSubject === 'chemistry' ||
+                      currentSubject === 'biology' ||
+                      currentSubject === 'cs'
                         ? 'bg-slate-900 dark:bg-sky-600 border border-sky-400 text-white shadow-md'
                         : 'bg-blue-50/85 dark:bg-slate-900/85 border border-blue-300/80 dark:border-slate-700 text-slate-900 dark:text-slate-100 hover:border-sky-400'
                     }`}
@@ -710,12 +757,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span className="flex items-center gap-2.5 min-w-0">
                       <BookOpen className="w-5 h-5 shrink-0" />
                       {!isRail && (
-                        <span className="truncate">{isEn ? 'Subjects (3)' : 'Môn học'}</span>
+                        <span className="truncate">{isEn ? 'Subjects (5)' : 'Môn học'}</span>
                       )}
                     </span>
                     {!isRail && (
                       <span className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[11px] font-mono opacity-80">3</span>
+                        <span className="text-[11px] font-mono opacity-80">5</span>
                         <ChevronDown
                           className={`w-4 h-4 transition-transform duration-150 ${
                             isSubjectsOpen ? 'rotate-180' : ''
@@ -748,6 +795,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               'bg-amber-50/85 dark:bg-amber-950/35 border border-amber-300/80 dark:border-amber-500/35 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/55',
                             activeClass:
                               'bg-gradient-to-r from-amber-500 to-yellow-500 border border-amber-300 text-slate-950 font-bold shadow-sm'
+                          },
+                          {
+                            id: 'chemistry',
+                            labelVi: 'Hóa học (Bài giảng & Lab)',
+                            labelEn: 'Chemistry Lessons & Lab',
+                            icon: <FlaskConical className="w-4 h-4 shrink-0" />,
+                            idleClass:
+                              'bg-emerald-50/85 dark:bg-emerald-950/35 border border-emerald-300/80 dark:border-emerald-500/35 text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/55',
+                            activeClass:
+                              'bg-gradient-to-r from-emerald-600 to-green-500 border border-emerald-400 text-white shadow-sm'
+                          },
+                          {
+                            id: 'biology',
+                            labelVi: 'Sinh học (Bài giảng & Lab)',
+                            labelEn: 'Biology Lessons & Lab',
+                            icon: <Dna className="w-4 h-4 shrink-0" />,
+                            idleClass:
+                              'bg-teal-50/85 dark:bg-teal-950/35 border border-teal-300/80 dark:border-teal-500/35 text-teal-900 dark:text-teal-200 hover:bg-teal-100 dark:hover:bg-teal-900/55',
+                            activeClass:
+                              'bg-gradient-to-r from-teal-600 to-cyan-500 border border-teal-400 text-white shadow-sm'
                           },
                           {
                             id: 'cs',

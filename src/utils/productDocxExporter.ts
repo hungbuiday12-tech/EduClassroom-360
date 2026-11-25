@@ -14,6 +14,9 @@ import {
 } from 'docx';
 import { CURRICULUM_COUNTS } from '../data/curriculumCounts';
 import { getPhysicsSimCounts } from '../data/physicsDomainsData';
+import { CHEMISTRY_2D_SIMS, CHEMISTRY_3D_SIMS } from '../data/chemistryDomainsData';
+import { BIOLOGY_2D_SIMS, BIOLOGY_3D_SIMS } from '../data/biologyDomainsData';
+import { PRE_STUDIOS } from '../data/preLabsData';
 
 const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -176,6 +179,12 @@ function makeTable(headers: string[], rows: string[][]): Table {
 
 async function generateFallbackDocxBlob(): Promise<Blob> {
   const phyCounts = getPhysicsSimCounts();
+  const chemTotalSims = CHEMISTRY_2D_SIMS.length + CHEMISTRY_3D_SIMS.length;
+  const bioTotalSims = BIOLOGY_2D_SIMS.length + BIOLOGY_3D_SIMS.length;
+  const preTotal = PRE_STUDIOS.length;
+  const preLabsCount = PRE_STUDIOS.filter((s) => s.group === 'labs').length;
+  const preSimsCount = PRE_STUDIOS.filter((s) => s.group === 'simulations').length;
+  const preSandboxesCount = PRE_STUDIOS.filter((s) => s.group === 'sandboxes').length;
   const totalLessons = CURRICULUM_COUNTS.totalLessons;
   const totalExams = CURRICULUM_COUNTS.totalExams;
   const doc = new Document({
@@ -204,7 +213,7 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
             spacing: { after: 220 },
             children: [
               new TextRun({
-                text: 'Hệ sinh thái Học tập, Mô phỏng Trực quan Đa giác quan & Luyện thi STEM (Toán học · Vật lí · Tin học Lớp 9–12)',
+                text: 'Hệ sinh thái Học tập, Mô phỏng Trực quan Đa giác quan & Luyện thi STEM 5 Môn (Toán học · Vật lí · Hóa học · Sinh học · Tin học Lớp 9–12)',
                 bold: true,
                 size: 24,
                 color: '0369A1'
@@ -213,40 +222,29 @@ async function generateFallbackDocxBlob(): Promise<Blob> {
           }),
           heading1('I. TỔNG QUAN SẢN PHẨM (SYNAPSE STEM · synapse-stem.is-a.dev)'),
           bodyPara(
-            'Synapse tích hợp bài giảng chuyên sâu (GDPT 2018 & 2006), mô phỏng Vật lí 2D/3D + Phòng Lab Toán Oxyz/2D, Synapse Pre (30 Đại công trình tương lai, Phòng Lab Cảm biến Điện thoại QR Live Oscilloscope & Hộp cát Hạt Lực Trường 2 Tay GPU 28.000 hạt), Syn Meet & 3D (Gọi Video/Thoại WebRTC, Chia sẻ màn hình, Mô hình 3D dùng chung đồng bộ bằng chuột, Up file .glb/.gltf/.obj & Đồ họa Trung bình/Cao), Trình chấm Code IDE Tin học 5 lộ trình quốc tế (Truy vết Code-to-Animation 1-1 & Replay Tư Duy WA → AC), Ngân hàng Đề thi có mã đề & xuất DOCX, Đấu trường Xếp hạng, Hệ thống 3 AI Mắt Thần Live Co-Pilot (Ngắt lời Voice Barge-in & Syn Reel Video 3B1B) và WebAR Bàn Học Pro điều khiển 10 ngón tay.'
+            `Synapse tích hợp ${totalLessons} bài giảng chuyên sâu (GDPT 2018 & GDPT 2006 + Lộ trình Chuyên) cho 5 môn Toán học, Vật lí, Hóa học, Sinh học và Tin học; chia tách rành mạch từng khu vực Phòng Lab, Mô phỏng 2D/3D và Sandbox riêng cho từng môn. Phiên bản Synapse Pre mở khóa ${preTotal} Studio 3D/4D (${preLabsCount} Phòng Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes), gồm 30 Đại công trình, Lò Phản Ứng Hóa 3D, Atlas Orbital VSEPR 3D, Atlas Tế Bào 3D, CRISPR-Cas9 3D, QR Cảm biến Điện thoại & Hộp cát Hạt Lực Trường GPU 28.000 hạt; kết hợp Syn Meet & 3D WebRTC, IDE Sublime Text 4 chấm code C++/Python (Trace 1-1 & Replay Tư Duy), Ngân hàng ${totalExams} Đề thi xuất DOCX và Hệ thống 5 AI Chuyên Môn (Syn Math, Syn Physics, Syn Chem, Syn Bio, Syn Code) + Syn AI Pro.`
           ),
-          heading1('II. TOÀN BỘ TÍNH NĂNG CỐT LÕI & 7 MODULE ĐỘT PHÁ MỚI'),
-          heading2('1. Hệ 3 AI Mắt Thần Live Co-Pilot (Voice Barge-in) & Syn Reel Video 3B1B'),
-          bulletItem('Mắt Thần AI hợp nhất 3 động cơ', 'Syn Math, Syn Physics, Syn Code (kèm Voice OS & Spatial Voice Mentor) tự động nhìn ảnh chụp Canvas/Màn hình chia sẻ và ngữ cảnh Workspace đang mở để hướng dẫn trực tiếp theo điểm đang vẽ/code.'),
-          bulletItem('Voice Barge-in (Ngắt lời tức thì)', 'Người học bấm micro hoặc nói khi AI đang giảng để ngắt luồng phát âm thanh cũ ngay lập tức, tạo cảm giác đối thoại tự nhiên.'),
-          bulletItem('Syn Reel Mini-Chat (Video 3B1B)', 'Tạo nhanh video 5 cảnh chuẩn 16:9 phong cách 3Blue1Brown kèm thuyết minh song ngữ và xuất trực tiếp file .webm.'),
-          heading2('2. WebAR Bàn Học Pro & Học Cảm Giác 3D/2D (10 Đầu Ngón Tay)'),
-          bulletItem('AR Bàn Học Pro', 'Chiếu mô hình 3D lên mặt bàn thật với Camera Trước/Sau, chỉnh độ mờ Alpha (35–100%), cân góc nghiêng bàn (-35°..+35°), mặt cắt Y-clipping trực tiếp, thước tỷ lệ cm và chụp ảnh PNG.'),
-          bulletItem('Không gian 3D & 2D', '15 mô hình tương tác 10 ngón tay, Quét đồ vật thật PBR, Point & Ask và hệ cử chỉ 2D tối giản 4+1 kèm Sáng tạo tự do AI.'),
-          heading2('3. Synapse Pre: Cảm Biến Điện Thoại QR Live & Hộp Cát Hạt GPU 28.000 Hạt'),
-          bulletItem('Phone Sensor QR Telemetry Lab', 'Quét QR kết nối điện thoại qua WebSocket độ trễ thấp, stream dữ liệu Gia tốc kế / Con quay lên Dao động ký đôi so sánh đường cong lý thuyết (RMSE, Hz) và xuất CSV.'),
-          bulletItem('Dual-Hand GPU Particle Sandbox', 'Mô phỏng 28.000 hạt lực trường trên GPU Shader (Trọng lực đôi, Từ trường Lorentz, Giao thoa sóng, Tán xạ Rutherford) điều khiển mượt 60 FPS bằng 2 bàn tay hoặc chuột.'),
-          heading2('4. Tin Học 5 Lộ Trình · Code-to-Animation Trace 1-1 & Thought-Trace Replay'),
-          bulletItem('5 Lộ trình Quốc tế & IDE Sublime 4', 'VNOI, C++ Institute (OpenEDG), Roadmap.sh, LearnCpp.com và GitHub Career Track kèm Code mẫu Cơ bản/Nâng cao, chấm TLE & File I/O thật.'),
-          bulletItem('Live Code Trace & Replay Tư Duy', 'Truy vết giá trị biến, mảng DP và stdout khớp từng dòng lệnh Python (sys.settrace) / C++ (g++) kết hợp thanh thời gian Replay Tư Duy (lưu lịch sử gõ, chạy, nộp WA → AC).'),
-          heading2(
-            `5. Mô phỏng Vật lí 2D/3D (${phyCounts.total} Lab), Toán 2D/11 Cảnh 3D & ${totalLessons} Bài Giảng · ${totalExams} Đề Thi DOCX`
-          ),
-          bodyPara(
-            `${totalLessons} bài giảng chuyên sâu (${CURRICULUM_COUNTS.mathLectures} Toán · ${CURRICULUM_COUNTS.physicsLessons} Vật lí · ${CURRICULUM_COUNTS.csLessons} Tin học chuẩn cả GDPT 2018 & GDPT 2006), ${phyCounts.count2D} phòng thí nghiệm Vật lí 2D và ${phyCounts.count3D} mô hình 3D theo ${phyCounts.domainCount} lĩnh vực (bao gồm bộ mô phỏng GDPT 2006 mới: Công suất & Công tơ điện, Động cơ điện DC, Điện phân Fa-ra-đây, Quang học Mắt & Tật của mắt, Nhà máy điện & Truyền tải điện năng, Giản đồ Fre-nen), Toán 2D & 11 cảnh Oxyz 3D (gồm Phép biến hình & Mặt phẳng phức), cùng ${totalExams} Đề thi (${CURRICULUM_COUNTS.chuyenExams} Chuyên & ${CURRICULUM_COUNTS.standardExams} Không Chuyên) cho phép tải DOCX sạch đáp án và chấm ảnh viết tay AI 0–10.`
-          ),
-          heading2('6. Syn Meet & 3D (WebRTC · Chia Sẻ Màn Hình · 3D Dùng Chung)'),
-          bulletItem('Gọi Video/Thoại & Chia sẻ màn hình (WebRTC)', 'Tạo phòng học bằng mã 6 ký tự hoặc tham gia phòng công khai; bật/tắt Micro, Camera, Chia sẻ màn hình trình chiếu bài giảng/code, Giơ tay phát biểu, Thả cảm xúc nổi và Trò chuyện trực tiếp.'),
-          bulletItem('Mô hình 3D dùng chung đồng bộ bằng chuột', 'Chuyển đổi tức thì giữa Lưới Video và Sân khấu 3D chung; hỗ trợ đầy đủ thao tác chuột (xoay, di chuyển pan, zoom, click soi chi tiết kích thước & đa giác), chế độ Khung dây (Wireframe) và Tách lớp (Explode).'),
-          bulletItem('Tải lên mô hình 3D & Thư viện Học tương tác', 'Cho phép tải lên trực tiếp file .glb, .gltf, .obj (tối đa 12MB) để cả phòng cùng nghiên cứu, hoặc chọn ngay 8 mô hình STEM có sẵn và các mô hình đã lưu từ Học tương tác 3D.'),
-          bulletItem('Tùy chỉnh Đồ họa Trung bình / Đồ họa Cao', 'Chuyển đổi linh hoạt giữa chế độ Trung bình (mượt nhẹ cho máy yếu) và Đồ họa Cao (hiệu ứng ánh sáng nền chuyển động, trường hạt 3D và độ phân giải DPR 2x).'),
+          heading1('II. TOÀN BỘ TÍNH NĂNG CỐT LÕI & CÁC HỆ THỐNG CHUYÊN BIỆT THEO TỪNG MÔN'),
+          heading2('1. Hệ 5 AI Mắt Thần Live Co-Pilot (Voice Barge-in) & Syn AI Pro'),
+          bulletItem('5 Trợ lý AI tách riêng từng môn', 'Syn Math (Ctrl+D), Syn Physics (Ctrl+F), Syn Chem (Ctrl+H), Syn Bio (Ctrl+B), Syn Code (Ctrl+G) kèm Mắt Thần đọc trực tiếp Canvas/Màn hình và nút Tạm đóng giữ hội thoại.'),
+          bulletItem('Syn AI Pro & Voice Barge-in', 'Bản Pre mở khóa Syn AI Pro giải 3 tầng siêu tốc, Suy luận sâu Olympiad, Sơ đồ Pro, Voice Barge-in ngắt lời tức thì và Syn Reel Mini-Chat tạo video 3B1B xuất file .webm.'),
+          heading2('2. Hóa học · Sinh học · Vật lí · Toán học · Tin học: Tách Riêng Lab, Mô Phỏng 2D/3D & Sandbox'),
+          bulletItem(`Hóa học (${CURRICULUM_COUNTS.chemistryLessons} bài · ${chemTotalSims} Lab 2D/3D & 4 Sandbox)`, `Đầy đủ GDPT 2018, GDPT 2006 & Chuyên; ${CHEMISTRY_2D_SIMS.length} mô phỏng 2D (Bảng tuần hoàn tương tác, Chuẩn độ Acid-Base, Bình điện phân, Pin điện hóa, Động hóa học, Polyme...) + ${CHEMISTRY_3D_SIMS.length} phòng Lab 3D (Orbital s-p-d-f, VSEPR, Cấu trúc tinh thể NaCl/Kim cương, Este hóa, Phức chất) + 4 Sandbox riêng (Cân bằng PTHH 3D, Chuẩn độ trực tiếp, Lò phản ứng Le Chatelier, Tổng hợp Hữu cơ).`),
+          bulletItem(`Sinh học (${CURRICULUM_COUNTS.biologyLessons} bài · ${bioTotalSims} Lab 2D/3D & 4 Sandbox)`, `Đầy đủ GDPT 2018, GDPT 2006 & Chuyên; ${BIOLOGY_2D_SIMS.length} mô phỏng 2D (Nguyên phân/Giảm phân, Nhân đôi DNA, Phiên mã/Dịch mã, Operon Lac, Tim & Tuần hoàn, Lưới thức ăn...) + ${BIOLOGY_3D_SIMS.length} Lab 3D (Tế bào nhân thực, Xoắn kép DNA, Ribosome, Thụ thể Synap, Tim 4 ngăn) + 4 Sandbox riêng (Lai Menđen F1-F2, Hệ gen & Đột biến CRISPR, Sinh trưởng Quần thể, Chuỗi chuyển hóa Quang hợp-Hô hấp).`),
+          bulletItem(`Vật lí (${CURRICULUM_COUNTS.physicsLessons} bài · ${phyCounts.total} Lab 2D/3D) & Toán học (${CURRICULUM_COUNTS.mathLectures} bài · 2D/Oxyz 3D)`, `Vật lí tách ${phyCounts.domainCount} lĩnh vực (${phyCounts.count2D} Lab 2D + ${phyCounts.count3D} Lab 3D chuẩn GDPT 2018 & 2006); Toán học tích hợp Máy vẽ hàm 2D, Xưởng Đường tròn 2D & 11 cảnh Không gian Oxyz 3D.`),
+          bulletItem(`Tin học (${CURRICULUM_COUNTS.csLessons} bài · 5 Lộ trình Quốc tế)`, 'VNOI, C++ Institute (OpenEDG), Roadmap.sh, LearnCpp & GitHub Track kèm IDE Sublime Text 4, Live Code Trace 1-1, Replay Tư Duy WA → AC & 16 đồ thị thuật toán.'),
+          heading2(`3. Synapse Pre (${preTotal} Studio 3D/4D: ${preLabsCount} Lab · ${preSimsCount} Mô phỏng · ${preSandboxesCount} Sandboxes) & Holo Atlas 3D`),
+          bulletItem('Đại công trình & Chế độ Pro', `Cung cấp thanh Phân tích Pro (CSV/Snapshot/Video WebM), Lắp Ráp Cơ Khí 3D, Tên Lửa Đa Tầng, Động Cơ Phản Lực, Lò Phản Ứng Hóa 3D, Orbital VSEPR 3D, Atlas Tế Bào 3D, DNA CRISPR-Cas9 3D, QR Cảm Biến Điện Thoại, Hộp cát Hạt GPU 28.000 hạt và Holo Atlas 3D 58 bộ phận WebAR 10 ngón tay.`),
+          heading2(`4. Ngân Hàng ${totalExams} Đề Thi DOCX (5 Môn) & Syn Meet 3D WebRTC`),
+          bulletItem(`Kho ${totalExams} Đề Thi (${CURRICULUM_COUNTS.chuyenExams} Chuyên · ${CURRICULUM_COUNTS.standardExams} Không chuyên)`, 'Mỗi môn Toán, Vật lí, Hóa học, Sinh học và Tin học có đúng 350 đề (175 Chuyên + 175 THPT), cho phép up ảnh/Ctrl+V/giọng nói, chấm bài viết tay 0–10 & tải DOCX sạch đáp án.'),
+          bulletItem('Syn Meet & 3D WebRTC', 'Gọi video/thoại theo mã phòng 6 ký tự, chia sẻ màn hình và đồng bộ mô hình 3D (.glb/.gltf/.obj) xoay, tách lớp cùng nhóm học tập.'),
           heading1('III. TÍNH MỚI, TÍNH THỰC TẾ & HIỆU QUẢ GIÁO DỤC'),
           makeTable(
             ['Khía cạnh Đánh giá', 'Giá trị Nổi bật trên Synapse'],
             [
-              ['Tính mới & Sáng tạo', 'Syn Meet & 3D tích hợp Mô hình 3D dùng chung & Up .glb/.obj, Mắt Thần Live Co-Pilot có Voice Barge-in, WebAR Bàn Học Pro, Điện thoại làm cảm biến Vật lí QR, 28K hạt GPU 2 tay, Truy vết Code 1-1 & Syn Reel Video 3B1B.'],
-              ['Tính thực tế', 'Chạy trực tiếp trên trình duyệt phổ thông & PWA đa thiết bị (PC, Android, iPhone) tại https://synapse-stem.is-a.dev, tối ưu đa mức đồ họa, không cần thiết bị VR chuyên dụng.'],
-              ['Hiệu quả giáo dục', 'Giúp học sinh vừa học nhóm trực tuyến như Google Meet vừa cùng mổ xẻ mô hình 3D trực quan, tự gỡ lỗi tư duy qua Thought Replay và rèn luyện với kho bài giảng 2D/3D (GDPT 2018 & 2006), kho đề xuất DOCX.']
+              ['Tính mới & Sáng tạo', `Phủ trọn 5 môn STEM (Toán, Lí, Hóa, Sinh, Tin) với khu vực Phòng Lab, Mô phỏng 2D/3D và Sandbox tách riêng từng môn; ${preTotal} Synapse Pre Studio 3D/4D, 5 AI chuyên môn Mắt Thần + Syn AI Pro và Code Trace 1-1.`],
+              ['Tính thực tế', 'Chạy mượt trực tiếp trên trình duyệt & PWA đa thiết bị (PC, Android, iPhone) tại https://synapse-stem.is-a.dev, tối ưu FPS nhiều cấu hình, hướng dẫn trực quan thực tế không rập khuôn AI.'],
+              ['Hiệu quả giáo dục', `Hệ thống hóa đầy đủ GDPT 2018, GDPT 2006 và Chuyên HSG Quốc gia với ${totalLessons} bài giảng 2D/3D, ${totalExams} đề thi chuẩn DOCX và Bản đồ Tri thức theo dõi lỗ hổng kiến thức tự động.`]
             ]
           )
         ]

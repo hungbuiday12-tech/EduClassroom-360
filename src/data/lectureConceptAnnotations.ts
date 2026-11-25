@@ -5,7 +5,7 @@ import {
 } from '../types';
 
 export interface LectureEnrichmentContext {
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   lessonTitle: string;
   grade?: string;
   keyFormulas?: string[];
@@ -403,7 +403,149 @@ const CS_DOMAIN_RULES: DomainKnowledgeRule[] = [
   }
 ];
 
-function extractFormulaAnnotations(formula: string | undefined, subject: 'math' | 'physics' | 'cs'): LectureSymbolAnnotation[] {
+const CHEMISTRY_DOMAIN_RULES: DomainKnowledgeRule[] = [
+  {
+    keywords: /mol|nồng độ|khí|dung dịch|chuẩn độ|ph|axit|acid|bazơ|base|điện li|muối/i,
+    concepts: [
+      {
+        term: 'Số mol & Nồng độ mol (C_M)',
+        symbol: 'n = \\frac{m}{M} = \\frac{V}{24{,}79}, \\quad C_M = \\frac{n}{V_{\\text{dd}}}',
+        definition: 'Mol đo lượng chất chứa $6{,}022\\cdot 10^{23}$ hạt vi mô; nồng độ mol cho biết số mol chất tan trong $1\\text{ lít}$ dung dịch.',
+        intuition: 'Ở điều kiện chuẩn ($25^\\circ\\text{C}, 1\\text{ bar}$), $1\\text{ mol}$ mọi chất khí chiếm $24{,}79\\text{ lít}$ (CT 2018) hoặc $22{,}4\\text{ lít}$ ở đktc (CT 2006).'
+      },
+      {
+        term: 'Thang đo pH & Cân bằng Acid–Base',
+        symbol: '\\text{pH} = -\\log[\\text{H}^+], \\quad [\\text{H}^+][\\text{OH}^-] = 10^{-14}',
+        definition: 'pH biểu thị độ acid hoặc base của dung dịch nước ở $25^\\circ\\text{C}$: $\\text{pH} < 7$ là môi trường acid, $\\text{pH} = 7$ trung tính, $\\text{pH} > 7$ là base.',
+        intuition: 'Khi nồng độ $\\text{H}^+$ tăng gấp $10$ lần thì $\\text{pH}$ giảm đi $1$ đơn vị.'
+      }
+    ],
+    annotations: [
+      { symbol: 'n', meaning: 'Số mol chất', unitOrType: 'mol', condition: '$n > 0$' },
+      { symbol: 'C_M', meaning: 'Nồng độ mol dung dịch', unitOrType: 'M (mol/L)', condition: '$V_{\\text{dd}}$ đổi ra lít' },
+      { symbol: 'C\\%', meaning: 'Nồng độ phần trăm theo khối lượng', unitOrType: '%', condition: '$m_{\\text{dd}} = m_{\\text{ct}} + m_{\\text{dm}}$' },
+      { symbol: '\\text{pH}', meaning: 'Chỉ số độ acid/base', unitOrType: 'Không đơn vị', condition: 'Ở $25^\\circ\\text{C}$: $\\text{pH}+\\text{pOH}=14$' }
+    ]
+  },
+  {
+    keywords: /nhiệt hóa|enthalpy|tốc độ phản ứng|cân bằng hóa học|le chatelier|chuyển dịch|xúc tác/i,
+    concepts: [
+      {
+        term: 'Biến thiên Enthalpy chuẩn (Δ_rH°₂₉₈)',
+        symbol: '\\Delta_r H^\\circ_{298} < 0 \\text{ (tỏa nhiệt)}, \\quad > 0 \\text{ (thu nhiệt)}',
+        definition: 'Đo nhiệt lượng trao đổi của phản ứng hóa học ở điều kiện chuẩn ($1\\text{ bar}, 298\\text{ K}$).',
+        intuition: 'Phản ứng tỏa nhiệt làm môi trường nóng lên ($\\Delta_r H^\\circ < 0$); phản ứng thu nhiệt hấp thụ nhiệt xung quanh ($\\Delta_r H^\\circ > 0$).'
+      },
+      {
+        term: 'Hằng số cân bằng K_C & Nguyên lí Le Chatelier',
+        symbol: 'K_C = \\frac{[C]^c[D]^d}{[A]^a[B]^b}',
+        definition: '$K_C$ chỉ phụ thuộc vào nhiệt độ; hệ đang cân bằng khi bị tác động sẽ chuyển dịch theo chiều làm giảm tác động đó.',
+        intuition: 'Chất rắn nguyên chất không xuất hiện trong biểu thức $K_C$.'
+      }
+    ],
+    annotations: [
+      { symbol: '\\Delta_r H^\\circ', meaning: 'Biến thiên enthalpy chuẩn phản ứng', unitOrType: 'kJ hoặc kJ/mol', condition: 'Âm: tỏa nhiệt; Dương: thu nhiệt' },
+      { symbol: 'K_C', meaning: 'Hằng số cân bằng theo nồng độ', unitOrType: 'Hằng số theo T', condition: 'Không phụ thuộc nồng độ ban đầu/xúc tác' },
+      { symbol: 'v', meaning: 'Tốc độ phản ứng hóa học', unitOrType: 'mol/(L·s)', condition: 'Tăng khi tăng $C, T, S$ hoặc thêm xúc tác' }
+    ]
+  },
+  {
+    keywords: /oxi hóa|khử|pin điện|điện phân|thế điện cực|kim loại|ester|este|lipit|cacbohidrat|amin|peptit|polime|hydrocacbon|ancol|andehit|axit cacboxylic/i,
+    concepts: [
+      {
+        term: 'Thế điện cực chuẩn (E°) & Pin Galvani',
+        symbol: 'E^\\circ_{\\text{pin}} = E^\\circ_{\\text{cathode}} - E^\\circ_{\\text{anode}} > 0',
+        definition: 'Ở anode (cực âm) xảy ra quá trình oxi hóa; ở cathode (cực dương) xảy ra quá trình khử; quy tắc $\\alpha$ dự đoán chiều phản ứng tự diễn biến.',
+        intuition: 'Pin sinh điện tự nhiên ($E^\\circ_{\\text{pin}} > 0$), còn điện phân dùng dòng điện ngoài ép phản ứng không tự xảy ra.'
+      },
+      {
+        term: 'Bảo toàn Electron & Bảo toàn Khối lượng',
+        symbol: '\\sum n_{e\\text{ cho}} = \\sum n_{e\\text{ nhận}}',
+        definition: 'Tổng số mol electron chất khử nhường luôn bằng tổng số mol electron chất oxi hóa thu trong mọi phản ứng oxi hóa–khử.',
+        intuition: 'Dùng bảo toàn electron + bảo toàn nguyên tố giúp giải nhanh bài hỗn hợp kim loại mà không cần viết hết mọi phương trình trung gian.'
+      }
+    ],
+    annotations: [
+      { symbol: 'E^\\circ', meaning: 'Thế điện cực chuẩn cặp oxi hóa–khử', unitOrType: 'V (Volt)', condition: 'Đo ở $25^\\circ\\text{C}, 1\\text{ M}, 1\\text{ bar}$' },
+      { symbol: 'F', meaning: 'Hằng số Faraday', unitOrType: '$96\\,500\\text{ C/mol}$', condition: '$n_e = \\frac{I \\cdot t}{F}$ trong điện phân' },
+      { symbol: 'k = \\frac{2C + 2 - H + N}{2}', meaning: 'Độ bất bão hòa (số vòng + liên kết $\\pi$)', unitOrType: 'Số nguyên $\\ge 0$', condition: 'Phân tử chỉ chứa C, H, O, N' }
+    ]
+  }
+];
+
+const BIOLOGY_DOMAIN_RULES: DomainKnowledgeRule[] = [
+  {
+    keywords: /tế bào|màng sinh chất|bào quan|ti thể|lục lạp|enzim|atp|quang hợp|hô hấp tế bào|nguyên phân|giảm phân/i,
+    concepts: [
+      {
+        term: 'Chuyển hóa năng lượng ATP',
+        symbol: '\\text{ATP} \\rightleftharpoons \\text{ADP} + \\text{P}_i + \\Delta G',
+        definition: 'ATP là đồng tiền năng lượng trực tiếp của tế bào nhờ 2 liên kết cao năng giữa các nhóm phosphate dễ giải phóng năng lượng.',
+        intuition: 'Glucose giống sổ tiết kiệm năng lượng dài hạn, còn ATP giống tiền mặt tiêu dùng ngay ở mọi phản ứng tế bào.'
+      },
+      {
+        term: 'Nguyên phân & Giảm phân',
+        symbol: '2n \\xrightarrow{\\text{NP}} 2\\times (2n); \\quad 2n \\xrightarrow{\\text{GP}} 4\\times (n)',
+        definition: 'Nguyên phân giữ nguyên bộ NST $2n$ giúp cơ thể lớn lên; giảm phân tạo giao tử đơn bội $n$ và tạo biến dị tổ hợp.',
+        intuition: 'Số tế bào con sau $k$ lần nguyên phân liên tiếp từ $1$ tế bào là $2^k$.'
+      }
+    ],
+    annotations: [
+      { symbol: '2n', meaning: 'Bộ NST lưỡng bội trong tế bào sinh dưỡng', unitOrType: 'Số chiếc NST', condition: 'Tồn tại thành từng cặp tương đồng' },
+      { symbol: 'n', meaning: 'Bộ NST đơn bội trong giao tử', unitOrType: 'Số chiếc NST', condition: 'Kết hợp thụ tinh khôi phục $2n$' },
+      { symbol: '\\text{ATP}', meaning: 'Adenosine triphosphate', unitOrType: 'Phân tử cao năng', condition: '$1\\text{ mol}$ ATP thủy phân $\\approx 30{,}5\\text{ kJ}$' }
+    ]
+  },
+  {
+    keywords: /adn|dna|arn|rna|gen|phiên mã|dịch mã|mã di truyền|đột biến|operon/i,
+    concepts: [
+      {
+        term: 'Cấu trúc xoắn kép DNA & Chiều dài phân tử',
+        symbol: 'N = 2A + 2G, \\quad L = \\frac{N}{2} \\cdot 3{,}4\\text{ \\AA}',
+        definition: 'Hai mạch DNA bổ sung nhau theo nguyên tắc A liên kết T (2 liên kết H), G liên kết C/X (3 liên kết H); mỗi chu kì xoắn dài $34\\text{ \\AA}$ gồm $10$ cặp nuclêôtit.',
+        intuition: 'Biết số nuclêôtit $N$ suy ra ngay chiều dài $L$, khối lượng $M = N \\cdot 300\\text{ đvC}$ và số liên kết hiđrô $H = 2A + 3G$.'
+      },
+      {
+        term: 'Phiên mã (DNA → mRNA) & Dịch mã (mRNA → Chuỗi pôlipeptit)',
+        symbol: '1\\text{ codon} = 3\\text{ ribônuclêôtit} \\to 1\\text{ aa}',
+        definition: 'Thông tin di truyền từ mạch khuôn $3\'\\to 5\'$ của gen được phiên mã thành mRNA ($5\'\\to 3\'$), sau đó ribôxôm dịch mã bộ ba thành chuỗi axit amin.',
+        intuition: 'Trong $64$ bộ ba có $3$ bộ ba kết thúc (UAA, UAG, UGA) không mã hóa axit amin.'
+      }
+    ],
+    annotations: [
+      { symbol: 'N', meaning: 'Tổng số nuclêôtit của đoạn gen/DNA kép', unitOrType: 'Nuclêôtit', condition: '$A = T, \\; G = C$' },
+      { symbol: 'L', meaning: 'Chiều dài phân tử DNA', unitOrType: 'Å ($1\\text{ nm} = 10\\text{ \\AA}$)', condition: '$L = \\frac{N}{2} \\cdot 3{,}4\\text{ \\AA}$' },
+      { symbol: 'H', meaning: 'Tổng số liên kết hiđrô giữa hai mạch', unitOrType: 'Liên kết', condition: '$H = 2A + 3G = N + G$' }
+    ]
+  },
+  {
+    keywords: /menden|menđen|phân li|hoán vị|liên kết gen|quần thể|hardy|tiến hóa|sinh thái|quần xã|hệ sinh thái|tuần hoàn|hô hấp|thần kinh|cảm ứng/i,
+    concepts: [
+      {
+        term: 'Quy luật Menđen & Hoán vị gen',
+        symbol: 'f_{\\text{hoán vị}} \\le 50\\%',
+        definition: 'Phân li độc lập cho tỉ lệ giao tử bằng nhau khi các gen nằm trên các cặp NST khác nhau; hoán vị gen tạo giao tử tái tổ hợp có tổng tỉ lệ bằng tần số hoán vị $f$.',
+        intuition: 'Mỗi loại giao tử hoán vị chiếm tỉ lệ $\\frac{f}{2}$, mỗi loại giao tử liên kết chiếm $\\frac{1 - f}{2}$.'
+      },
+      {
+        term: 'Cân bằng Di truyền Quần thể (Hardy–Weinberg)',
+        symbol: 'p^2 AA + 2pq Aa + q^2 aa = 1 \\quad (p + q = 1)',
+        definition: 'Trong quần thể ngẫu phối lớn không chịu tác động của các nhân tố tiến hóa, tần số alen và thành phần kiểu gen duy trì không đổi qua các thế hệ.',
+        intuition: 'Kiểm tra cân bằng nhanh: $\\sqrt{d_{\\text{AA}}} + \\sqrt{r_{\\text{aa}}} = 1$.'
+      }
+    ],
+    annotations: [
+      { symbol: 'p, q', meaning: 'Tần số tương đối của alen trội ($p$) và lặn ($q$)', unitOrType: 'Tỉ lệ $\\in [0; 1]$', condition: '$p + q = 1$' },
+      { symbol: 'f', meaning: 'Tần số hoán vị gen', unitOrType: '% (0% < f ≤ 50%)', condition: 'Tỉ lệ thuận khoảng cách giữa 2 gen (cM)' },
+      { symbol: 'k', meaning: 'Hiệu suất sinh thái chuyển bậc dinh dưỡng', unitOrType: '%', condition: 'Thường thất thoát ~90%, truyền lên ~10%' }
+    ]
+  }
+];
+
+function extractFormulaAnnotations(
+  formula: string | undefined,
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs'
+): LectureSymbolAnnotation[] {
   if (!formula) return [];
   const candidates: LectureSymbolAnnotation[] = [];
   const pushUnique = (item: LectureSymbolAnnotation) => {
@@ -468,11 +610,27 @@ function extractFormulaAnnotations(formula: string | undefined, subject: 'math' 
       condition: 'Giới hạn thực thi thường $\\le 10^8$ phép tính/giây'
     });
   }
+  if (/\\Delta_r H|K_C|\\text\{pH\}|E\^\\circ/.test(formula) && subject === 'chemistry') {
+    pushUnique({
+      symbol: '\\Delta_r H^\\circ, K_C, \\text{pH}',
+      meaning: 'Đại lượng nhiệt động, hằng số cân bằng hoặc độ acid–base của hệ hóa học',
+      unitOrType: 'kJ/mol · Hằng số · pH',
+      condition: 'Đo ở điều kiện chuẩn ($25^\\circ\\text{C}, 1\\text{ bar}$)'
+    });
+  }
+  if (/3\{?,?\}4|p\^2|2pq|2A\s*\+\s*3G|ATP/i.test(formula) && subject === 'biology') {
+    pushUnique({
+      symbol: 'N, L, p, q',
+      meaning: 'Thông số phân tử DNA / tần số alen trong quần thể sinh học',
+      unitOrType: 'Nu · Å · Tỉ lệ [0..1]',
+      condition: '$L = \\frac{N}{2}\\cdot 3{,}4\\text{ \\AA}$, $p + q = 1$'
+    });
+  }
   return candidates;
 }
 
 /**
- * Enriches every LectureStep across Math, Physics, and CS with structured
+ * Enriches every LectureStep across Math, Physics, Chemistry, Biology, and CS with structured
  * Concept Glossary cards, Symbol Annotation tables, and Step-by-step Reading Notes.
  * Preserves any hand-written entries already defined on the step.
  */
@@ -497,6 +655,10 @@ export function enrichLectureStepWithConceptsAndAnnotations(
       ? PHYSICS_DOMAIN_RULES
       : ctx.subject === 'math'
       ? MATH_DOMAIN_RULES
+      : ctx.subject === 'chemistry'
+      ? CHEMISTRY_DOMAIN_RULES
+      : ctx.subject === 'biology'
+      ? BIOLOGY_DOMAIN_RULES
       : CS_DOMAIN_RULES;
 
   const matchedRule = rules.find((r) => r.keywords.test(haystack));
@@ -524,6 +686,10 @@ export function enrichLectureStepWithConceptsAndAnnotations(
             step.keyTakeaway ||
             (ctx.subject === 'physics'
               ? 'Hãy liên hệ trực tiếp với thí nghiệm 2D/3D để thấy đại lượng nào là nguyên nhân, đại lượng nào là kết quả.'
+              : ctx.subject === 'chemistry'
+              ? 'Kiểm tra hệ số cân bằng phương trình, trạng thái chất và bảo toàn electron/nguyên tố khi tính mol.'
+              : ctx.subject === 'biology'
+              ? 'Liên hệ cấu trúc phân tử/tế bào với chức năng sinh lí và kiểm tra quy ước mạch khuôn $3\'\\to 5\'$ hoặc tần số alen.'
               : ctx.subject === 'math'
               ? 'Kiểm tra miền xác định và vẽ phác sơ đồ / đồ thị để nhìn bản chất hình học trước khi tính.'
               : 'Thử chạy tay trên bộ dữ liệu nhỏ $N=3..5$ để thấy giá trị từng biến thay đổi qua mỗi vòng lặp.')
@@ -554,6 +720,16 @@ export function enrichLectureStepWithConceptsAndAnnotations(
           { symbol: 'SI', meaning: 'Hệ đơn vị chuẩn quốc tế (m, kg, s, A, K)', unitOrType: 'Đơn vị vật lí', condition: 'Luôn quy đổi trước khi thay số' },
           { symbol: '\\Delta X', meaning: 'Độ biến thiên của đại lượng vật lí', unitOrType: 'Theo đại lượng', condition: '$\\Delta X = X_{\\text{sau}} - X_{\\text{trước}}$' }
         );
+      } else if (ctx.subject === 'chemistry') {
+        combined.push(
+          { symbol: 'n', meaning: 'Số mol chất phản ứng hoặc sản phẩm', unitOrType: 'mol', condition: 'Đổi thể tích dung dịch sang lít, khí đúng đkc' },
+          { symbol: 'C_M', meaning: 'Nồng độ mol của dung dịch', unitOrType: 'M (mol/L)', condition: '$C_M = \\frac{n}{V}$' }
+        );
+      } else if (ctx.subject === 'biology') {
+        combined.push(
+          { symbol: '2n, n', meaning: 'Bộ NST lưỡng bội và đơn bội của loài', unitOrType: 'Nhiễm sắc thể', condition: 'Giao tử mang bộ $n$, hợp tử mang bộ $2n$' },
+          { symbol: 'N, L', meaning: 'Tổng số nuclêôtit và chiều dài gen/DNA', unitOrType: 'Nu · Å', condition: '$L = \\frac{N}{2} \\cdot 3{,}4\\text{ \\AA}$' }
+        );
       } else if (ctx.subject === 'math') {
         combined.push(
           { symbol: 'x', meaning: 'Biến số độc lập của bài toán', unitOrType: 'Số thực $\\mathbb{R}$', condition: 'Thuộc tập xác định $D$' },
@@ -579,6 +755,18 @@ export function enrichLectureStepWithConceptsAndAnnotations(
         'Bước 1: Đọc kỹ hiện tượng, tóm tắt dữ kiện đã cho và đổi toàn bộ sang hệ đơn vị chuẩn SI.',
         'Bước 2: Xác định hệ quy chiếu / chiều dương (hoặc sơ đồ mạch) để ghi đúng dấu đại lượng.',
         'Bước 3: Chọn công thức phù hợp, kiểm tra điều kiện áp dụng rồi mới bấm máy tính.'
+      ];
+    } else if (ctx.subject === 'chemistry') {
+      stepByStepNotes = [
+        'Bước 1: Quy đổi các số liệu khối lượng, thể tích, nồng độ về số mol và kiểm tra điều kiện chuẩn.',
+        'Bước 2: Cân bằng phương trình phản ứng hoặc thiết lập sơ đồ bảo toàn electron / bảo toàn nguyên tố.',
+        'Bước 3: So sánh tỉ lệ mol để tìm chất hết – chất dư trước khi kết luận lượng sản phẩm.'
+      ];
+    } else if (ctx.subject === 'biology') {
+      stepByStepNotes = [
+        'Bước 1: Xác định cấp độ tổ chức (phân tử DNA/RNA, tế bào nguyên/giảm phân, cơ thể hay quần thể).',
+        'Bước 2: Viết đúng quy ước chiều mạch ($3\'\\to 5\'$ hay $5\'\\to 3\'$) hoặc tỉ lệ giao tử/kiểu gen.',
+        'Bước 3: Kiểm chứng kết quả qua mô phỏng 2D/3D để nắm chắc cơ chế biến đổi.'
       ];
     } else if (ctx.subject === 'math') {
       stepByStepNotes = [

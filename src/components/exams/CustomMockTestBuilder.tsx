@@ -19,6 +19,8 @@ import {
 } from '../../types';
 import { MATH_LECTURES } from '../../data/curriculumData';
 import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
+import { CHEMISTRY_LESSONS } from '../../data/chemistryLessonsData';
+import { BIOLOGY_LESSONS } from '../../data/biologyLessonsData';
 import { CS_LESSONS } from '../../data/csLessonsData';
 import { useAuth } from '../../context/AuthContext';
 import { loadAllLessonAssessments } from '../../lib/lessonProgressStore';
@@ -181,6 +183,44 @@ export const CustomMockTestBuilder: React.FC<CustomMockTestBuilderProps> = ({ on
       }
     }
 
+    if (selectedSubjects.includes('chemistry')) {
+      for (const lec of CHEMISTRY_LESSONS) {
+        const isWeak = matchesWeak(lec.title);
+        (lec.practiceExercises || []).forEach((q, idx) => {
+          pool.push({
+            id: `ch-${lec.id}-pe-${idx}`,
+            subject: 'chemistry',
+            topic: lec.title,
+            grade: lec.grade || 'Hóa học',
+            isWeakTopic: isWeak,
+            question: q.question,
+            options: q.options,
+            correctIndex: q.correctIndex,
+            explanation: q.explanation
+          });
+        });
+      }
+    }
+
+    if (selectedSubjects.includes('biology')) {
+      for (const lec of BIOLOGY_LESSONS) {
+        const isWeak = matchesWeak(lec.title);
+        (lec.practiceExercises || []).forEach((q, idx) => {
+          pool.push({
+            id: `bi-${lec.id}-pe-${idx}`,
+            subject: 'biology',
+            topic: lec.title,
+            grade: lec.grade || 'Sinh học',
+            isWeakTopic: isWeak,
+            question: q.question,
+            options: q.options,
+            correctIndex: q.correctIndex,
+            explanation: q.explanation
+          });
+        });
+      }
+    }
+
     if (selectedSubjects.includes('cs')) {
       for (const lec of CS_LESSONS) {
         const isWeak = matchesWeak(lec.title);
@@ -277,7 +317,7 @@ export const CustomMockTestBuilder: React.FC<CustomMockTestBuilderProps> = ({ on
     const score10 = Math.round(((correct / Math.max(1, total)) * 10) * 10) / 10;
     const result: CustomMockTestResult = {
       id: `mock_${Date.now()}`,
-      title: `Đề Kiểm Tra ${selectedSubjects.map((s) => (s === 'math' ? 'Toán' : s === 'physics' ? 'Lí' : 'Tin')).join(' + ')}`,
+      title: `Đề Kiểm Tra ${selectedSubjects.map((s) => (s === 'math' ? 'Toán' : s === 'physics' ? 'Lí' : s === 'chemistry' ? 'Hóa' : s === 'biology' ? 'Sinh' : 'Tin')).join(' + ')}`,
       subjects: selectedSubjects,
       score10,
       correctCount: correct,
@@ -401,7 +441,7 @@ export const CustomMockTestBuilder: React.FC<CustomMockTestBuilderProps> = ({ on
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
                   <span className="font-bold text-blue-700 dark:text-sky-400">
-                    Câu {idx + 1} · {q.subject === 'math' ? 'Toán' : q.subject === 'physics' ? 'Vật lí' : 'Tin'} · {q.topic}
+                    Câu {idx + 1} · {q.subject === 'math' ? 'Toán' : q.subject === 'physics' ? 'Vật lí' : q.subject === 'chemistry' ? 'Hóa học' : q.subject === 'biology' ? 'Sinh học' : 'Tin'} · {q.topic}
                   </span>
                   {q.isWeakTopic && (
                     <span className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-bold">
@@ -496,6 +536,8 @@ export const CustomMockTestBuilder: React.FC<CustomMockTestBuilderProps> = ({ on
             {[
               { id: 'math' as GrowthSubject, label: 'Toán' },
               { id: 'physics' as GrowthSubject, label: 'Vật lí' },
+              { id: 'chemistry' as GrowthSubject, label: 'Hóa học' },
+              { id: 'biology' as GrowthSubject, label: 'Sinh học' },
               { id: 'cs' as GrowthSubject, label: 'Tin học' }
             ].map((s) => (
               <button

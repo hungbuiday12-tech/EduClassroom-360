@@ -221,7 +221,7 @@ export async function saveLessonAssessment(
 
 export interface CloudLessonAssessmentSummary {
   lessonKey: string;
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   lessonTitle: string;
   grade?: string;
   totalSteps: number;

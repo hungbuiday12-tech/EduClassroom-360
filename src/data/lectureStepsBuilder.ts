@@ -259,7 +259,7 @@ function splitHeaderBeforeColonOutsideMath(text: string): string | null {
 }
 
 function buildVariablesNote(
-  subject: 'math' | 'physics' | 'cs',
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
   formula: string | undefined,
   extraContext: string,
   commonTrap?: string,
@@ -298,6 +298,12 @@ function buildVariablesNote(
       lines.push('• Đổi các số liệu đề bài về đơn vị chuẩn trước khi thay số (ví dụ: $\\text{cm} \\to \\text{m}$, $\\text{g} \\to \\text{kg}$, $\\text{phút/giờ} \\to \\text{s}$, $\\text{km/h} \\div 3{,}6 \\to \\text{m/s}$).');
       lines.push('• Chú ý dấu cộng/trừ theo chiều dương đã chọn: vật đi ngược chiều dương thì vận tốc mang dấu âm, vật tỏa nhiệt hoặc sinh công cần xét đúng quy ước.');
     }
+  } else if (subject === 'chemistry') {
+    lines.push('• Kiểm tra cân bằng phương trình hóa học, điều kiện nhiệt độ/xúc tác và bảo toàn electron / bảo toàn nguyên tố trước khi thế mol.');
+    lines.push('• Chú ý điều kiện đo thể tích khí ($24{,}79\\text{ L/mol}$ ở đkc CT 2018 hoặc $22{,}4\\text{ L/mol}$ ở đktc CT 2006) và chất dư – chất hết.');
+  } else if (subject === 'biology') {
+    lines.push('• Đọc kỹ đối tượng (tế bào $2n$, giao tử $n$, gen/mRNA chiều $3\'\\to 5\'$ hay $5\'\\to 3\'$, quần thể ngẫu phối hay tự thụ) trước khi áp dụng công thức.');
+    lines.push('• Đổi đồng nhất đơn vị chiều dài DNA ($1\\text{ }\\mu\\text{m} = 10^4\\text{ \\AA} = 10^3\\text{ nm}$) và kiểm tra điều kiện cân bằng Hardy–Weinberg.');
   } else {
     if (ctx?.csLevel === 'Cơ bản') {
       lines.push('• Đọc kỹ kiểu dữ liệu và giới hạn đầu vào: nếu tích hoặc tổng có thể vượt $2\\cdot 10^9$ hãy dùng `long long` (C++) hoặc số nguyên chuẩn trong Python.');
@@ -321,7 +327,7 @@ function createFlashcardMCQ(
   id: string,
   card: { front: string; back: string; tip?: string },
   otherCards: { front: string; back: string }[],
-  subject: 'math' | 'physics' | 'cs'
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs'
 ): LectureStepMCQ {
   const distractorPool: string[] = [];
   for (const oc of otherCards) {
@@ -341,6 +347,18 @@ function createFlashcardMCQ(
           'Chỉ áp dụng khi hệ đứng yên hoàn toàn trong chân không tuyệt đối.',
           'Đại lượng này luôn tỉ lệ nghịch với thời gian và không phụ thuộc vào môi trường.',
           'Giá trị luôn bằng $0$ tại mọi thời điểm trong suốt quá trình biến đổi.'
+        ]
+      : subject === 'chemistry'
+      ? [
+          'Chỉ xảy ra ở nhiệt độ $0\\text{ K}$ và không phụ thuộc nồng độ chất tham gia.',
+          'Tổng khối lượng sản phẩm luôn lớn hơn gấp đôi tổng khối lượng chất ban đầu.',
+          'Xúc tác làm thay đổi hằng số cân bằng $K_C$ theo chiều thuận vô hạn.'
+        ]
+      : subject === 'biology'
+      ? [
+          'Chỉ xuất hiện ở sinh vật nhân sơ và không có mặt ở tế bào nhân thực.',
+          'Quá trình diễn ra hoàn toàn ngẫu nhiên không tuân theo nguyên tắc bổ sung.',
+          'Bộ nhiễm sắc thể sau nguyên phân luôn giảm một nửa so với tế bào mẹ.'
         ]
       : [
           'Thuật toán luôn chạy với độ phức tạp $O(N^3)$ nên không dùng được cho $N > 100$.',
@@ -374,7 +392,7 @@ function buildFormulaCheckMCQ(
   stepTitle: string,
   formula: string | undefined,
   otherFormulas: string[],
-  subject: 'math' | 'physics' | 'cs',
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
   keyTakeaway?: string
 ): LectureStepMCQ {
   const cleanTitle = stripLeadingNumber(stepTitle);
@@ -390,7 +408,7 @@ function buildFormulaCheckMCQ(
       }
     }
 
-    // Add realistic mathematical/physical variations as fallback distractors
+    // Add realistic domain variations as fallback distractors
     const variations = [
       formula.includes('+') ? `$${formula.replace('+', '-')}$` : `$${formula} + 1$`,
       formula.includes('\\frac')
@@ -398,6 +416,10 @@ function buildFormulaCheckMCQ(
         : `$${formula.replace('=', '\\neq ')}$`,
       subject === 'physics'
         ? 'Hệ thức không tồn tại trong hệ đơn vị chuẩn SI'
+        : subject === 'chemistry'
+        ? 'Không tuân theo định luật bảo toàn khối lượng và bảo toàn electron'
+        : subject === 'biology'
+        ? 'Không tuân theo nguyên tắc bổ sung sinh học'
         : subject === 'cs'
         ? '$\\mathcal{O}(N^3)$ (Vét cạn 3 vòng lặp lồng nhau)'
         : 'Không có hệ thức liên hệ xác định trong miền thực'
@@ -446,6 +468,18 @@ function buildFormulaCheckMCQ(
           'Các đại lượng vector như vận tốc, gia tốc, lực luôn luôn cộng đại số bỏ qua phương chiều.',
           'Mọi định luật bảo toàn vẫn giữ nguyên giá trị số ngay cả khi có lực ma sát lớn làm tỏa nhiệt.'
         ]
+      : subject === 'chemistry'
+      ? [
+          'Không cần cân bằng phương trình hóa học hay xét chất dư vì số mol chất đầu luôn bằng nhau.',
+          'Chất xúc tác làm dịch chuyển cân bằng hóa học và làm tăng hằng số cân bằng $K_C$.',
+          'Mọi chất khí ở mọi nhiệt độ áp suất đều có thể tích mol đúng bằng $22{,}4\\text{ lít}$.'
+        ]
+      : subject === 'biology'
+      ? [
+          'Không cần xét chiều mạch khuôn $3\'\\to 5\'$ hay nguyên tắc bổ sung khi phiên mã và dịch mã.',
+          'Quần thể tự thụ phấn qua nhiều thế hệ luôn giữ nguyên tỉ lệ dị hợp $Aa$ như ban đầu.',
+          'Năng lượng truyền qua các bậc dinh dưỡng trong hệ sinh thái đạt hiệu suất $100\\%$.'
+        ]
       : [
           'Không cần ước lượng giới hạn $N$ và giá trị lớn nhất của biến, luôn dùng kiểu `int` và `endl`.',
           'Thuật toán có độ phức tạp $O(N^2)$ luôn chạy dưới $1\\text{ giây}$ với $N = 10^6$.',
@@ -470,7 +504,7 @@ function buildConditionCheckMCQ(
   id: string,
   stepTitle: string,
   conceptText: string,
-  subject: 'math' | 'physics' | 'cs',
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
   trap?: string
 ): LectureStepMCQ {
   const cleanTitle = stripLeadingNumber(stepTitle);
@@ -483,6 +517,10 @@ function buildConditionCheckMCQ(
       ? `Luôn rà soát điều kiện xác định, điều kiện tham số ($a \\ne 0$, $\\Delta$) và đối chiếu nghiệm sau khi biến đổi trong "${cleanTitle}".`
       : subject === 'physics'
       ? `Xác định rõ hệ quy chiếu, điều kiện áp dụng định luật và quy đổi chuẩn đơn vị SI trước khi thay số ở phần "${cleanTitle}".`
+      : subject === 'chemistry'
+      ? `Cân bằng đúng phương trình, kiểm tra điều kiện chuẩn/chất dư và áp dụng bảo toàn electron – nguyên tố cho "${cleanTitle}".`
+      : subject === 'biology'
+      ? `Kiểm tra đúng chiều mạch khuôn, trạng thái NST ($2n/n$) và điều kiện di truyền học quần thể cho "${cleanTitle}".`
       : `Phân tích kỹ độ phức tạp Big-O theo giới hạn $N$, chọn kiểu dữ liệu tránh tràn số và xử lý test biên cho "${cleanTitle}".`);
 
   const distractors =
@@ -497,6 +535,18 @@ function buildConditionCheckMCQ(
           'Chỉ cần nhớ tên đại lượng mà không cần quan tâm điều kiện lý tưởng hay hệ quy chiếu.',
           'Cộng trực tiếp độ lớn các đại lượng mà không xét góc hợp hay chiều chuyển động.',
           'Luôn giả sử ma sát và lực cản bằng $0$ ngay cả khi đề bài cho hệ số ma sát $\\mu > 0$.'
+        ]
+      : subject === 'chemistry'
+      ? [
+          'Bỏ qua bước cân bằng phương trình hóa học và tính thẳng theo khối lượng thô.',
+          'Luôn giả sử mọi phản ứng đều đạt hiệu suất $100\\%$ ngay cả với phản ứng thuận nghịch.',
+          'Đưa trực tiếp nồng độ chất rắn nguyên chất vào biểu thức tính $K_C$.'
+        ]
+      : subject === 'biology'
+      ? [
+          'Cộng trực tiếp số nuclêôtit của một mạch rồi nhân ngẫu nhiên mà không xét $A=T, G=C$.',
+          'Luôn dùng công thức quần thể ngẫu phối cho cả quần thể tự thụ phấn.',
+          'Bỏ qua giai đoạn nhân đôi DNA ở kì trung gian trước khi phân bào.'
         ]
       : [
           'Viết vòng lặp lồng nhau bất chấp $N = 10^5$ vì máy tính hiện đại luôn chạy kịp $1\\text{ giây}$.',
@@ -525,7 +575,7 @@ function buildSectionMiniEssay(
   conceptText: string,
   formula: string | undefined,
   deepDiveText: string,
-  subject: 'math' | 'physics' | 'cs',
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
   keyTakeaway?: string
 ): LectureStepMiniEssay {
   const cleanTitle = stripLeadingNumber(stepTitle);

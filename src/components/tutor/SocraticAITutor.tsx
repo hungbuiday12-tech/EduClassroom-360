@@ -31,7 +31,9 @@ import {
   MonitorOff,
   Volume2,
   VolumeX,
-  Eye
+  Eye,
+  FlaskConical,
+  Dna
 } from 'lucide-react';
 import {
   AITutorMode,
@@ -60,7 +62,7 @@ import {
 
 export const AI_ROADMAPS_STORAGE_KEY = 'educlassroom_ai_roadmaps_v1';
 
-type AISubjectKey = 'math' | 'physics' | 'cs';
+type AISubjectKey = 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 
 interface SubjectDiagConfig {
   grade: string;
@@ -92,6 +94,18 @@ const MAJOR_OPTIONS_BY_SUBJ_VI: Record<AISubjectKey, string[]> = {
     'Vi mạch bán dẫn - Vật lí kỹ thuật & AI phần cứng',
     'Hàng không - Cơ khí chế tạo - Năng lượng'
   ],
+  chemistry: [
+    'Đội tuyển Chuyên Hóa / HSG / Mục tiêu 9+ THPT QG',
+    'Kỹ thuật Hóa học, Vật liệu Polyme & Pin năng lượng',
+    'Dược học, Hóa Sinh & Mỹ phẩm Công nghiệp',
+    'Công nghệ Hóa dầu, Môi trường & Xử lý nước'
+  ],
+  biology: [
+    'Đội tuyển Chuyên Sinh / HSG / Mục tiêu 9+ THPT QG',
+    'Y khoa, Răng Hàm Mặt & Dược lâm sàng (Khối B00)',
+    'Công nghệ Sinh học, Chỉnh sửa gen CRISPR & Di truyền',
+    'Sinh học Phân tử, Tin sinh học & Sinh thái'
+  ],
   cs: [
     'Lập trình thi đấu (Chuyên Tin / HSG QG / VNOI / ICPC)',
     'Trí tuệ nhân tạo (AI), Machine Learning & Khoa học dữ liệu',
@@ -113,6 +127,18 @@ const MAJOR_OPTIONS_BY_SUBJ_EN: Record<AISubjectKey, string[]> = {
     'Semiconductors, Microchips & Applied Physics',
     'Aerospace, Mechanical & Energy Engineering'
   ],
+  chemistry: [
+    'Chemistry Olympiad (IChO) / Top University Entrance',
+    'Chemical Engineering, Polymers & Battery Materials',
+    'Pharmacy, Medicinal Chemistry & Biochemistry',
+    'Environmental Chemistry & Catalysis'
+  ],
+  biology: [
+    'Biology Olympiad (IBO) / Top Medical Entrance',
+    'Medicine, Surgery & Clinical Sciences',
+    'Biotechnology, CRISPR Gene Editing & Genomics',
+    'Molecular Biology, Bioinformatics & Ecology'
+  ],
   cs: [
     'Competitive Programming (HSG / IOI / VNOI / ICPC)',
     'Artificial Intelligence & Data Science',
@@ -122,7 +148,11 @@ const MAJOR_OPTIONS_BY_SUBJ_EN: Record<AISubjectKey, string[]> = {
 };
 
 function normalizeSubject(subj?: SubjectType): AISubjectKey {
-  if (subj === 'physics' || subj === 'cs') return subj;
+  if (subj === 'physics' || subj === 'chemistry' || subj === 'biology' || subj === 'cs') return subj;
+  if (subj === 'physics_sims') return 'physics';
+  if (subj === 'chemistry_sims') return 'chemistry';
+  if (subj === 'biology_sims') return 'biology';
+  if (subj === 'cs_sims') return 'cs';
   return 'math';
 }
 
@@ -240,6 +270,58 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         avatarRing: 'ring-amber-400/60 bg-gradient-to-br from-amber-500 to-orange-600 text-slate-950',
         eqBar: 'bg-amber-400',
         icon: <Zap className="w-4 h-4" />
+      };
+    }
+    if (subj === 'chemistry') {
+      return {
+        nameVi: 'Syn Chem',
+        nameEn: 'Syn Chem',
+        roleVi: 'Cấu Trúc VSEPR · Cân Bằng & Tổng Hợp Hữu Cơ',
+        roleEn: 'VSEPR Geometry · Equilibrium & Organic Engine',
+        badgeVi: 'Vô cơ · Hữu cơ · Điện hóa',
+        badgeEn: 'Inorganic · Organic · Electrochem',
+        accentHex: '#14b8a6',
+        secondaryHex: '#38bdf8',
+        tabActive:
+          'bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 text-slate-950 border-teal-300 shadow-[0_10px_28px_-8px_rgba(20,184,166,0.55)]',
+        glowRing: 'ring-1 ring-teal-400/45 border-teal-500/50',
+        headerGrad: 'from-slate-950 via-[#042322] to-slate-950',
+        auroraOrb:
+          'bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.34),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(56,189,248,0.22),transparent_60%)]',
+        userBubble:
+          'bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-600 text-white shadow-md shadow-teal-500/25',
+        sendBtn:
+          'bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 shadow-lg shadow-teal-500/35',
+        accentRing: 'focus-within:ring-teal-400/60 focus-within:border-teal-400',
+        avatarRing: 'ring-teal-400/60 bg-gradient-to-br from-teal-500 to-cyan-600 text-white',
+        eqBar: 'bg-teal-400',
+        icon: <FlaskConical className="w-4 h-4" />
+      };
+    }
+    if (subj === 'biology') {
+      return {
+        nameVi: 'Syn Bio',
+        nameEn: 'Syn Bio',
+        roleVi: 'Tế Bào 3D · Di Truyền Phân Tử & Sinh Thái',
+        roleEn: '3D Cellular · Genetics & Ecology Engine',
+        badgeVi: 'Tế bào · Di truyền · Sinh lí',
+        badgeEn: 'Cell · Genetics · Physiology',
+        accentHex: '#f43f5e',
+        secondaryHex: '#ec4899',
+        tabActive:
+          'bg-gradient-to-r from-rose-500 via-pink-500 to-fuchsia-500 text-white border-rose-300 shadow-[0_10px_28px_-8px_rgba(244,63,94,0.55)]',
+        glowRing: 'ring-1 ring-rose-400/45 border-rose-500/50',
+        headerGrad: 'from-slate-950 via-[#290814] to-slate-950',
+        auroraOrb:
+          'bg-[radial-gradient(ellipse_at_top_right,rgba(244,63,94,0.34),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(236,72,153,0.22),transparent_60%)]',
+        userBubble:
+          'bg-gradient-to-br from-rose-600 via-pink-600 to-fuchsia-600 text-white shadow-md shadow-rose-500/25',
+        sendBtn:
+          'bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white shadow-lg shadow-rose-500/35',
+        accentRing: 'focus-within:ring-rose-400/60 focus-within:border-rose-400',
+        avatarRing: 'ring-rose-400/60 bg-gradient-to-br from-rose-500 to-pink-600 text-white',
+        eqBar: 'bg-rose-400',
+        icon: <Dna className="w-4 h-4" />
       };
     }
     if (subj === 'cs') {
@@ -368,6 +450,18 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
       selfLevel: 'Khá',
       customGoal: ''
     },
+    chemistry: {
+      grade: 'Lớp 12',
+      major: isEn ? MAJOR_OPTIONS_BY_SUBJ_EN.chemistry[0] : MAJOR_OPTIONS_BY_SUBJ_VI.chemistry[0],
+      selfLevel: 'Khá',
+      customGoal: ''
+    },
+    biology: {
+      grade: 'Lớp 12',
+      major: isEn ? MAJOR_OPTIONS_BY_SUBJ_EN.biology[0] : MAJOR_OPTIONS_BY_SUBJ_VI.biology[0],
+      selfLevel: 'Khá',
+      customGoal: ''
+    },
     cs: {
       grade: 'Lớp 12',
       major: isEn ? MAJOR_OPTIONS_BY_SUBJ_EN.cs[0] : MAJOR_OPTIONS_BY_SUBJ_VI.cs[0],
@@ -392,11 +486,15 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   const [diagQuestionsBySubj, setDiagQuestionsBySubj] = useState<Record<AISubjectKey, DiagnosticQuestion[]>>({
     math: [],
     physics: [],
+    chemistry: [],
+    biology: [],
     cs: []
   });
   const [diagAnswersBySubj, setDiagAnswersBySubj] = useState<Record<AISubjectKey, Record<string, number>>>({
     math: {},
     physics: {},
+    chemistry: {},
+    biology: {},
     cs: {}
   });
   const [roadmapsBySubj, setRoadmapsBySubj] = useState<Partial<Record<AISubjectKey, PersonalizedRoadmapResult>>>(() => {
@@ -428,7 +526,13 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (context.subject === 'math' || context.subject === 'physics' || context.subject === 'cs') {
+    if (
+      context.subject === 'math' ||
+      context.subject === 'physics' ||
+      context.subject === 'chemistry' ||
+      context.subject === 'biology' ||
+      context.subject === 'cs'
+    ) {
       setActiveSubject(context.subject);
     }
     if (context.mode) {
@@ -563,6 +667,20 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
             'Code em bị sai test biên hoặc TLE ở đoạn này',
             'Xem giúp hướng tiếp cận của em đúng chưa (chưa đưa code)'
           ]
+        : activeSubject === 'chemistry'
+        ? [
+            'Em chưa cân bằng được phản ứng oxi hóa – khử này',
+            'Cơ chế phản ứng hay công thức bảo toàn mol/electron nào áp dụng ở đây?',
+            'Em bị vướng ở bước tính pH / hằng số cân bằng KC',
+            'Kiểm tra giúp hướng viết đồng phân / bảo toàn khối lượng của em'
+          ]
+        : activeSubject === 'biology'
+        ? [
+            'Em chưa rõ cơ chế nhân đôi ADN / phiên mã / dịch mã ở đoạn này',
+            'Bài này dùng công thức lai Menđen, hoán vị gen hay Hardy–Weinberg?',
+            'Em đang nhầm giữa nguyên phân và giảm phân / tính tỉ lệ giao tử',
+            'Xem giúp hướng suy luận phả hệ của em đúng chưa (chưa đưa đáp số)'
+          ]
         : activeSubject === 'physics'
         ? [
             'Em chưa hình dung được hiện tượng và các lực tác dụng',
@@ -602,7 +720,17 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         ]
       : [
           'Điều chỉnh sơ đồ xuống còn 30 phút/ngày',
-          `Với môn ${activeSubject === 'math' ? 'Toán' : activeSubject === 'physics' ? 'Vật lí' : 'Tin học'}, nên ưu tiên chuyên đề nào?`,
+          `Với môn ${
+            activeSubject === 'math'
+              ? 'Toán'
+              : activeSubject === 'physics'
+              ? 'Vật lí'
+              : activeSubject === 'chemistry'
+              ? 'Hóa học'
+              : activeSubject === 'biology'
+              ? 'Sinh học'
+              : 'Tin học'
+          }, nên ưu tiên chuyên đề nào?`,
           'Gợi ý 3 bài học đầu tiên em nên mở ngay hôm nay'
         ];
 
@@ -1086,27 +1214,45 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
         </div>
       </div>
 
-      {/* 3 DEDICATED SYN AI ENGINES SWITCHER */}
+      {/* 5 DEDICATED SYN AI ENGINES SWITCHER */}
       <div className="px-3.5 sm:px-5 py-2.5 bg-slate-900/95 dark:bg-slate-950 border-b border-slate-800 shrink-0">
-        <div className={`grid grid-cols-3 gap-2 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
-          {(['math', 'physics', 'cs'] as AISubjectKey[]).map((subj) => {
+        <div className={`grid grid-cols-2 sm:grid-cols-5 gap-1.5 ${isFullscreen ? 'max-w-5xl mx-auto' : ''}`}>
+          {(['math', 'physics', 'chemistry', 'biology', 'cs'] as AISubjectKey[]).map((subj) => {
             const meta = getAiPersonaMeta(subj);
             const selected = activeSubject === subj;
-            const shortcut = subj === 'math' ? 'Ctrl(L)+D' : subj === 'physics' ? 'Ctrl(L)+F' : 'Ctrl(L)+G';
-            const shortKey = subj === 'math' ? '^D' : subj === 'physics' ? '^F' : '^G';
+            const shortcut =
+              subj === 'math'
+                ? 'Ctrl(L)+D'
+                : subj === 'physics'
+                ? 'Ctrl(L)+F'
+                : subj === 'cs'
+                ? 'Ctrl(L)+G'
+                : '';
+            const shortKey =
+              subj === 'math'
+                ? '^D'
+                : subj === 'physics'
+                ? '^F'
+                : subj === 'chemistry'
+                ? 'Hóa'
+                : subj === 'biology'
+                ? 'Sinh'
+                : '^G';
             const iconAnim =
               subj === 'math'
                 ? 'icon-anim-compass'
                 : subj === 'physics'
                 ? 'icon-anim-zap'
-                : 'icon-anim-code';
+                : subj === 'cs'
+                ? 'icon-anim-code'
+                : '';
             return (
               <button
                 key={subj}
                 data-ripple="true"
                 onClick={() => handleSwitchSubject(subj)}
-                title={isEn ? `Shortcut: Left ${shortcut}` : `Phím tắt: ${shortcut.replace('Ctrl(L)', 'Ctrl trái')}`}
-                className={`group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-md text-xs sm:text-[13px] font-bold border transition-all whitespace-nowrap cursor-pointer ${
+                title={shortcut ? (isEn ? `Shortcut: Left ${shortcut}` : `Phím tắt: ${shortcut.replace('Ctrl(L)', 'Ctrl trái')}`) : meta.nameVi}
+                className={`group cs-deck-btn relative overflow-hidden flex items-center justify-between gap-1 px-2.5 py-2 rounded-md text-xs font-bold border transition-all whitespace-nowrap cursor-pointer ${
                   selected
                     ? meta.tabActive
                     : 'bg-slate-900/90 text-slate-300 border-slate-700/80 hover:border-sky-400/70 hover:text-white hover:bg-slate-800'
@@ -1117,7 +1263,7 @@ export const SocraticAITutor: React.FC<SocraticAITutorProps> = ({
                   <span className="truncate">{isEn ? meta.nameEn : meta.nameVi}</span>
                 </span>
                 <kbd
-                  className={`hidden sm:inline text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                  className={`hidden md:inline text-[9px] font-mono px-1 py-0.5 rounded border ${
                     selected
                       ? 'bg-black/20 border-white/25 text-current'
                       : 'bg-slate-950 border-slate-700 text-slate-400'

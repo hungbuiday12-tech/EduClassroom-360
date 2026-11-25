@@ -160,7 +160,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
   const camPresetFnRef = useRef<((preset: 'iso' | 'oxy' | 'oxz' | 'oyz') => void) | null>(null);
   const capturePngFnRef = useRef<(() => void) | null>(null);
 
-  const { isRecording, seconds: recSeconds, toggleRecording } = useCanvasRecorder(
+  const { isRecording, recordSeconds: recSeconds, toggleRecording } = useCanvasRecorder(
     () => rendererRef.current?.domElement || null,
     `synapse-math3d-${mode}`
   );
@@ -2196,8 +2196,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({ initialMode = 'oxyz_vect
 
             <RecordVideoButton
               isRecording={isRecording}
-              seconds={recSeconds}
-              onClick={toggleRecording}
+              recordSeconds={recSeconds}
+              onToggle={toggleRecording}
               compact
             />
 

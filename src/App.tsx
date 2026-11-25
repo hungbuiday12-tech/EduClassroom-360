@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Compass, Zap, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff, Film, Crown, Play, Flame, Clock } from 'lucide-react';
+import { Compass, Zap, FlaskConical, Dna, Code2, Orbit, Cpu, ChevronUp, X, GripVertical, PinOff, Film, Crown, Play, Flame, Clock } from 'lucide-react';
 import { SubjectType, TutorContextPayload } from './types';
 import type { SynProDomain, SynProMode } from './components/tutor/SynAIProChat';
 import { Header } from './components/Header';
@@ -47,6 +47,18 @@ const PhysicsLab = lazy(() =>
 );
 const PhysicsDomainsPage = lazy(() =>
   import('./components/physics/PhysicsDomainsPage').then((m) => ({ default: m.PhysicsDomainsPage }))
+);
+const ChemistryLab = lazy(() =>
+  import('./components/chemistry/ChemistryLab').then((m) => ({ default: m.ChemistryLab }))
+);
+const ChemistrySimulationsPage = lazy(() =>
+  import('./components/chemistry/ChemistrySimulationsPage').then((m) => ({ default: m.ChemistrySimulationsPage }))
+);
+const BiologyLab = lazy(() =>
+  import('./components/biology/BiologyLab').then((m) => ({ default: m.BiologyLab }))
+);
+const BiologySimulationsPage = lazy(() =>
+  import('./components/biology/BiologySimulationsPage').then((m) => ({ default: m.BiologySimulationsPage }))
 );
 const CodeJudgeLab = lazy(() =>
   import('./components/cs/CodeJudgeLab').then((m) => ({ default: m.CodeJudgeLab }))
@@ -234,6 +246,10 @@ function MainApp() {
     const fallbackSubj: SubjectType =
       currentSubject === 'physics' || currentSubject === 'physics_sims'
         ? 'physics'
+        : currentSubject === 'chemistry' || currentSubject === 'chemistry_sims'
+        ? 'chemistry'
+        : currentSubject === 'biology' || currentSubject === 'biology_sims'
+        ? 'biology'
         : currentSubject === 'cs' || currentSubject === 'cs_sims'
         ? 'cs'
         : 'math';
@@ -337,6 +353,10 @@ function MainApp() {
       location.futureTab === 'quantum_holodeck_3d' ||
       location.futureTab === 'universe_forge_3d' ||
       location.futureTab === 'nanobot_bioswarm_4d' ||
+      location.futureTab === 'chem_reaction_3d' ||
+      location.futureTab === 'chem_orbital_vsepr_3d' ||
+      location.futureTab === 'bio_cell_atlas_3d' ||
+      location.futureTab === 'bio_dna_crispr_3d' ||
       location.futureTab === 'timemachine_holo_3d' ||
       location.futureTab === 'spatial_gesture_3d' ||
       location.futureTab === 'tech_teardown_3d' ||
@@ -443,9 +463,11 @@ function MainApp() {
       const isLeftCtrlActive = leftCtrlDownRef.current || !rightCtrlDownRef.current;
       if (!isLeftCtrlActive) return;
 
-      let targetSubj: 'math' | 'physics' | 'cs' | null = null;
+      let targetSubj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' | null = null;
       if (e.code === 'KeyD') targetSubj = 'math';
       else if (e.code === 'KeyF') targetSubj = 'physics';
+      else if (e.code === 'KeyH') targetSubj = 'chemistry';
+      else if (e.code === 'KeyB') targetSubj = 'biology';
       else if (e.code === 'KeyG') targetSubj = 'cs';
 
       if (!targetSubj) return;
@@ -642,6 +664,22 @@ function MainApp() {
                       <PhysicsDomainsPage onBack={goBack} />
                     )}
 
+                    {currentSubject === 'chemistry' && (
+                      <ChemistryLab onBack={goBack} onScoreEarned={handleEarnXP} />
+                    )}
+
+                    {currentSubject === 'chemistry_sims' && (
+                      <ChemistrySimulationsPage onBack={goBack} />
+                    )}
+
+                    {currentSubject === 'biology' && (
+                      <BiologyLab onBack={goBack} onScoreEarned={handleEarnXP} />
+                    )}
+
+                    {currentSubject === 'biology_sims' && (
+                      <BiologySimulationsPage onBack={goBack} />
+                    )}
+
                     {currentSubject === 'cs' && (
                       <CodeJudgeLab onScoreEarned={handleEarnXP} onBack={goBack} />
                     )}
@@ -770,6 +808,30 @@ function MainApp() {
                     {isEn ? 'Physics 2D/3D' : 'Mô phỏng Vật lí'}
                   </button>
                   <button
+                    onClick={() => selectSubject('chemistry')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  >
+                    {isEn ? 'Chemistry' : 'Hóa học'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('chemistry_sims')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold text-violet-600 dark:text-violet-400 cursor-pointer"
+                  >
+                    {isEn ? 'Chem 2D/3D' : 'Mô phỏng Hóa'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('biology')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  >
+                    {isEn ? 'Biology' : 'Sinh học'}
+                  </button>
+                  <button
+                    onClick={() => selectSubject('biology_sims')}
+                    className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold text-teal-600 dark:text-teal-400 cursor-pointer"
+                  >
+                    {isEn ? 'Bio 2D/3D' : 'Mô phỏng Sinh'}
+                  </button>
+                  <button
                     onClick={() => selectSubject('cs_sims')}
                     className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors font-semibold text-emerald-600 dark:text-emerald-400 cursor-pointer"
                   >
@@ -845,10 +907,12 @@ function MainApp() {
                   : undefined
               }
               className={`fixed z-[85] select-none ${
-                ['math_sims', 'physics_sims', 'cs_sims', 'synapse_v2', 'future_lab', 'spatial_3d', 'exams', 'arena'].includes(
+                ['math_sims', 'physics_sims', 'chemistry_sims', 'biology_sims', 'cs_sims', 'synapse_v2', 'future_lab', 'spatial_3d', 'exams', 'arena'].includes(
                   currentSubject
                 ) ||
                 (currentSubject === 'physics' && location.physicsView !== 'catalog') ||
+                (currentSubject === 'chemistry' && location.chemistryView !== 'catalog') ||
+                (currentSubject === 'biology' && location.biologyView !== 'catalog') ||
                 (currentSubject === 'cs' && location.csViewMode === 'visualizer')
                   ? 'hidden lg:block'
                   : ''
@@ -1022,6 +1086,38 @@ function MainApp() {
                           </span>
                           <kbd className="px-1.5 py-0.5 rounded bg-amber-950/20 border border-amber-950/30 font-mono text-[9px] text-slate-950">
                             Ctrl+F
+                          </kbd>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSynDockOpen(false);
+                            handleOpenTutor({ subject: 'chemistry' });
+                          }}
+                          className="cs-deck-btn w-full px-3 py-2 rounded bg-violet-600 hover:bg-violet-500 border border-violet-400/35 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <FlaskConical className="w-3.5 h-3.5 shrink-0" />
+                            <span>Syn Chem</span>
+                          </span>
+                          <kbd className="px-1.5 py-0.5 rounded bg-violet-950/70 border border-violet-300/30 font-mono text-[9px] text-violet-100">
+                            Ctrl+H
+                          </kbd>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSynDockOpen(false);
+                            handleOpenTutor({ subject: 'biology' });
+                          }}
+                          className="cs-deck-btn w-full px-3 py-2 rounded bg-teal-600 hover:bg-teal-500 border border-teal-400/35 text-white text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Dna className="w-3.5 h-3.5 shrink-0" />
+                            <span>Syn Bio</span>
+                          </span>
+                          <kbd className="px-1.5 py-0.5 rounded bg-teal-950/70 border border-teal-300/30 font-mono text-[9px] text-teal-100">
+                            Ctrl+B
                           </kbd>
                         </button>
                         <button
@@ -1206,6 +1302,8 @@ function MainApp() {
                   ...tutorContext,
                   subject:
                     location.tutorSubject === 'physics' ||
+                    location.tutorSubject === 'chemistry' ||
+                    location.tutorSubject === 'biology' ||
                     location.tutorSubject === 'cs' ||
                     location.tutorSubject === 'math'
                       ? location.tutorSubject

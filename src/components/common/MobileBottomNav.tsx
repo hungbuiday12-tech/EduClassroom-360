@@ -19,7 +19,9 @@ import {
   Bot,
   PenTool,
   MessageSquare,
-  ChevronRight
+  ChevronRight,
+  FlaskConical,
+  Dna
 } from 'lucide-react';
 import { SubjectType } from '../../types';
 import { useNavigation } from '../../context/NavigationContext';
@@ -54,10 +56,19 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   if (isHidden) return null;
 
   const isHomeActive = currentSubject === 'overview';
-  const isSimsActive = ['math_sims', 'physics_sims', 'cs_sims', 'synapse_v2', 'future_lab', 'spatial_3d'].includes(
+  const isSimsActive = [
+    'math_sims',
+    'physics_sims',
+    'chemistry_sims',
+    'biology_sims',
+    'cs_sims',
+    'synapse_v2',
+    'future_lab',
+    'spatial_3d'
+  ].includes(currentSubject);
+  const isSubjectsActive = ['math', 'physics', 'chemistry', 'biology', 'cs', 'exams', 'roadmap'].includes(
     currentSubject
   );
-  const isSubjectsActive = ['math', 'physics', 'cs', 'exams', 'roadmap'].includes(currentSubject);
   const isArenaActive = ['arena', 'growth_hub', 'forum'].includes(currentSubject);
 
   const toggleSheet = (sheet: Exclude<ActiveSheet, null>) => {
@@ -98,6 +109,32 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       onClick: () => {
         setActiveSheet(null);
         navigate({ subject: 'physics_sims', tutorOpen: false });
+      }
+    },
+    {
+      id: 'chemistry_sims',
+      titleVi: 'Khu Lab & Mô phỏng Hóa 2D/3D',
+      titleEn: 'Chemistry 2D/3D & Sandboxes',
+      subVi: '30 Lab 2D · 16 Mô phỏng 3D · 4 Sandboxes',
+      subEn: '30 2D · 16 3D Models · 4 Chem Sandboxes',
+      icon: FlaskConical,
+      accentClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/35',
+      onClick: () => {
+        setActiveSheet(null);
+        navigate({ subject: 'chemistry_sims', chemistryView: 'sim2d_hub', tutorOpen: false });
+      }
+    },
+    {
+      id: 'biology_sims',
+      titleVi: 'Khu Lab & Mô phỏng Sinh 2D/3D',
+      titleEn: 'Biology 2D/3D & Sandboxes',
+      subVi: '30 Lab 2D · 16 Tế bào/DNA 3D · 4 Sandboxes',
+      subEn: '30 2D · 16 3D Cell/DNA · 4 Bio Sandboxes',
+      icon: Dna,
+      accentClass: 'bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/35',
+      onClick: () => {
+        setActiveSheet(null);
+        navigate({ subject: 'biology_sims', biologyView: 'sim2d_hub', tutorOpen: false });
       }
     },
     {
@@ -174,6 +211,24 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       accentClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
     },
     {
+      id: 'chemistry',
+      titleVi: 'Bài giảng Hóa học',
+      titleEn: 'Chemistry',
+      subVi: 'GDPT 2018 · 2006 · Chuyên & Lab 2D/3D',
+      subEn: '2018 & 2006 Curricula + 2D/3D Labs',
+      icon: FlaskConical,
+      accentClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+    },
+    {
+      id: 'biology',
+      titleVi: 'Bài giảng Sinh học',
+      titleEn: 'Biology',
+      subVi: 'GDPT 2018 · 2006 · Chuyên & Lab 2D/3D',
+      subEn: '2018 & 2006 Curricula + 2D/3D Labs',
+      icon: Dna,
+      accentClass: 'bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30'
+    },
+    {
       id: 'cs',
       titleVi: 'Tin học & Chấm Code IDE',
       titleEn: 'CS & Online Judge IDE',
@@ -229,8 +284,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       id: 'tutor',
       titleVi: 'Syn AI Gia Sư Tương Tác',
       titleEn: 'Syn AI Interactive Tutor',
-      subVi: 'Giải thích từng bước Toán · Lý · Tin',
-      subEn: 'Step-by-step Math, Physics & CS',
+      subVi: 'Giải thích từng bước Toán · Lí · Hóa · Sinh · Tin',
+      subEn: 'Step-by-step Math, Physics, Chem, Bio & CS',
       icon: Bot,
       accentClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30',
       onClick: () => {

@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { MATH_LECTURES } from '../../data/curriculumData';
 import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
+import { CHEMISTRY_LESSONS } from '../../data/chemistryLessonsData';
+import { BIOLOGY_LESSONS } from '../../data/biologyLessonsData';
 import { CS_LESSONS } from '../../data/csLessonsData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
 import { useLanguage } from '../../context/LanguageContext';
@@ -9,6 +11,8 @@ import {
   BookOpen,
   Compass,
   Zap,
+  FlaskConical,
+  Dna,
   Code2,
   Search,
   ArrowRight,
@@ -16,17 +20,17 @@ import {
   GitBranch
 } from 'lucide-react';
 
-export type DirectorySubjectFilter = 'all' | 'math' | 'physics' | 'cs';
+export type DirectorySubjectFilter = 'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 export type DirectoryTrackFilter = 'all' | 'khong_chuyen' | 'chuyen';
 
 export interface LectureDirectoryTarget {
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   lectureId: string;
 }
 
 interface UnifiedLectureItem {
   id: string;
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   indexNumber: number;
   title: string;
   metaLine: string;
@@ -95,6 +99,42 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
       };
     });
 
+    const chemistryItems: UnifiedLectureItem[] = CHEMISTRY_LESSONS.map((l, idx) => {
+      const isChuyen = l.track === 'chuyen';
+      const parts = [
+        l.grade,
+        l.tier || (isChuyen ? (isEn ? 'Specialized' : 'Chuyên / HSG') : (isEn ? 'Standard' : 'Cơ bản GDPT')),
+        l.subtitle
+      ].filter(Boolean);
+      return {
+        id: l.id,
+        subject: 'chemistry',
+        indexNumber: idx + 1,
+        title: l.title,
+        metaLine: parts.slice(0, 2).join(' · '),
+        track: isChuyen ? 'chuyen' : 'khong_chuyen',
+        searchText: `${l.title} ${l.grade} ${l.subtitle} ${l.description || ''}`.toLowerCase()
+      };
+    });
+
+    const biologyItems: UnifiedLectureItem[] = BIOLOGY_LESSONS.map((l, idx) => {
+      const isChuyen = l.track === 'chuyen';
+      const parts = [
+        l.grade,
+        l.tier || (isChuyen ? (isEn ? 'Specialized' : 'Chuyên / HSG') : (isEn ? 'Standard' : 'Cơ bản GDPT')),
+        l.subtitle
+      ].filter(Boolean);
+      return {
+        id: l.id,
+        subject: 'biology',
+        indexNumber: idx + 1,
+        title: l.title,
+        metaLine: parts.slice(0, 2).join(' · '),
+        track: isChuyen ? 'chuyen' : 'khong_chuyen',
+        searchText: `${l.title} ${l.grade} ${l.subtitle} ${l.description || ''}`.toLowerCase()
+      };
+    });
+
     const csItems: UnifiedLectureItem[] = CS_LESSONS.map((l, idx) => {
       const isChuyen = l.level === 'Nâng cao / HSG';
       const parts = [
@@ -113,7 +153,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
       };
     });
 
-    return [...mathItems, ...physicsItems, ...csItems];
+    return [...mathItems, ...physicsItems, ...chemistryItems, ...biologyItems, ...csItems];
   }, [isEn]);
 
   const filteredItems = useMemo(() => {
@@ -130,6 +170,8 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
     return {
       math: filteredItems.filter((i) => i.subject === 'math'),
       physics: filteredItems.filter((i) => i.subject === 'physics'),
+      chemistry: filteredItems.filter((i) => i.subject === 'chemistry'),
+      biology: filteredItems.filter((i) => i.subject === 'biology'),
       cs: filteredItems.filter((i) => i.subject === 'cs')
     };
   }, [filteredItems]);
@@ -181,6 +223,34 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
       titleHover: 'group-hover:text-amber-700 dark:group-hover:text-amber-300',
       sheenGlow: 'from-amber-400/12 via-orange-400/10 to-transparent'
     },
+    chemistry: {
+      headingVi: 'Hóa Học · GDPT 2018, 2006 & Chuyên · Phòng Lab & Mô Phỏng 2D/3D',
+      headingEn: 'Chemistry · GDPT 2018, 2006 & Olympiad · 2D/3D Labs',
+      icon: <FlaskConical className="w-4 h-4 text-violet-600 dark:text-violet-300 shrink-0" />,
+      headerBadge: 'bg-violet-500/12 border-violet-400/40 text-violet-800 dark:text-violet-300',
+      cardSurface:
+        'bg-violet-50/45 dark:bg-slate-900/75 hover:bg-white dark:hover:bg-slate-800/95 border-violet-300/80 dark:border-violet-500/30 hover:border-violet-500 hover:shadow-[0_12px_28px_-10px_rgba(139,92,246,0.34)] text-violet-700 dark:text-violet-300',
+      indexBg:
+        'bg-violet-500/12 border border-violet-400/35 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300 group-hover:bg-violet-600 group-hover:border-violet-500 group-hover:text-white',
+      arrowBg:
+        'bg-violet-500/10 border border-violet-400/30 text-violet-700 dark:text-violet-300 group-hover:bg-violet-600 group-hover:border-violet-500 group-hover:text-white',
+      titleHover: 'group-hover:text-violet-700 dark:group-hover:text-violet-300',
+      sheenGlow: 'from-violet-400/12 via-fuchsia-400/10 to-transparent'
+    },
+    biology: {
+      headingVi: 'Sinh Học · GDPT 2018, 2006 & Chuyên · Atlas Tế Bào & Di Truyền 2D/3D',
+      headingEn: 'Biology · GDPT 2018, 2006 & Olympiad · 2D/3D Bio Labs',
+      icon: <Dna className="w-4 h-4 text-teal-600 dark:text-teal-300 shrink-0" />,
+      headerBadge: 'bg-teal-500/12 border-teal-400/40 text-teal-800 dark:text-teal-300',
+      cardSurface:
+        'bg-teal-50/45 dark:bg-slate-900/75 hover:bg-white dark:hover:bg-slate-800/95 border-teal-300/80 dark:border-teal-500/30 hover:border-teal-500 hover:shadow-[0_12px_28px_-10px_rgba(20,184,166,0.34)] text-teal-700 dark:text-teal-300',
+      indexBg:
+        'bg-teal-500/12 border border-teal-400/35 text-teal-800 dark:bg-teal-500/20 dark:text-teal-300 group-hover:bg-teal-600 group-hover:border-teal-500 group-hover:text-white',
+      arrowBg:
+        'bg-teal-500/10 border border-teal-400/30 text-teal-700 dark:text-teal-300 group-hover:bg-teal-600 group-hover:border-teal-500 group-hover:text-white',
+      titleHover: 'group-hover:text-teal-700 dark:group-hover:text-teal-300',
+      sheenGlow: 'from-teal-400/12 via-emerald-400/10 to-transparent'
+    },
     cs: {
       headingVi: 'Tin Học · 5 Lộ Trình (VNOI & C++ Quốc Tế) · Sublime 4 Judge',
       headingEn: 'Computer Science · 5 Roadmaps (VNOI & C++ Tracks) · Sublime Judge',
@@ -197,7 +267,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
     }
   };
 
-  const renderGroup = (subj: 'math' | 'physics' | 'cs', items: UnifiedLectureItem[]) => {
+  const renderGroup = (subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs', items: UnifiedLectureItem[]) => {
     const showCsTracks = subj === 'cs' && filteredCsTracks.length > 0;
     if (items.length === 0 && !showCsTracks) return null;
     const meta = subjectMeta[subj];
@@ -343,8 +413,8 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
           </div>
           <h3 className="font-display text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             {isEn
-              ? 'All Interactive Lectures (Math · Physics · CS)'
-              : 'Danh Sách Bài Giảng 5 Bước (Toán · Vật Lí · Tin Học)'}
+              ? 'All Interactive Lectures (Math · Physics · Chemistry · Biology · CS)'
+              : 'Danh Sách Bài Giảng 5 Bước (Toán · Vật Lí · Hóa · Sinh · Tin Học)'}
           </h3>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
             {isEn
@@ -443,6 +513,52 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
           <button
             type="button"
             data-ripple="true"
+            onClick={() => onSubjectFilterChange('chemistry')}
+            className={`group cs-deck-btn flex items-center gap-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap border transition-all cursor-pointer ${
+              subjectFilter === 'chemistry'
+                ? 'bg-violet-600 text-white border-violet-600 shadow-md shadow-violet-500/25'
+                : 'bg-violet-50/65 dark:bg-slate-800/75 text-violet-950 dark:text-violet-200 border-violet-300/80 dark:border-violet-500/30 hover:border-violet-500 hover:bg-violet-100/80 dark:hover:bg-violet-950/45'
+            }`}
+          >
+            <FlaskConical className="w-4 h-4 shrink-0" />
+            <span>{isEn ? 'Chemistry' : 'Hóa học'}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold tabular-nums ${
+                subjectFilter === 'chemistry'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-violet-500/15 text-violet-800 dark:text-violet-300 border border-violet-400/30'
+              }`}
+            >
+              {CHEMISTRY_LESSONS.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-ripple="true"
+            onClick={() => onSubjectFilterChange('biology')}
+            className={`group cs-deck-btn flex items-center gap-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap border transition-all cursor-pointer ${
+              subjectFilter === 'biology'
+                ? 'bg-teal-600 text-white border-teal-600 shadow-md shadow-teal-500/25'
+                : 'bg-teal-50/65 dark:bg-slate-800/75 text-teal-950 dark:text-teal-200 border-teal-300/80 dark:border-teal-500/30 hover:border-teal-500 hover:bg-teal-100/80 dark:hover:bg-teal-950/45'
+            }`}
+          >
+            <Dna className="w-4 h-4 shrink-0" />
+            <span>{isEn ? 'Biology' : 'Sinh học'}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold tabular-nums ${
+                subjectFilter === 'biology'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-teal-500/15 text-teal-800 dark:text-teal-300 border border-teal-400/30'
+              }`}
+            >
+              {BIOLOGY_LESSONS.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            data-ripple="true"
             onClick={() => onSubjectFilterChange('cs')}
             className={`group cs-deck-btn flex items-center gap-2 px-3.5 py-2 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap border transition-all cursor-pointer ${
               subjectFilter === 'cs'
@@ -513,6 +629,8 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
         <div className="space-y-7 max-h-[540px] overflow-y-auto pr-1">
           {renderGroup('math', groupedBySubject.math)}
           {renderGroup('physics', groupedBySubject.physics)}
+          {renderGroup('chemistry', groupedBySubject.chemistry)}
+          {renderGroup('biology', groupedBySubject.biology)}
           {renderGroup('cs', groupedBySubject.cs)}
         </div>
       )}

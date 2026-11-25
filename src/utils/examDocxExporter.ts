@@ -163,6 +163,10 @@ export async function downloadExamPaperDocx(
       ? isEn ? 'MATHEMATICS' : 'TOÁN HỌC'
       : exam.subject === 'physics'
       ? isEn ? 'PHYSICS' : 'VẬT LÝ'
+      : exam.subject === 'chemistry'
+      ? isEn ? 'CHEMISTRY' : 'HÓA HỌC'
+      : exam.subject === 'biology'
+      ? isEn ? 'BIOLOGY' : 'SINH HỌC'
       : isEn ? 'COMPUTER SCIENCE' : 'TIN HỌC';
 
   const trackLabel =

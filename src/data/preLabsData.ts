@@ -10,6 +10,8 @@ import {
   Cog,
   Cpu,
   Crosshair,
+  Dna,
+  FlaskConical,
   Gauge,
   Hand,
   Keyboard,
@@ -25,10 +27,50 @@ import { FutureLabTabId } from '../types';
 
 export type PreCategoryId = 'all' | 'future_2030' | 'aerospace_physics' | 'math_4d' | 'ai_code_sensor';
 export type PreSidebarGroupId = 'labs' | 'simulations' | 'sandboxes';
+export type PreSubjectZoneId = 'physics' | 'chemistry' | 'biology' | 'math' | 'cs';
+
+export const PRE_SUBJECT_ZONES: {
+  id: PreSubjectZoneId;
+  labelVi: string;
+  labelEn: string;
+  badgeClass: string;
+}[] = [
+  {
+    id: 'physics',
+    labelVi: 'Khu Vật lí & Vũ trụ',
+    labelEn: 'Physics & Aerospace Zone',
+    badgeClass: 'bg-sky-500/15 border-sky-400/50 text-sky-700 dark:text-sky-300',
+  },
+  {
+    id: 'chemistry',
+    labelVi: 'Khu Hóa học Lượng tử',
+    labelEn: 'Chemistry Zone',
+    badgeClass: 'bg-amber-500/15 border-amber-400/50 text-amber-700 dark:text-amber-300',
+  },
+  {
+    id: 'biology',
+    labelVi: 'Khu Sinh học Phân tử',
+    labelEn: 'Biology Zone',
+    badgeClass: 'bg-emerald-500/15 border-emerald-400/50 text-emerald-700 dark:text-emerald-300',
+  },
+  {
+    id: 'math',
+    labelVi: 'Khu Toán học & 4D',
+    labelEn: 'Math & 4D Zone',
+    badgeClass: 'bg-indigo-500/15 border-indigo-400/50 text-indigo-700 dark:text-indigo-300',
+  },
+  {
+    id: 'cs',
+    labelVi: 'Khu Tin học, AI & Phần cứng',
+    labelEn: 'CS, AI & Hardware Zone',
+    badgeClass: 'bg-violet-500/15 border-violet-400/50 text-violet-700 dark:text-violet-300',
+  },
+];
 
 export interface PreStudioItem {
   id: FutureLabTabId;
   category: Exclude<PreCategoryId, 'all'>;
+  subjectZone: PreSubjectZoneId;
   sidebarGroup: PreSidebarGroupId;
   indexLabel: string;
   titleVi: string;
@@ -94,6 +136,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'what_if_physics_3d',
     category: 'future_2030',
+    subjectZone: 'physics',
     sidebarGroup: 'sandboxes',
     indexLabel: 'NEW 01',
     titleVi: 'Vũ Trụ "Nếu Định Luật Vật Lí Thay Đổi" 3D',
@@ -119,6 +162,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'algo_city_3d',
     category: 'ai_code_sensor',
+    subjectZone: 'cs',
     sidebarGroup: 'sandboxes',
     indexLabel: 'NEW 02',
     titleVi: 'Thành Phố Thuật Toán 3D — AlgoCity',
@@ -144,6 +188,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'quantum_holodeck_3d',
     category: 'future_2030',
+    subjectZone: 'physics',
     sidebarGroup: 'labs',
     indexLabel: '01',
     titleVi: 'Quantum Holodeck — Máy Tính Lượng Tử 3D',
@@ -169,6 +214,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'universe_forge_3d',
     category: 'future_2030',
+    subjectZone: 'physics',
     sidebarGroup: 'sandboxes',
     indexLabel: '02',
     titleVi: 'Universe Forge — Lò Rèn Vũ Trụ & Tương Đối 3D',
@@ -194,6 +240,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'nanobot_bioswarm_4d',
     category: 'future_2030',
+    subjectZone: 'biology',
     sidebarGroup: 'labs',
     indexLabel: '03',
     titleVi: 'Nanobot Bio-Swarm 4D — Đàn Robot Y Sinh',
@@ -219,6 +266,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'assembly_3d',
     category: 'aerospace_physics',
+    subjectZone: 'physics',
     sidebarGroup: 'simulations',
     indexLabel: 'NEW 03',
     titleVi: 'Mô Phỏng Lắp Ráp Cơ Khí 3D Tương Tác',
@@ -244,6 +292,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'solar_system_3d',
     category: 'aerospace_physics',
+    subjectZone: 'physics',
     sidebarGroup: 'simulations',
     indexLabel: 'NEW 04',
     titleVi: 'Hệ Mặt Trời Kepler Thực Tế 3D',
@@ -269,6 +318,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'timemachine_holo_3d',
     category: 'future_2030',
+    subjectZone: 'physics',
     sidebarGroup: 'simulations',
     indexLabel: '04',
     titleVi: 'Cỗ Máy Thời Gian Hologram 3D',
@@ -294,6 +344,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'tech_teardown_3d',
     category: 'future_2030',
+    subjectZone: 'cs',
     sidebarGroup: 'labs',
     indexLabel: '05',
     titleVi: 'Xưởng Phẫu Thuật & Sửa Chữa Thiết Bị 3D',
@@ -319,6 +370,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'spatial_gesture_3d',
     category: 'future_2030',
+    subjectZone: 'math',
     sidebarGroup: 'labs',
     indexLabel: '06',
     titleVi: 'Học Cảm Giác 3D & WebAR Bàn Học Pro',
@@ -344,6 +396,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'rocket_launch_3d',
     category: 'aerospace_physics',
+    subjectZone: 'physics',
     sidebarGroup: 'simulations',
     indexLabel: '07',
     titleVi: 'Phóng Tên Lửa Đa Tầng & Quỹ Đạo 3D',
@@ -369,6 +422,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'jet_engine_3d',
     category: 'aerospace_physics',
+    subjectZone: 'physics',
     sidebarGroup: 'simulations',
     indexLabel: '08',
     titleVi: 'Động Cơ Phản Lực Tua-bin 3D (Brayton)',
@@ -394,6 +448,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'four_d_lectures',
     category: 'math_4d',
+    subjectZone: 'math',
     sidebarGroup: 'simulations',
     indexLabel: '09',
     titleVi: 'Bài Giảng Không Gian 4D & Tương Đối',
@@ -419,6 +474,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'robotics_ik_3d',
     category: 'aerospace_physics',
+    subjectZone: 'cs',
     sidebarGroup: 'simulations',
     indexLabel: '10',
     titleVi: 'Cánh Tay Robot 6-DOF & Động Học Ngược 3D',
@@ -444,6 +500,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'cannon_ballistics_3d',
     category: 'aerospace_physics',
+    subjectZone: 'physics',
     sidebarGroup: 'simulations',
     indexLabel: '11',
     titleVi: 'Quỹ Đạo Đường Bay Bắn Pháo 3D',
@@ -469,6 +526,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'megastructures',
     category: 'aerospace_physics',
+    subjectZone: 'physics',
     sidebarGroup: 'simulations',
     indexLabel: '12',
     titleVi: 'Đại công trình tương lai',
@@ -494,6 +552,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'galaxy3d',
     category: 'math_4d',
+    subjectZone: 'math',
     sidebarGroup: 'simulations',
     indexLabel: '13',
     titleVi: 'Vũ Trụ Tri Thức 3D',
@@ -519,6 +578,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'text_to_sim',
     category: 'ai_code_sensor',
+    subjectZone: 'physics',
     sidebarGroup: 'sandboxes',
     indexLabel: '14',
     titleVi: 'Sinh Mô Phỏng 3D AI',
@@ -544,6 +604,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'paper_to_sim',
     category: 'ai_code_sensor',
+    subjectZone: 'math',
     sidebarGroup: 'sandboxes',
     indexLabel: '15',
     titleVi: 'Giấy Nháp → 3D Sim Vision',
@@ -569,6 +630,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'audio_fft',
     category: 'aerospace_physics',
+    subjectZone: 'physics',
     sidebarGroup: 'labs',
     indexLabel: '16',
     titleVi: 'Sóng Âm FFT 3D Lab',
@@ -594,6 +656,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'silicon_neural',
     category: 'ai_code_sensor',
+    subjectZone: 'cs',
     sidebarGroup: 'labs',
     indexLabel: '17',
     titleVi: 'Mạch Silicon & Neural 3D',
@@ -619,6 +682,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'phone_sensor_lab',
     category: 'ai_code_sensor',
+    subjectZone: 'physics',
     sidebarGroup: 'labs',
     indexLabel: '18',
     titleVi: 'Cảm Biến Điện Thoại & Bản Sao 3D',
@@ -644,6 +708,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'dual_hand_sandbox',
     category: 'ai_code_sensor',
+    subjectZone: 'physics',
     sidebarGroup: 'sandboxes',
     indexLabel: '19',
     titleVi: 'Trường Hạt GPU 3D 2 Tay',
@@ -669,6 +734,7 @@ export const PRE_STUDIOS: PreStudioItem[] = [
   {
     id: 'typing_parroto_sandbox',
     category: 'ai_code_sensor',
+    subjectZone: 'cs',
     sidebarGroup: 'sandboxes',
     indexLabel: 'NEW 05',
     titleVi: 'Đấu Trường Luyện Gõ Parroto & Bàn Phím Trực Tiếp',
@@ -690,5 +756,109 @@ export const PRE_STUDIOS: PreStudioItem[] = [
     iconBgClass: 'bg-sky-500/15 border-sky-500/40 text-sky-600 dark:text-cyan-300',
     btnGradientClass: 'from-sky-500 via-cyan-500 to-emerald-500 text-white',
     icon: Keyboard,
+  },
+  {
+    id: 'chem_reaction_3d',
+    category: 'future_2030',
+    subjectZone: 'chemistry',
+    sidebarGroup: 'simulations',
+    indexLabel: 'NEW 06',
+    titleVi: 'Bề Mặt Thế Năng 3D & Động Học Xúc Tác',
+    titleEn: '3D Potential Energy Surface & Kinetics',
+    shortVi: 'Thế Năng Phản Ứng 3D',
+    shortEn: 'Chem Kinetics 3D',
+    metaVi: 'Đường đồng mức thế năng · Rào Ea, Xúc tác & Va chạm Arrhenius',
+    metaEn: '3D Energy Saddle · Activation Barrier Ea & Catalyst Path',
+    descVi:
+      'Quan sát trực tiếp bề mặt thế năng 3D giữa chất tham gia và sản phẩm, bật chất xúc tác để hạ thấp rào năng lượng hoạt hóa Ea và theo dõi tỉ lệ hạt vượt rào Boltzmann theo phương trình Arrhenius k = A·exp(−Ea/RT).',
+    descEn:
+      'Explore a live 3D potential energy saddle between reactants and products, toggle catalysis to lower activation energy Ea, and measure reactive Boltzmann collision yield.',
+    specsVi: 'Bề mặt Thế năng 3D · Động học Arrhenius · Quét biến ProBar',
+    specsEn: '3D Energy Saddle · Arrhenius Kinetics · ProBar Parameter Sweep',
+    keywords: 'hoa hoc chemistry dong hoc xuc tac arrhenius nang luong hoat hoa 3d',
+    accentHex: '#f59e0b',
+    secondaryHex: '#10b981',
+    accentTextClass: 'text-amber-600 dark:text-amber-300',
+    iconBgClass: 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-300',
+    btnGradientClass: 'from-amber-500 via-orange-500 to-emerald-500 text-white',
+    icon: FlaskConical,
+  },
+  {
+    id: 'chem_orbital_vsepr_3d',
+    category: 'future_2030',
+    subjectZone: 'chemistry',
+    sidebarGroup: 'labs',
+    indexLabel: 'NEW 07',
+    titleVi: 'Orbital Lượng Tử & Lai Hóa VSEPR 3D',
+    titleEn: '3D Quantum Orbitals & VSEPR Studio',
+    shortVi: 'Orbital & VSEPR 3D',
+    shortEn: 'Orbitals & VSEPR 3D',
+    metaVi: 'Orbital 2p_z, 3d_z² · Lai hóa sp / sp² / sp³ / sp³d / sp³d² & Cặp e tự do',
+    metaEn: 'Quantum 2p/3d Clouds · sp–sp³d² Hybridization & Lone Pair Angle Shift',
+    descVi:
+      'Khảo sát đám mây xác suất lượng tử |ψ|² của orbital s, p, d và hình học phân tử VSEPR từ lai hóa sp (180°) đến sp³d² (90°), tùy chỉnh cặp electron không liên kết để đo góc liên kết bị nén thực tế.',
+    descEn:
+      'Inspect 3D quantum probability clouds and VSEPR molecular geometry from sp linear to sp³d² octahedral, tuning lone-pair repulsion to quantify bond angle compression.',
+    specsVi: '7 Dạng Orbital/VSEPR · Điều chỉnh cặp e tự do · Báo cáo .md',
+    specsEn: '7 Orbital & VSEPR Modes · Lone-Pair Compression · Lab Report Export',
+    keywords: 'hoa hoc chemistry orbital luong tu vsepr lai hoa sp sp2 sp3 3d',
+    accentHex: '#0ea5e9',
+    secondaryHex: '#f59e0b',
+    accentTextClass: 'text-sky-600 dark:text-sky-300',
+    iconBgClass: 'bg-sky-500/15 border-sky-500/40 text-sky-600 dark:text-sky-300',
+    btnGradientClass: 'from-sky-500 via-indigo-500 to-amber-500 text-white',
+    icon: Atom,
+  },
+  {
+    id: 'bio_cell_atlas_3d',
+    category: 'future_2030',
+    subjectZone: 'biology',
+    sidebarGroup: 'labs',
+    indexLabel: 'NEW 08',
+    titleVi: 'Atlas Tế Bào Nhân Thực 3D & ATP Synthase',
+    titleEn: '3D Eukaryotic Cell Atlas & Organelle Inspector',
+    shortVi: 'Atlas Tế Bào 3D',
+    shortEn: 'Cell Atlas 3D',
+    metaVi: 'Mặt cắt Nhân, Ti thể ATP, Lục lạp, Golgi, Lưới nội chất & Tách lớp',
+    metaEn: 'Nucleus, Mitochondria Rotor, Chloroplast Grana, Golgi & Explode View',
+    descVi:
+      'Phẫu thuật tách lớp tế bào nhân thực 3D bằng chuột: chạm từng bào quan để xem chức năng, cô lập bào quan đơn lẻ và điều chỉnh tốc độ quay tuabin ATP Synthase trong hô hấp hiếu khí.',
+    descEn:
+      'Interactive cutaway 3D eukaryotic cell: click organelles to inspect function, isolate individual structures, scrub exploded separation, and tune ATP Synthase flux.',
+    specsVi: '6 Bào quan Chạm chọn · Tách lớp & Cô lập 3D · Đo sản lượng ATP',
+    specsEn: '6 Raycast Organelles · Explode & Isolate Mode · ATP Output Gauge',
+    keywords: 'sinh hoc biology te bao nhan thuc ti the luc lap atp bao quan 3d',
+    accentHex: '#10b981',
+    secondaryHex: '#14b8a6',
+    accentTextClass: 'text-emerald-600 dark:text-emerald-300',
+    iconBgClass: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-300',
+    btnGradientClass: 'from-emerald-500 via-teal-500 to-cyan-500 text-white',
+    icon: Dna,
+  },
+  {
+    id: 'bio_dna_crispr_3d',
+    category: 'future_2030',
+    subjectZone: 'biology',
+    sidebarGroup: 'simulations',
+    indexLabel: 'NEW 09',
+    titleVi: 'Chuỗi Xoắn ADN 3D & Chỉnh Sửa Gen CRISPR-Cas9',
+    titleEn: '3D DNA Helix & CRISPR-Cas9 Gene Editing',
+    shortVi: 'ADN & CRISPR-Cas9 3D',
+    shortEn: 'DNA & CRISPR 3D',
+    metaVi: '4 Pha CRISPR: Dò PAM 5′-NGG-3′, R-Loop sgRNA, Cắt DSB & Sửa HDR',
+    metaEn: '4-Stage CRISPR Pipeline · PAM Scan, R-Loop, DSB Cleavage & HDR Repair',
+    descVi:
+      'Điều khiển phức hợp Cas9-sgRNA quét trình tự PAM trên chuỗi xoắn kép ADN 3D, thực hiện cắt đứt mạch kép (HNH & RuvC), chèn đoạn khuôn sửa chữa chính xác HDR và tính nhiệt độ nóng chảy Tm theo tỉ lệ %GC.',
+    descEn:
+      'Guide Cas9-sgRNA along a live 3D DNA double helix from PAM recognition and R-loop unwinding to HNH/RuvC cleavage and HDR template repair.',
+    specsVi: '4 Pha CRISPR-Cas9 · Tính Tm & Liên kết Hydro · Quét %GC ProBar',
+    specsEn: '4 CRISPR Stages · Live Tm & H-Bond Counter · ProBar Sweep',
+    keywords: 'sinh hoc biology adn dna crispr cas9 gen di truyen 3d',
+    accentHex: '#06b6d4',
+    secondaryHex: '#8b5cf6',
+    accentTextClass: 'text-cyan-600 dark:text-cyan-300',
+    iconBgClass: 'bg-cyan-500/15 border-cyan-500/40 text-cyan-600 dark:text-cyan-300',
+    btnGradientClass: 'from-cyan-500 via-sky-500 to-violet-500 text-white',
+    icon: Dna,
   },
 ];

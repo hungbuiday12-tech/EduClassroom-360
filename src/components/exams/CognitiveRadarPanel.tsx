@@ -116,9 +116,17 @@ export const CognitiveRadarPanel: React.FC<CognitiveRadarPanelProps> = ({
 
   const polygonStr = axisPts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
 
-  const openRemedialSim = (subj: 'math' | 'physics' | 'cs') => {
+  const openRemedialSim = (subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs') => {
     const target: SubjectType =
-      subj === 'physics' ? 'physics_sims' : subj === 'math' ? 'math_sims' : subj;
+      subj === 'physics'
+        ? 'physics_sims'
+        : subj === 'math'
+        ? 'math_sims'
+        : subj === 'chemistry'
+        ? 'chemistry_sims'
+        : subj === 'biology'
+        ? 'biology_sims'
+        : subj;
     navigate({ subject: target, tutorOpen: false });
   };
 
@@ -261,7 +269,17 @@ export const CognitiveRadarPanel: React.FC<CognitiveRadarPanelProps> = ({
                   onClick={() => openRemedialSim(s)}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
                 >
-                  <span>{s === 'math' ? 'Toán 2D/3D' : s === 'physics' ? 'Mô phỏng Lí 2D/3D' : 'IDE Tin học'}</span>
+                  <span>
+                    {s === 'math'
+                      ? 'Toán 2D/3D'
+                      : s === 'physics'
+                      ? 'Mô phỏng Lí 2D/3D'
+                      : s === 'chemistry'
+                      ? 'Mô phỏng Hóa 2D/3D'
+                      : s === 'biology'
+                      ? 'Mô phỏng Sinh 2D/3D'
+                      : 'IDE Tin học'}
+                  </span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               ))}

@@ -30,7 +30,9 @@ import {
   Grid3x3,
   ListTree,
   RotateCcw,
-  BookOpenCheck
+  BookOpenCheck,
+  FlaskConical,
+  Dna
 } from 'lucide-react';
 import {
   LessonAssessmentRecord,
@@ -73,7 +75,7 @@ type TreeViewMode = 'matrix' | 'linear';
 interface StudentPlanProfile {
   grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
   goal: StudyGoalId;
-  focusSubjects: Array<'math' | 'physics' | 'cs'>;
+  focusSubjects: Array<'math' | 'physics' | 'chemistry' | 'biology' | 'cs'>;
   hoursPerWeek: number;
   pace: StudyPaceId;
 }
@@ -89,7 +91,7 @@ const LOCAL_TREE_VIEW_KEY = 'synapse_roadmap_tree_view_v1';
 const DEFAULT_PROFILE: StudentPlanProfile = {
   grade: 'Lớp 10',
   goal: 'foundation',
-  focusSubjects: ['math', 'physics', 'cs'],
+  focusSubjects: ['math', 'physics', 'chemistry', 'biology', 'cs'],
   hoursPerWeek: 10,
   pace: 'balanced'
 };
@@ -120,7 +122,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
 
   const [activeStageIdx, setActiveStageIdx] = useState<number>(0);
   const [autoPlayWorkflow, setAutoPlayWorkflow] = useState<boolean>(false);
-  const [subjectFilter, setSubjectFilter] = useState<'all' | 'math' | 'physics' | 'cs'>('all');
+  const [subjectFilter, setSubjectFilter] = useState<'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs'>('all');
   const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [readinessFilter, setReadinessFilter] = useState<ReadinessFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -203,7 +205,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     }
   });
 
-  const [aiRoadmaps, setAiRoadmaps] = useState<Partial<Record<'math' | 'physics' | 'cs', PersonalizedRoadmapResult>>>(() => {
+  const [aiRoadmaps, setAiRoadmaps] = useState<Partial<Record<'math' | 'physics' | 'chemistry' | 'biology' | 'cs', PersonalizedRoadmapResult>>>(() => {
     try {
       const saved = localStorage.getItem(AI_ROADMAPS_STORAGE_KEY);
       return saved ? JSON.parse(saved) : {};
@@ -364,7 +366,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
   const savedLessonSummaries = useMemo(() => {
     type UnifiedSummary = {
       lessonKey: string;
-      subject: 'math' | 'physics' | 'cs';
+      subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
       lessonTitle: string;
       grade?: string;
       totalSteps: number;
@@ -512,7 +514,13 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
 
   // Map mastery gaps from saved assessments
   const weakSubjectBoost = useMemo(() => {
-    const scores: Record<'math' | 'physics' | 'cs', number> = { math: 0, physics: 0, cs: 0 };
+    const scores: Record<'math' | 'physics' | 'chemistry' | 'biology' | 'cs', number> = {
+      math: 0,
+      physics: 0,
+      chemistry: 0,
+      biology: 0,
+      cs: 0
+    };
     savedLessonSummaries.forEach((s) => {
       if (s.overallMastery < 65 || s.weakPoints.length > 0) {
         scores[s.subject] += 1;
@@ -672,7 +680,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
   const progressPercent = Math.round((completedNodeIds.length / ROADMAP_NODES.length) * 100);
 
   const subjectMasteryStats = useMemo(() => {
-    return (['math', 'physics', 'cs'] as const).map((subj) => {
+    return (['math', 'physics', 'chemistry', 'biology', 'cs'] as const).map((subj) => {
       const nodes = ROADMAP_NODES.filter((n) => n.subject === subj);
       const done = nodes.filter((n) => completedNodeIds.includes(n.id)).length;
       const pct = nodes.length > 0 ? Math.round((done / nodes.length) * 100) : 0;
@@ -754,20 +762,24 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     return [...lowMasteryItems, ...completedReviewNodes].slice(0, 6);
   }, [savedLessonSummaries, completedNodeIds, trackFilter, isEn]);
 
-  const getSubjectName = (subj: 'math' | 'physics' | 'cs') => {
+  const getSubjectName = (subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs') => {
     if (subj === 'math') return isEn ? 'Mathematics' : 'Toán học';
     if (subj === 'physics') return isEn ? 'Physics' : 'Vật lí';
+    if (subj === 'chemistry') return isEn ? 'Chemistry' : 'Hóa học';
+    if (subj === 'biology') return isEn ? 'Biology' : 'Sinh học';
     return isEn ? 'Computer Science' : 'Tin học';
   };
 
-  const getSubjectIcon = (subj: 'math' | 'physics' | 'cs') => {
+  const getSubjectIcon = (subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs') => {
     if (subj === 'math') return <Compass className="w-4 h-4 text-sky-600 dark:text-sky-400" />;
     if (subj === 'physics') return <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />;
+    if (subj === 'chemistry') return <FlaskConical className="w-4 h-4 text-teal-600 dark:text-teal-400" />;
+    if (subj === 'biology') return <Dna className="w-4 h-4 text-rose-600 dark:text-rose-400" />;
     return <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />;
   };
 
   const handleOpenSavedLesson = (
-    subject: 'math' | 'physics' | 'cs',
+    subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
     lessonKey?: string,
     explicitCsTrackId?: CSTrackId
   ) => {
@@ -792,6 +804,20 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
         ...(lessonKey ? { physicsLessonId: lessonKey } : {}),
         physicsTab: 'theory'
       });
+    } else if (subject === 'chemistry') {
+      navigate({
+        subject: 'chemistry',
+        chemistryView: lessonKey ? 'lecture' : 'catalog',
+        ...(lessonKey ? { chemistryLessonId: lessonKey } : {}),
+        chemistryTab: 'theory'
+      });
+    } else if (subject === 'biology') {
+      navigate({
+        subject: 'biology',
+        biologyView: lessonKey ? 'lecture' : 'catalog',
+        ...(lessonKey ? { biologyLessonId: lessonKey } : {}),
+        biologyTab: 'theory'
+      });
     } else {
       const resolvedTrack = explicitCsTrackId || (lessonKey ? NODE_TO_CS_TRACK[lessonKey] : undefined);
       if (resolvedTrack) {
@@ -814,7 +840,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
     }
   };
 
-  const toggleFocusSubject = (subj: 'math' | 'physics' | 'cs') => {
+  const toggleFocusSubject = (subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs') => {
     setPlanProfile((prev) => {
       const exists = prev.focusSubjects.includes(subj);
       if (exists && prev.focusSubjects.length === 1) return prev; // Keep at least 1 subject active
@@ -883,8 +909,8 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
               {isEn
-                ? 'Automatically build a balanced weekly schedule tailored to your grade, target exam, and mastery diagnostics across Math, Physics, and CS.'
-                : 'Tự động lập thời khóa biểu tuần tối ưu theo lớp học, mục tiêu kỳ thi và kết quả đánh giá năng lực Toán · Lí · Tin.'}
+                ? 'Automatically build a balanced weekly schedule tailored to your grade, target exam, and mastery diagnostics across Math, Physics, Chemistry, Biology, and CS.'
+                : 'Tự động lập thời khóa biểu tuần tối ưu theo lớp học, mục tiêu kỳ thi và kết quả đánh giá năng lực Toán · Lí · Hóa · Sinh · Tin.'}
             </p>
 
             {/* Per-Subject Inline Mastery Strip */}
@@ -1112,11 +1138,13 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
               {isEn ? 'Focus Subjects' : 'Môn ưu tiên'}
             </label>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {(
                 [
                   { id: 'math', label: isEn ? 'Math' : 'Toán' },
                   { id: 'physics', label: isEn ? 'Phys' : 'Lí' },
+                  { id: 'chemistry', label: isEn ? 'Chem' : 'Hóa' },
+                  { id: 'biology', label: isEn ? 'Bio' : 'Sinh' },
                   { id: 'cs', label: isEn ? 'CS' : 'Tin' }
                 ] as const
               ).map((s) => {
@@ -1125,7 +1153,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                   <button
                     key={s.id}
                     onClick={() => toggleFocusSubject(s.id)}
-                    className={`flex-1 py-2 rounded-md text-xs font-bold transition-colors whitespace-nowrap ${
+                    className={`flex-1 min-w-[46px] py-2 px-1.5 rounded-md text-xs font-bold transition-colors whitespace-nowrap ${
                       active
                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
                         : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500'
@@ -1651,8 +1679,8 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {(['math', 'physics', 'cs'] as const).map((subj, idx) => {
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {(['math', 'physics', 'chemistry', 'biology', 'cs'] as const).map((subj, idx) => {
               const rm = aiRoadmaps[subj];
               if (!rm) return null;
               return (
@@ -2023,6 +2051,8 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                 { id: 'all' as const, label: isEn ? 'All' : 'Tất cả' },
                 { id: 'math' as const, label: isEn ? 'Math' : 'Toán' },
                 { id: 'physics' as const, label: isEn ? 'Physics' : 'Lí' },
+                { id: 'chemistry' as const, label: isEn ? 'Chem' : 'Hóa' },
+                { id: 'biology' as const, label: isEn ? 'Bio' : 'Sinh' },
                 { id: 'cs' as const, label: isEn ? 'CS' : 'Tin' }
               ].map((tab) => (
                 <button
@@ -2031,7 +2061,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                     setSubjectFilter(tab.id);
                     setGradeFilter('all');
                   }}
-                  className={`px-3 py-1 rounded-sm text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-sm text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                     subjectFilter === tab.id
                       ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -2141,7 +2171,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
           ) : treeViewMode === 'matrix' ? (
             /* 4-COLUMN GRADES 9 -> 12 PROGRESSION MATRIX */
             <div className="space-y-5">
-              {(['math', 'physics', 'cs'] as const)
+              {(['math', 'physics', 'chemistry', 'biology', 'cs'] as const)
                 .filter((s) => subjectFilter === 'all' || subjectFilter === s)
                 .map((subj) => {
                   const subjNodes = filteredNodes.filter((n) => n.subject === subj);

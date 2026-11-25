@@ -57,7 +57,7 @@ const getGenAI = () => {
 // =====================================================================
 // PERSISTENT ONLINE ARENA & WEEKLY LEADERBOARD STORE + REAL-TIME SSE
 // =====================================================================
-type ArenaSubjectServer = 'math' | 'physics' | 'cs';
+type ArenaSubjectServer = 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 
 interface ArenaAttemptRecord {
   id: string;
@@ -89,6 +89,12 @@ interface WeeklyLeaderboardRecord {
   physicsBest: number | null;
   physicsAvg: number | null;
   physicsAttempts: number;
+  chemistryBest: number | null;
+  chemistryAvg: number | null;
+  chemistryAttempts: number;
+  biologyBest: number | null;
+  biologyAvg: number | null;
+  biologyAttempts: number;
   csBest: number | null;
   csAvg: number | null;
   csAttempts: number;
@@ -174,9 +180,11 @@ function computeWeeklyLeaderboard(weekId: string): WeeklyLeaderboardRecord[] {
 
     const math = calcSubject('math');
     const physics = calcSubject('physics');
+    const chemistry = calcSubject('chemistry');
+    const biology = calcSubject('biology');
     const cs = calcSubject('cs');
 
-    const subjectAvgs = [math.avg, physics.avg, cs.avg].filter(
+    const subjectAvgs = [math.avg, physics.avg, chemistry.avg, biology.avg, cs.avg].filter(
       (v): v is number => v !== null
     );
     const overallAvg =
@@ -198,6 +206,12 @@ function computeWeeklyLeaderboard(weekId: string): WeeklyLeaderboardRecord[] {
       physicsBest: physics.best,
       physicsAvg: physics.avg,
       physicsAttempts: physics.count,
+      chemistryBest: chemistry.best,
+      chemistryAvg: chemistry.avg,
+      chemistryAttempts: chemistry.count,
+      biologyBest: biology.best,
+      biologyAvg: biology.avg,
+      biologyAttempts: biology.count,
       csBest: cs.best,
       csAvg: cs.avg,
       csAttempts: cs.count,
@@ -656,7 +670,7 @@ app.delete('/api/reviews/:id', (req: Request, res: Response) => {
 // =====================================================================
 // PERSISTENT STUDY FORUM STORE (.forum_db.json) + REAL-TIME SSE
 // =====================================================================
-type ForumSubjectServer = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
+type ForumSubjectServer = 'announcements' | 'general' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' | 'exams';
 
 interface ForumPollOptionRecord {
   id: string;
@@ -676,7 +690,7 @@ interface ForumMessageReplyRefRecord {
 }
 
 interface ForumLessonAttachmentRecord {
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   lessonId: string;
   title: string;
   subtitle?: string;
@@ -816,6 +830,38 @@ function buildDefaultForumSeed(): ForumDatabase {
         createdAt: t3
       },
       {
+        id: 'chemistry-lab-club',
+        name: 'CLB Hóa Học 2D/3D · Cân Bằng, Chuẩn Độ & Hữu Cơ',
+        description:
+          'Trao đổi phương trình ion-electron, chuẩn độ acid-base pH, liên kết VSEPR, điện hóa và cơ chế hữu cơ.',
+        subject: 'chemistry',
+        isMandatoryAdminGroup: false,
+        creatorId: 'demo_user_5',
+        creatorName: 'Phạm Hoàng Minh',
+        creatorUsername: 'chuyenhoa2026',
+        messageCount: 1,
+        lastMessagePreview:
+          'Chào mọi người! Cần phân tích bài toán điện phân, chuẩn độ hay đồng phân hữu cơ thì gửi vào đây nha.',
+        lastMessageAt: t4,
+        createdAt: t4
+      },
+      {
+        id: 'biology-genetics-club',
+        name: 'CLB Sinh Học · Di Truyền Phân Tử & Sinh Lý',
+        description:
+          'Thảo luận cơ chế nhân đôi DNA, phiên mã-dịch mã, quy luật Mendel, Hardy-Weinberg và mô phỏng tế bào 3D.',
+        subject: 'biology',
+        isMandatoryAdminGroup: false,
+        creatorId: 'demo_user_6',
+        creatorName: 'Nguyễn Ngọc Linh',
+        creatorUsername: 'chuyensinh2026',
+        messageCount: 1,
+        lastMessagePreview:
+          'Chào các bạn! Mọi câu hỏi về cơ chế di truyền, enzyme, điện thế hoạt động hay hệ sinh thái đều có thể trao đổi ở đây.',
+        lastMessageAt: t5,
+        createdAt: t5
+      },
+      {
         id: 'general-study-lounge',
         name: 'Góc Thảo Luận Chung & Chia Sẻ Kinh Nghiệm',
         description:
@@ -883,6 +929,30 @@ function buildDefaultForumSeed(): ForumDatabase {
         createdAt: t3
       },
       {
+        id: 'msg_seed_chemistry_1',
+        groupId: 'chemistry-lab-club',
+        isAdminGroup: false,
+        senderId: 'demo_user_5',
+        senderName: 'Phạm Hoàng Minh',
+        senderUsername: 'chuyenhoa2026',
+        senderRole: 'student',
+        content:
+          'Chào mọi người! Ai cần thảo luận chuẩn độ pH, bảo toàn electron ($\\text{Fe} \\to \\text{Fe}^{3+} + 3e$) hay hình học phân tử VSEPR có thể nhắn ở đây nhé.',
+        createdAt: t4
+      },
+      {
+        id: 'msg_seed_biology_1',
+        groupId: 'biology-genetics-club',
+        isAdminGroup: false,
+        senderId: 'demo_user_6',
+        senderName: 'Nguyễn Ngọc Linh',
+        senderUsername: 'chuyensinh2026',
+        senderRole: 'student',
+        content:
+          'Chào các bạn! Cùng thảo luận bài tập nhân đôi DNA, di truyền quần thể Hardy-Weinberg ($p^2 + 2pq + q^2 = 1$) và sinh lý cơ thể tại đây nha.',
+        createdAt: t5
+      },
+      {
         id: 'msg_seed_general_1',
         groupId: 'general-study-lounge',
         isAdminGroup: false,
@@ -928,9 +998,11 @@ function ensureMandatoryAdminGroup(data: ForumDatabase): ForumDatabase {
     );
   }
 
-  // Ensure default Physics & General Discussion groups exist when none exist for those categories
+  // Ensure default Physics, Chemistry, Biology & General Discussion groups exist
   const defaultExtraSpecs = [
     { groupId: 'physics-mechanics-waves', subject: 'physics', msgId: 'msg_seed_physics_1' },
+    { groupId: 'chemistry-lab-club', subject: 'chemistry', msgId: 'msg_seed_chemistry_1' },
+    { groupId: 'biology-genetics-club', subject: 'biology', msgId: 'msg_seed_biology_1' },
     { groupId: 'general-study-lounge', subject: 'general', msgId: 'msg_seed_general_1' }
   ] as const;
 
@@ -1076,7 +1148,7 @@ app.post('/api/forum/groups', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Mô tả nhóm phải từ 3 đến 300 ký tự.' });
   }
 
-  const allowedSubjects: ForumSubjectServer[] = ['general', 'math', 'physics', 'cs', 'exams'];
+  const allowedSubjects: ForumSubjectServer[] = ['general', 'math', 'physics', 'chemistry', 'biology', 'cs', 'exams'];
   const cleanSubject: ForumSubjectServer = allowedSubjects.includes(subject) ? subject : 'general';
   const cleanId = id
     ? String(id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 128)
@@ -1201,7 +1273,13 @@ app.post('/api/forum/groups/:groupId/messages', (req: Request, res: Response) =>
 
   let sanitizedAttachment: ForumLessonAttachmentRecord | undefined;
   if (attachment && typeof attachment === 'object' && attachment.lessonId && attachment.title) {
-    const attSubj = attachment.subject === 'physics' || attachment.subject === 'cs' ? attachment.subject : 'math';
+    const attSubj =
+      attachment.subject === 'physics' ||
+      attachment.subject === 'chemistry' ||
+      attachment.subject === 'biology' ||
+      attachment.subject === 'cs'
+        ? attachment.subject
+        : 'math';
     sanitizedAttachment = {
       subject: attSubj,
       lessonId: String(attachment.lessonId).trim().slice(0, 80),
@@ -1691,11 +1769,13 @@ app.get('/api/arena/state', (req: Request, res: Response) => {
   const userAttemptsToday: Record<ArenaSubjectServer, ArenaAttemptRecord | null> = {
     math: null,
     physics: null,
+    chemistry: null,
+    biology: null,
     cs: null
   };
 
   if (userId && dateKey) {
-    for (const subj of ['math', 'physics', 'cs'] as ArenaSubjectServer[]) {
+    for (const subj of ['math', 'physics', 'chemistry', 'biology', 'cs'] as ArenaSubjectServer[]) {
       userAttemptsToday[subj] =
         arenaDb.attempts.find(
           (a) =>
@@ -1761,7 +1841,7 @@ app.post('/api/arena/sprint', (req: Request, res: Response) => {
   if (!userId || !subject || typeof score !== 'number') {
     return res.status(400).json({ error: 'Dữ liệu Speedrun không hợp lệ.' });
   }
-  if (!['math', 'physics', 'cs'].includes(subject)) {
+  if (!['math', 'physics', 'chemistry', 'biology', 'cs'].includes(subject)) {
     return res.status(400).json({ error: 'Môn thi Speedrun không hợp lệ.' });
   }
 
@@ -1831,7 +1911,7 @@ app.post('/api/arena/submit', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Dữ liệu nộp bài thi đấu không hợp lệ.' });
   }
 
-  if (!['math', 'physics', 'cs'].includes(subject)) {
+  if (!['math', 'physics', 'chemistry', 'biology', 'cs'].includes(subject)) {
     return res.status(400).json({ error: 'Môn thi đấu không hợp lệ.' });
   }
 
@@ -2214,7 +2294,7 @@ async function streamGeminiChatWithFallback({
 // Uses real @google/genai ai.chats + SSE streaming & strict mode instructions
 // =====================================================================
 function buildTutorSystemInstruction(
-  subjKey: 'math' | 'physics' | 'cs',
+  subjKey: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
   modeKey: 'explain_no_answer' | 'full_solution' | 'diagnostic_roadmap',
   isEn: boolean,
   context?: { topicTitle?: string; grade?: string; problemStatement?: string }
@@ -2228,6 +2308,14 @@ function buildTutorSystemInstruction(
       ? isEn
         ? 'Syn Physics (Syn AI) — Senior Physics Specialist AI (Mechanics, Electricity & Magnetism, Oscillations & Waves, Optics, Quantum & Nuclear Physics for Grades 9–12 & 2D/3D Labs)'
         : 'Syn Physics (Syn AI) — Chuyên gia Vật Lí THCS/THPT & Thí nghiệm 2D/3D (Cơ học, Điện từ, Dao động & Sóng, Quang học, Hạt nhân Lớp 9–12)'
+      : subjKey === 'chemistry'
+      ? isEn
+        ? 'Syn Chem (Syn AI) — Senior Chemistry Specialist AI (Atomic Orbitals, VSEPR, Chemical Kinetics, Equilibrium, Acid-Base Titration, Electrochemistry, Inorganic & Organic Chemistry for Grades 9–12)'
+        : 'Syn Chem (Syn AI) — Chuyên gia Hóa Học THCS/THPT & Chuyên Hóa (Cấu tạo nguyên tử, VSEPR, Động hóa học, Cân bằng pH, Điện hóa, Vô cơ & Hữu cơ Lớp 9–12)'
+      : subjKey === 'biology'
+      ? isEn
+        ? 'Syn Bio (Syn AI) — Senior Biology Specialist AI (Cell Biology, Enzyme Kinetics, Molecular Genetics & CRISPR, Evolution, Human & Plant Physiology, Ecology for Grades 9–12)'
+        : 'Syn Bio (Syn AI) — Chuyên gia Sinh Học THCS/THPT & Chuyên Sinh (Tế bào học, Enzyme, Di truyền phân tử & CRISPR, Tiến hóa, Sinh lý & Sinh thái Lớp 9–12)'
       : isEn
       ? 'Syn Code (Syn AI) — Senior Computer Science & Competitive Programming AI (C++20 STL, Python 3, VNOI/IOI/ICPC, Big-O Time/Space, Graphs, DP, Segment Tree & Edge Test Analysis)'
       : 'Syn Code (Syn AI) — Chuyên gia Thuật toán & Lập trình thi đấu (C++20 STL, Python 3, VNOI/IOI/ICPC, Big-O, Quy hoạch động, Đồ thị, CTDL & Test biên)';
@@ -2237,6 +2325,10 @@ function buildTutorSystemInstruction(
       ? 'Luôn kiểm tra điều kiện xác định, miền giá trị, tập nghiệm, đạo hàm/dấu và biểu diễn hình học trực quan khi giải thích.'
       : subjKey === 'physics'
       ? 'Luôn kiểm tra hệ quy chiếu, chiều dương, véc-tơ lực, đơn vị chuẩn SI (m, kg, s, A, V, Ω) và bản chất định luật bảo toàn.'
+      : subjKey === 'chemistry'
+      ? 'Luôn kiểm tra cân bằng phương trình hóa học, bảo toàn khối lượng/mol/electron/điện tích, điều kiện phản ứng ($t^\\circ$, xúc tác, pH) và cấu trúc phân tử.'
+      : subjKey === 'biology'
+      ? 'Luôn kiểm tra cơ chế phân tử–tế bào, chiều mạch $5\'\\to 3\'$, quy luật di truyền, cân bằng nội môi và mối liên hệ cấu trúc–chức năng.'
       : 'Luôn kiểm tra giới hạn $N$, độ phức tạp thời gian/bộ nhớ $\\mathcal{O}(\\dots)$, tràn số `long long` ($10^9 \\times 10^9$), và test biên ($N=0, 1$).';
 
   const domainFocusEn =
@@ -2244,6 +2336,10 @@ function buildTutorSystemInstruction(
       ? 'Always verify domain conditions, edge cases, derivatives/signs, and geometric intuition.'
       : subjKey === 'physics'
       ? 'Always check reference frames, sign conventions, vectors, SI units (m, kg, s, A, V, Ω), and conservation laws.'
+      : subjKey === 'chemistry'
+      ? 'Always verify stoichiometry, conservation of mass/charge/electrons, reaction conditions (T, catalyst, pH), and molecular geometry.'
+      : subjKey === 'biology'
+      ? 'Always verify cellular/molecular mechanisms, 5\'-to-3\' directionality, genetic laws, homeostasis, and structure-function logic.'
       : 'Always check input constraints $N$, Big-O Time/Space complexity, 64-bit `long long` overflow, and edge tests ($N=0, 1$).';
 
   const katexRuleVi =
@@ -2328,7 +2424,15 @@ Chốt rõ kết quả cuối cùng và 1–2 lỗi sai dễ mất điểm cần
 Act as a senior academic mentor for ${subjKey.toUpperCase()}. Evaluate strengths/gaps from the student's questions using clear ### headings and bullet points, recommend concrete milestones, study hours/day, specific topics, and how ${subjKey.toUpperCase()} connects to their target university major.`
       : `CHẾ ĐỘ 3: ĐÁNH GIÁ TRÌNH ĐỘ, ĐỊNH HƯỚNG CHUYÊN NGÀNH & TƯ VẤN SƠ ĐỒ HỌC TẬP.
 Đóng vai cố vấn học thuật chuyên sâu môn ${
-          subjKey === 'math' ? 'Toán học' : subjKey === 'physics' ? 'Vật lí' : 'Tin học'
+        subjKey === 'math'
+          ? 'Toán học'
+          : subjKey === 'physics'
+          ? 'Vật lí'
+          : subjKey === 'chemistry'
+          ? 'Hóa học'
+          : subjKey === 'biology'
+          ? 'Sinh học'
+          : 'Tin học'
         }. Chia thành các mục \`### \` và gạch đầu dòng rõ ràng: Đánh giá điểm mạnh/yếu, Lộ trình từng tuần, Thời lượng mỗi ngày và Định hướng chuyên ngành.`;
   }
 
@@ -2418,8 +2522,13 @@ app.post('/api/gemini/tutor/stream', async (req: Request, res: Response) => {
 
     const ai = getGenAI();
     const isEn = language === 'en';
-    const subjKey: 'math' | 'physics' | 'cs' =
-      context?.subject === 'physics' || context?.subject === 'cs' ? context.subject : 'math';
+    const subjKey: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' =
+      context?.subject === 'physics' ||
+      context?.subject === 'chemistry' ||
+      context?.subject === 'biology' ||
+      context?.subject === 'cs'
+        ? context.subject
+        : 'math';
     const modeKey: 'explain_no_answer' | 'full_solution' | 'diagnostic_roadmap' =
       context?.mode === 'full_solution' || context?.mode === 'diagnostic_roadmap'
         ? context.mode
@@ -2462,8 +2571,13 @@ app.post('/api/gemini/tutor', async (req: Request, res: Response) => {
 
     const ai = getGenAI();
     const isEn = language === 'en';
-    const subjKey: 'math' | 'physics' | 'cs' =
-      context?.subject === 'physics' || context?.subject === 'cs' ? context.subject : 'math';
+    const subjKey: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' =
+      context?.subject === 'physics' ||
+      context?.subject === 'chemistry' ||
+      context?.subject === 'biology' ||
+      context?.subject === 'cs'
+        ? context.subject
+        : 'math';
     const modeKey: 'explain_no_answer' | 'full_solution' | 'diagnostic_roadmap' =
       context?.mode === 'full_solution' || context?.mode === 'diagnostic_roadmap'
         ? context.mode
@@ -2538,15 +2652,26 @@ function hasDegenerateQuizOptions(options: unknown): boolean {
 
 app.post('/api/gemini/diagnostic-quiz', async (req: Request, res: Response) => {
   const { subject = 'math', grade = 'Lớp 12', targetMajor = 'Công nghệ thông tin / AI', selfLevel = 'Khá', language = 'vi' } = req.body || {};
-  const subj: 'math' | 'physics' | 'cs' = subject === 'physics' || subject === 'cs' ? subject : 'math';
+  const subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' =
+    subject === 'physics' || subject === 'chemistry' || subject === 'biology' || subject === 'cs'
+      ? subject
+      : 'math';
   const isEn = language === 'en';
 
   try {
     const ai = getGenAI();
     const subjectName =
-      subj === 'math' ? (isEn ? 'Mathematics' : 'Toán học')
-      : subj === 'physics' ? (isEn ? 'Physics' : 'Vật lí')
-      : (isEn ? 'Computer Science (C++/Python & Algorithms)' : 'Tin học (Thuật toán & C++/Python)');
+      subj === 'math'
+        ? isEn ? 'Mathematics' : 'Toán học'
+        : subj === 'physics'
+        ? isEn ? 'Physics' : 'Vật lí'
+        : subj === 'chemistry'
+        ? isEn ? 'Chemistry' : 'Hóa học'
+        : subj === 'biology'
+        ? isEn ? 'Biology' : 'Sinh học'
+        : isEn
+        ? 'Computer Science (C++/Python & Algorithms)'
+        : 'Tin học (Thuật toán & C++/Python)';
 
     const systemInstruction = isEn
       ? `You are a strict STEM curriculum examiner. Output ONLY valid JSON matching:
@@ -2644,7 +2769,10 @@ app.post('/api/gemini/diagnostic-roadmap', async (req: Request, res: Response) =
     language = 'vi'
   } = req.body || {};
 
-  const subj: 'math' | 'physics' | 'cs' = subject === 'physics' || subject === 'cs' ? subject : 'math';
+  const subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' =
+    subject === 'physics' || subject === 'chemistry' || subject === 'biology' || subject === 'cs'
+      ? subject
+      : 'math';
   const isEn = language === 'en';
 
   const knowledgeItems = Array.isArray(quizAnswers)
@@ -2664,9 +2792,17 @@ app.post('/api/gemini/diagnostic-roadmap', async (req: Request, res: Response) =
   try {
     const ai = getGenAI();
     const subjectName =
-      subj === 'math' ? (isEn ? 'Mathematics' : 'Toán học')
-      : subj === 'physics' ? (isEn ? 'Physics' : 'Vật lí')
-      : (isEn ? 'Computer Science' : 'Tin học');
+      subj === 'math'
+        ? isEn ? 'Mathematics' : 'Toán học'
+        : subj === 'physics'
+        ? isEn ? 'Physics' : 'Vật lí'
+        : subj === 'chemistry'
+        ? isEn ? 'Chemistry' : 'Hóa học'
+        : subj === 'biology'
+        ? isEn ? 'Biology' : 'Sinh học'
+        : isEn
+        ? 'Computer Science'
+        : 'Tin học';
 
     const answerTranscript = (quizAnswers || [])
       .map((a: any, i: number) =>
@@ -2758,7 +2894,7 @@ ${answerTranscript}`;
       throw new Error('Gemini chưa trả về đầy đủ sơ đồ lộ trình. Vui lòng thử tạo lại.');
     }
 
-    const validModules = new Set(['math', 'physics', 'cs', 'exams', 'arena', 'roadmap']);
+    const validModules = new Set(['math', 'physics', 'chemistry', 'biology', 'cs', 'exams', 'arena', 'roadmap']);
     return res.json({
       success: true,
       roadmap: {
@@ -2943,6 +3079,10 @@ app.post('/api/gemini/grade-exam-image', async (req: Request, res: Response) => 
     const subjName =
       subject === 'physics'
         ? isEn ? 'Physics' : 'Vật lí'
+        : subject === 'chemistry'
+        ? isEn ? 'Chemistry' : 'Hóa học'
+        : subject === 'biology'
+        ? isEn ? 'Biology' : 'Sinh học'
         : subject === 'cs'
         ? isEn ? 'Computer Science' : 'Tin học'
         : isEn ? 'Mathematics' : 'Toán học';
@@ -3110,6 +3250,10 @@ app.post('/api/gemini/exam-qa', async (req: Request, res: Response) => {
     const subjLabel =
       subject === 'physics'
         ? isEn ? 'Physics' : 'Vật lí'
+        : subject === 'chemistry'
+        ? isEn ? 'Chemistry' : 'Hóa học'
+        : subject === 'biology'
+        ? isEn ? 'Biology' : 'Sinh học'
         : subject === 'cs'
         ? isEn ? 'Computer Science' : 'Tin học'
         : isEn ? 'Mathematics' : 'Toán học';
@@ -3719,7 +3863,15 @@ app.post('/api/gemini/grade-mini-essay', async (req: Request, res: Response) => 
     const ai = getGenAI();
     const isEn = language === 'en';
     const subjLabel =
-      subject === 'physics' ? (isEn ? 'Physics' : 'Vật lí') : subject === 'cs' ? (isEn ? 'Computer Science' : 'Tin học') : isEn ? 'Mathematics' : 'Toán học';
+      subject === 'physics'
+        ? isEn ? 'Physics' : 'Vật lí'
+        : subject === 'chemistry'
+        ? isEn ? 'Chemistry' : 'Hóa học'
+        : subject === 'biology'
+        ? isEn ? 'Biology' : 'Sinh học'
+        : subject === 'cs'
+        ? isEn ? 'Computer Science' : 'Tin học'
+        : isEn ? 'Mathematics' : 'Toán học';
 
     const prompt = isEn
       ? `You are a ${subjLabel} teacher grading a student's short essay response (0 to 10 points) for lesson "${lessonTitle}", section "${stepTitle}".
@@ -3801,7 +3953,15 @@ app.post('/api/gemini/generate-step-quiz', async (req: Request, res: Response) =
     const ai = getGenAI();
     const isEn = language === 'en';
     const subjLabel =
-      subject === 'physics' ? 'Vật lí' : subject === 'cs' ? 'Tin học & Thuật toán' : 'Toán học';
+      subject === 'physics'
+        ? 'Vật lí'
+        : subject === 'chemistry'
+        ? 'Hóa học'
+        : subject === 'biology'
+        ? 'Sinh học'
+        : subject === 'cs'
+        ? 'Tin học & Thuật toán'
+        : 'Toán học';
 
     const systemInstruction = isEn
       ? `You are an expert STEM teacher. Output ONLY valid JSON matching:
@@ -3927,7 +4087,10 @@ app.post('/api/gemini/analyze-lesson-progress', async (req: Request, res: Respon
     language = 'vi'
   } = req.body || {};
 
-  const subj: 'math' | 'physics' | 'cs' = subject === 'physics' || subject === 'cs' ? subject : 'math';
+  const subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' =
+    subject === 'physics' || subject === 'chemistry' || subject === 'biology' || subject === 'cs'
+      ? subject
+      : 'math';
   const isEn = language === 'en';
   const safeSummary = Array.isArray(stepsSummary) ? stepsSummary : [];
 
@@ -4799,7 +4962,16 @@ app.post('/api/gemini/pdf-to-lesson', async (req: Request, res: Response) => {
 
     const ai = getGenAI();
     const isEn = language === 'en';
-    const subjLabel = subject === 'physics' ? 'Vật lí' : subject === 'cs' ? 'Tin học' : 'Toán học';
+    const subjLabel =
+      subject === 'physics'
+        ? 'Vật lí'
+        : subject === 'chemistry'
+        ? 'Hóa học'
+        : subject === 'biology'
+        ? 'Sinh học'
+        : subject === 'cs'
+        ? 'Tin học'
+        : 'Toán học';
 
     const systemInstruction = isEn
       ? `You are a master ${subjLabel} curriculum architect for grades 9–12. Transform the provided document/image into a crisp, mathematically accurate 5-step interactive Synapse lesson using LaTeX ($...$ / $$...$$).`
@@ -4924,7 +5096,13 @@ ${cleanText || '(Xem trực tiếp trong hình ảnh trang tài liệu đính k�
       success: true,
       lesson: {
         id: `custom_lesson_${Date.now()}`,
-        subject: subject === 'physics' || subject === 'cs' ? subject : 'math',
+        subject:
+          subject === 'physics' ||
+          subject === 'chemistry' ||
+          subject === 'biology' ||
+          subject === 'cs'
+            ? subject
+            : 'math',
         grade: String(grade || 'Lớp 12'),
         title: String(parsed?.title || titleHint || 'Bài giảng 5 bước từ tài liệu'),
         description: String(parsed?.description || 'Bài giảng được hệ thống Synapse AI cấu trúc hóa thành 5 bước học chủ động.'),
@@ -5019,7 +5197,7 @@ const SHOWCASE_DB_PATH = path.resolve(process.cwd(), '.showcase_db.json');
 interface ShowcaseItemServer {
   id: string;
   category: '3d_model' | '2d_canvas' | 'cs_algo';
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   title: string;
   description: string;
   authorName: string;
@@ -5245,7 +5423,12 @@ app.post('/api/showcase', (req: Request, res: Response) => {
   const category =
     body.category === '2d_canvas' || body.category === 'cs_algo' ? body.category : '3d_model';
   const subject =
-    body.subject === 'physics' || body.subject === 'cs' ? body.subject : 'math';
+    body.subject === 'physics' ||
+    body.subject === 'chemistry' ||
+    body.subject === 'biology' ||
+    body.subject === 'cs'
+      ? body.subject
+      : 'math';
 
   const newItem: ShowcaseItemServer = {
     id: `sc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -5526,12 +5709,12 @@ QUY TẮC BẮT BUỘC:
 2. Chỉ điều hướng ("navigate", "navigate_math_sim", "navigate_future", "navigate_monument", "set_background", "toggle_theme", "timer", "open_tutor") khi ý định rõ ràng (>75% chắc chắn).
 3. Nếu người dùng hỏi kiến thức/công thức/khái niệm khoa học -> chọn actionType="answer_qa" và viết câu trả lời súc tích dễ hiểu (2-3 câu) vào replyVi.
 - actionType nhận: "navigate" | "navigate_math_sim" | "navigate_future" | "navigate_monument" | "set_background" | "toggle_theme" | "timer" | "open_tutor" | "answer_qa" | "clarify" | "none"
-- targetSubject (khi navigate): "overview" | "roadmap" | "synapse_v2" | "spatial_3d" | "math" | "math_sims" | "physics" | "physics_sims" | "cs" | "exams" | "arena" | "forum" | "growth_hub" | "showcase"
+- targetSubject (khi navigate): "overview" | "roadmap" | "synapse_v2" | "spatial_3d" | "math" | "math_sims" | "physics" | "physics_sims" | "chemistry" | "chemistry_sims" | "biology" | "biology_sims" | "cs" | "cs_sims" | "exams" | "arena" | "forum" | "growth_hub" | "showcase"
 - targetMathTab (khi navigate_math_sim): "grapher" | "geometry" | "math3d"
-- targetFutureTab (khi navigate_future): "megastructures" | "galaxy3d" | "text_to_sim" | "paper_to_sim" | "infinite_canvas" | "audio_fft" | "silicon_neural" | "phone_sensor_lab" | "dual_hand_sandbox"
+- targetFutureTab (khi navigate_future): "megastructures" | "galaxy3d" | "text_to_sim" | "paper_to_sim" | "infinite_canvas" | "audio_fft" | "silicon_neural" | "phone_sensor_lab" | "dual_hand_sandbox" | "chem_reaction_3d" | "chem_orbital_vsepr_3d" | "bio_cell_atlas_3d" | "bio_dna_crispr_3d"
 - bgStyle (khi set_background): "ecosystem" | "molecules" | "ocean" | "sky" | "constellations" | "cosmic_galaxy" | "blueprint_tech" | "studio_grid" | "aurora_clean" | "minimal_solid"
 - timerAction: "start" | "pause" | "reset"
-- tutorSubject: "math" | "physics" | "cs"`;
+- tutorSubject: "math" | "physics" | "chemistry" | "biology" | "cs"`;
 
     const responseSchema = {
       type: Type.OBJECT,

@@ -14,6 +14,12 @@ export type ExamDiagramKind =
   | 'physics_rlc_circuit'
   | 'physics_optics'
   | 'physics_field_atom'
+  | 'chem_titration_curve'
+  | 'chem_enthalpy_kinetics'
+  | 'chem_galvanic_cell'
+  | 'bio_dna_transcription'
+  | 'bio_enzyme_kinetics'
+  | 'bio_population_growth'
   | 'cs_graph'
   | 'cs_tree'
   | 'cs_array_dp';
@@ -267,6 +273,93 @@ export function detectQuestionDiagram(
         captionEn: 'Illustrates array indices, DP state transitions, and sliding window range.'
       };
     }
+  }
+
+  if (subject === 'chemistry') {
+    if (
+      text.includes('chuẩn độ') ||
+      text.includes('ph ') ||
+      text.includes('đệm') ||
+      text.includes('axit') ||
+      text.includes('acid') ||
+      text.includes('naoh') ||
+      text.includes('hcl')
+    ) {
+      return {
+        kind: 'chem_titration_curve',
+        titleVi: 'Đường cong Chuẩn độ pH & Điểm tương đương',
+        titleEn: 'Acid-Base Titration pH Curve & Equivalence Point',
+        captionVi: 'Biểu diễn biến thiên pH theo thể tích chất chuẩn V(NaOH), bước nhảy pH và điểm nửa tương đương pH = pKa.',
+        captionEn: 'pH curve vs titrant volume V(NaOH), highlighting half-equivalence pH = pKa and equivalence jump.'
+      };
+    }
+    if (
+      text.includes('điện phân') ||
+      text.includes('pin') ||
+      text.includes('điện cực') ||
+      text.includes('suất điện động') ||
+      text.includes('oxi hóa') ||
+      text.includes('galvani')
+    ) {
+      return {
+        kind: 'chem_galvanic_cell',
+        titleVi: 'Sơ đồ Pin Điện hóa Galvani & Cầu muối',
+        titleEn: 'Galvanic Electrochemical Cell & Salt Bridge',
+        captionVi: 'Anode (-) xảy ra quá trình oxi hóa giải phóng electron sang Cathode (+) xảy ra quá trình khử; E°pin = E°(+) - E°(-).',
+        captionEn: 'Anode (-) oxidation releases electrons to Cathode (+) reduction; E°cell = E°cathode - E°anode.'
+      };
+    }
+    return {
+      kind: 'chem_enthalpy_kinetics',
+      titleVi: 'Giản đồ Năng lượng Hoạt hóa Ea & Biến thiên Enthalpy ΔH',
+      titleEn: 'Activation Energy Ea & Enthalpy ΔH Diagram',
+      captionVi: 'So sánh đường đi phản ứng có và không có xúc tác, trạng thái chuyển tiếp và ΔrH = H(sản phẩm) - H(chất đầu).',
+      captionEn: 'Reaction coordinate comparing catalyzed vs uncatalyzed barrier Ea and enthalpy change ΔrH.'
+    };
+  }
+
+  if (subject === 'biology') {
+    if (
+      text.includes('dna') ||
+      text.includes('gen') ||
+      text.includes('arn') ||
+      text.includes('mrna') ||
+      text.includes('operon') ||
+      text.includes('tái bản') ||
+      text.includes('nucleotit')
+    ) {
+      return {
+        kind: 'bio_dna_transcription',
+        titleVi: 'Sơ đồ Cơ chế Tái bản DNA – Phiên mã mRNA – Dịch mã',
+        titleEn: 'Central Dogma: DNA Replication, Transcription & Translation',
+        captionVi: 'Chiều tổng hợp mạch mới 5′→3′, nguyên tắc bổ sung A=T(U), G≡X và điều hòa Operon Lac.',
+        captionEn: '5′→3′ strand synthesis following complementary base pairing A=T(U), G≡C.'
+      };
+    }
+    if (
+      text.includes('enzyme') ||
+      text.includes('michaelis') ||
+      text.includes('quang hợp') ||
+      text.includes('hô hấp') ||
+      text.includes('thẩm thấu') ||
+      text.includes('bohr') ||
+      text.includes('neuron')
+    ) {
+      return {
+        kind: 'bio_enzyme_kinetics',
+        titleVi: 'Đường cong Động học Enzyme Michaelis–Menten & Sinh lí',
+        titleEn: 'Michaelis–Menten Enzyme Kinetics Curve',
+        captionVi: 'Tốc độ phản ứng V đạt tiệm cận Vmax khi bão hòa cơ chất [S]; tại V = Vmax/2 thì [S] = Km.',
+        captionEn: 'Reaction velocity V approaches Vmax at substrate saturation; [S] = Km at half-maximal rate.'
+      };
+    }
+    return {
+      kind: 'bio_population_growth',
+      titleVi: 'Đường cong Tăng trưởng Logistic & Cân bằng Quần thể',
+      titleEn: 'Logistic Population Growth & Equilibrium Curve',
+      captionVi: 'Mô hình dN/dt = rN(1 - N/K) tiệm cận sức chứa môi trường K và điểm uốn tăng trưởng cực đại N = K/2.',
+      captionEn: 'Logistic dynamics dN/dt = rN(1 - N/K) reaching carrying capacity K with peak slope at K/2.'
+    };
   }
 
   return null;
@@ -632,6 +725,108 @@ export const ExamQuestionDiagram: React.FC<ExamQuestionDiagramProps> = ({
                 </text>
               </g>
             ))}
+          </svg>
+        );
+
+      case 'chem_titration_curve':
+        return (
+          <svg viewBox="0 0 360 215" className="w-full h-full">
+            <line x1="48" y1="180" x2="328" y2="180" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.6" />
+            <line x1="48" y1="22" x2="48" y2="180" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.6" />
+            <line x1="48" y1="96" x2="320" y2="96" stroke="#94a3b8" strokeDasharray="4 3" strokeWidth="1" />
+            <line x1="196" y1="26" x2="196" y2="180" stroke="#f59e0b" strokeDasharray="4 3" strokeWidth="1.3" />
+            <path d="M 52 162 C 115 154, 170 144, 188 128 C 195 112, 197 68, 206 50 C 224 38, 278 34, 322 33" fill="none" stroke="#0ea5e9" strokeWidth="2.6" />
+            <circle cx="124" cy="148" r="4" fill="#10b981" />
+            <circle cx="196" cy="84" r="5" fill="#ef4444" stroke="#ffffff" strokeWidth="1.5" />
+            <text x="16" y="34" fill="currentColor" fontSize="11" fontWeight="700">pH 14</text>
+            <text x="20" y="99" fill="#64748b" fontSize="10" fontWeight="700">7.0</text>
+            <text x="202" y="84" fill="#ef4444" fontSize="10" fontWeight="800">Điểm TĐ</text>
+            <text x="86" y="138" fill="#10b981" fontSize="10" fontWeight="700">pH = pKa</text>
+            <text x="255" y="196" fill="currentColor" fontSize="10" fontWeight="700">V(NaOH) mL →</text>
+          </svg>
+        );
+
+      case 'chem_galvanic_cell':
+        return (
+          <svg viewBox="0 0 360 215" className="w-full h-full">
+            <rect x="38" y="82" width="110" height="104" rx="6" fill="rgba(14,165,233,0.08)" stroke="#0ea5e9" strokeWidth="1.8" />
+            <rect x="212" y="82" width="110" height="104" rx="6" fill="rgba(99,102,241,0.08)" stroke="#6366f1" strokeWidth="1.8" />
+            <rect x="66" y="66" width="18" height="92" rx="2" fill="#64748b" />
+            <rect x="276" y="66" width="18" height="92" rx="2" fill="#d97706" />
+            <path d="M 122 118 L 122 68 L 238 68 L 238 118" fill="none" stroke="#10b981" strokeWidth="12" strokeOpacity="0.35" strokeLinecap="round" />
+            <polyline points="75,66 75,32 285,32 285,66" fill="none" stroke="#f59e0b" strokeWidth="2.2" />
+            <circle cx="180" cy="32" r="14" fill="#0f172a" stroke="#f59e0b" strokeWidth="2" />
+            <text x="175" y="36" fill="#f59e0b" fontSize="12" fontWeight="800">V</text>
+            <text x="148" y="24" fill="#0ea5e9" fontSize="10" fontWeight="700">e⁻ →</text>
+            <text x="52" y="202" fill="#0ea5e9" fontSize="10" fontWeight="800">Anode (-)</text>
+            <text x="236" y="202" fill="#6366f1" fontSize="10" fontWeight="800">Cathode (+)</text>
+            <text x="155" y="84" fill="#10b981" fontSize="10" fontWeight="700">Cầu muối</text>
+          </svg>
+        );
+
+      case 'chem_enthalpy_kinetics':
+        return (
+          <svg viewBox="0 0 360 215" className="w-full h-full">
+            <line x1="42" y1="184" x2="328" y2="184" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.6" />
+            <line x1="42" y1="22" x2="42" y2="184" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.6" />
+            <line x1="56" y1="104" x2="128" y2="104" stroke="#3b82f6" strokeWidth="2.4" />
+            <line x1="238" y1="152" x2="318" y2="152" stroke="#10b981" strokeWidth="2.4" />
+            <path d="M 104 104 C 138 104, 152 34, 182 34 C 212 34, 224 152, 260 152" fill="none" stroke="#ef4444" strokeWidth="2.3" />
+            <path d="M 104 104 C 138 104, 154 68, 182 68 C 210 68, 224 152, 260 152" fill="none" stroke="#10b981" strokeDasharray="5 3" strokeWidth="2" />
+            <line x1="182" y1="34" x2="182" y2="104" stroke="#f59e0b" strokeDasharray="3 3" strokeWidth="1.4" />
+            <line x1="274" y1="104" x2="274" y2="152" stroke="#6366f1" strokeWidth="1.8" />
+            <text x="188" y="54" fill="#ef4444" fontSize="10" fontWeight="800">Ea (không XT)</text>
+            <text x="280" y="132" fill="#6366f1" fontSize="10" fontWeight="800">ΔrH &lt; 0</text>
+            <text x="60" y="96" fill="#3b82f6" fontSize="10" fontWeight="700">Chất đầu</text>
+            <text x="242" y="168" fill="#10b981" fontSize="10" fontWeight="700">Sản phẩm</text>
+          </svg>
+        );
+
+      case 'bio_dna_transcription':
+        return (
+          <svg viewBox="0 0 360 215" className="w-full h-full">
+            <line x1="36" y1="58" x2="324" y2="58" stroke="#3b82f6" strokeWidth="2.8" />
+            <line x1="36" y1="102" x2="324" y2="102" stroke="#0ea5e9" strokeWidth="2.8" />
+            {[70, 110, 150, 190, 230, 270].map((x, i) => (
+              <g key={x}>
+                <line x1={x} y1="58" x2={x} y2="102" stroke="#94a3b8" strokeWidth="2" />
+                <text x={x - 4} y="50" fill="#3b82f6" fontSize="10" fontWeight="800">{['A', 'T', 'G', 'X', 'A', 'G'][i]}</text>
+                <text x={x - 4} y="117" fill="#0ea5e9" fontSize="10" fontWeight="800">{['T', 'A', 'X', 'G', 'T', 'X'][i]}</text>
+              </g>
+            ))}
+            <path d="M 86 154 L 292 154" stroke="#10b981" strokeWidth="3" strokeLinecap="round" />
+            <text x="36" y="158" fill="#10b981" fontSize="11" fontWeight="800">mRNA 5′→3′:</text>
+            <text x="116" y="176" fill="#10b981" fontSize="11" fontWeight="700">U — A — X — G — U — X</text>
+          </svg>
+        );
+
+      case 'bio_enzyme_kinetics':
+        return (
+          <svg viewBox="0 0 360 215" className="w-full h-full">
+            <line x1="48" y1="180" x2="328" y2="180" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.6" />
+            <line x1="48" y1="22" x2="48" y2="180" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.6" />
+            <line x1="48" y1="42" x2="324" y2="42" stroke="#ef4444" strokeDasharray="5 3" strokeWidth="1.4" />
+            <line x1="48" y1="111" x2="112" y2="111" stroke="#f59e0b" strokeDasharray="3 3" strokeWidth="1.4" />
+            <line x1="112" y1="111" x2="112" y2="180" stroke="#f59e0b" strokeDasharray="3 3" strokeWidth="1.4" />
+            <path d="M 48 180 C 78 124, 114 78, 178 58 C 228 46, 278 45, 322 44" fill="none" stroke="#10b981" strokeWidth="2.8" />
+            <circle cx="112" cy="111" r="4.5" fill="#f59e0b" />
+            <text x="54" y="36" fill="#ef4444" fontSize="10" fontWeight="800">Vmax</text>
+            <text x="104" y="196" fill="#f59e0b" fontSize="10" fontWeight="800">Km</text>
+            <text x="240" y="196" fill="currentColor" fontSize="10" fontWeight="700">Nồng độ cơ chất [S] →</text>
+          </svg>
+        );
+
+      case 'bio_population_growth':
+        return (
+          <svg viewBox="0 0 360 215" className="w-full h-full">
+            <line x1="48" y1="180" x2="328" y2="180" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.6" />
+            <line x1="48" y1="22" x2="48" y2="180" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.6" />
+            <line x1="48" y1="44" x2="324" y2="44" stroke="#6366f1" strokeDasharray="5 3" strokeWidth="1.5" />
+            <path d="M 48 176 C 120 174, 152 135, 182 108 C 212 80, 244 47, 322 46" fill="none" stroke="#10b981" strokeWidth="2.8" />
+            <circle cx="182" cy="108" r="4.5" fill="#f59e0b" />
+            <text x="56" y="38" fill="#6366f1" fontSize="10" fontWeight="800">Sức chứa K</text>
+            <text x="190" y="114" fill="#f59e0b" fontSize="10" fontWeight="800">K/2 (Tăng nhanh nhất)</text>
+            <text x="260" y="196" fill="currentColor" fontSize="10" fontWeight="700">Thời gian t →</text>
           </svg>
         );
 

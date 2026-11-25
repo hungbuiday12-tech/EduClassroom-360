@@ -84,7 +84,7 @@ export interface LectureActionItem {
 
 interface InteractiveLectureRoomProps {
   lessonKey: string;
-  subject?: 'math' | 'physics' | 'cs';
+  subject?: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   physicsLesson?: PhysicsLesson;
   grade?: string;
   subjectAccent: 'indigo' | 'blue' | 'emerald' | 'amber';
@@ -611,7 +611,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
     } else {
       recordMistake(
         {
-          subject: subject === 'physics' || subject === 'cs' ? subject : 'math',
+          subject,
           sourceType: 'lecture_mcq',
           lessonKey,
           lessonTitle: title,
@@ -688,7 +688,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
     if (evaluation.score < 6.5) {
       recordMistake(
         {
-          subject: subject === 'physics' || subject === 'cs' ? subject : 'math',
+          subject,
           sourceType: 'lecture_essay',
           lessonKey,
           lessonTitle: title,
@@ -737,7 +737,7 @@ export const InteractiveLectureRoom: React.FC<InteractiveLectureRoomProps> = ({
       if (essaySpec) {
         recordMistake(
           {
-            subject: subject === 'physics' || subject === 'cs' ? subject : 'math',
+            subject,
             sourceType: 'lecture_essay',
             lessonKey,
             lessonTitle: title,

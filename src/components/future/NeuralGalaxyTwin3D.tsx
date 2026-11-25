@@ -70,7 +70,9 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
   const resetCamRef = useRef<(() => void) | null>(null);
   const flyToNodeRef = useRef<((nodeId: string) => void) | null>(null);
 
-  const [subjectFilter, setSubjectFilter] = useState<'all' | 'math' | 'physics' | 'cs'>('all');
+  const [subjectFilter, setSubjectFilter] = useState<
+    'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs'
+  >('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshTick, setRefreshTick] = useState(0);
   const [selectedNodeId, setSelectedNodeId] = useState<string>(ROADMAP_NODES[0]?.id || 'rm-math-9-1');
@@ -95,21 +97,30 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
     const errors = getErrorNotebook(user?.uid).filter((e) => !e.resolved);
     const streak = getStreakState(user?.uid);
 
-    const bySubjectOrder: Record<'math' | 'physics' | 'cs', RoadmapNode[]> = {
+    const bySubjectOrder: Record<
+      'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
+      RoadmapNode[]
+    > = {
       math: [],
       physics: [],
+      chemistry: [],
+      biology: [],
       cs: []
     };
-    ROADMAP_NODES.forEach((n) => bySubjectOrder[n.subject].push(n));
+    ROADMAP_NODES.forEach((n) => {
+      if (bySubjectOrder[n.subject]) bySubjectOrder[n.subject].push(n);
+    });
 
-    const sectorAngleBase: Record<'math' | 'physics' | 'cs', number> = {
+    const sectorAngleBase: Record<'math' | 'physics' | 'chemistry' | 'biology' | 'cs', number> = {
       math: 0,
-      physics: (Math.PI * 2) / 3,
-      cs: (Math.PI * 4) / 3
+      physics: (Math.PI * 2) / 5,
+      chemistry: (Math.PI * 4) / 5,
+      biology: (Math.PI * 6) / 5,
+      cs: (Math.PI * 8) / 5
     };
 
     const planets: GalaxyPlanetData[] = [];
-    (['math', 'physics', 'cs'] as const).forEach((subj) => {
+    (['math', 'physics', 'chemistry', 'biology', 'cs'] as const).forEach((subj) => {
       const list = bySubjectOrder[subj];
       const baseTheta = sectorAngleBase[subj];
       list.forEach((node, idx) => {
@@ -348,9 +359,11 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
     selectionHalo.rotation.x = Math.PI / 2;
     scene.add(selectionHalo);
 
-    const subjectColors: Record<'math' | 'physics' | 'cs', number> = {
+    const subjectColors: Record<'math' | 'physics' | 'chemistry' | 'biology' | 'cs', number> = {
       math: 0x38bdf8,
       physics: 0xf59e0b,
+      chemistry: 0x14b8a6,
+      biology: 0xec4899,
       cs: 0x10b981
     };
 
@@ -643,6 +656,26 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
       });
       return;
     }
+    if (node.subject === 'chemistry') {
+      navigate({
+        subject: 'chemistry',
+        chemistryView: 'lecture',
+        chemistryLessonId: node.targetLessonId || 'chem-9-1',
+        chemistryTab: 'theory',
+        tutorOpen: false
+      });
+      return;
+    }
+    if (node.subject === 'biology') {
+      navigate({
+        subject: 'biology',
+        biologyView: 'lecture',
+        biologyLessonId: node.targetLessonId || 'bio-9-1',
+        biologyTab: 'theory',
+        tutorOpen: false
+      });
+      return;
+    }
     navigate({
       subject: 'cs',
       csViewMode: 'curriculum',
@@ -662,8 +695,16 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
     window.setTimeout(() => flyToNodeRef.current?.(rec.node.id), 40);
   };
 
-  const subjectAccentText = (s: 'math' | 'physics' | 'cs') =>
-    s === 'math' ? 'text-sky-400' : s === 'physics' ? 'text-amber-400' : 'text-emerald-400';
+  const subjectAccentText = (s: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs') =>
+    s === 'math'
+      ? 'text-sky-400'
+      : s === 'physics'
+      ? 'text-amber-400'
+      : s === 'chemistry'
+      ? 'text-teal-400'
+      : s === 'biology'
+      ? 'text-pink-400'
+      : 'text-emerald-400';
 
   return (
     <div
@@ -684,7 +725,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
             <p className="text-xs text-slate-400 mt-1">
               {isEn
                 ? 'Click any orbital node to fly camera in, inspect mastery & SM-2 weak points, and warp straight into its lecture.'
-                : 'Xoay 360° & nhấp từng hành tinh kiến thức (Toán · Lí · Tin) để camera tự bay tới soi % thành thạo, vòng cảnh báo lỗi sai và vào thẳng bài học.'}
+                : 'Xoay 360° & nhấp từng hành tinh kiến thức (Toán · Lí · Hóa · Sinh · Tin) để camera tự bay tới soi % thành thạo, vòng cảnh báo lỗi sai và vào thẳng bài học.'}
             </p>
           </div>
 
@@ -694,6 +735,8 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
                 { id: 'all', label: isEn ? 'All Sectors' : 'Toàn bộ' },
                 { id: 'math', label: isEn ? 'Math' : 'Toán học' },
                 { id: 'physics', label: isEn ? 'Physics' : 'Vật lí' },
+                { id: 'chemistry', label: isEn ? 'Chemistry' : 'Hóa học' },
+                { id: 'biology', label: isEn ? 'Biology' : 'Sinh học' },
                 { id: 'cs', label: isEn ? 'CS' : 'Tin học' }
               ] as const
             ).map((f) => (
@@ -701,7 +744,7 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
                 key={f.id}
                 type="button"
                 onClick={() => setSubjectFilter(f.id)}
-                className={`min-h-[36px] px-3 py-1.5 rounded text-xs font-semibold border transition cursor-pointer ${
+                className={`min-h-[36px] px-3 py-1.5 rounded text-xs font-semibold border transition cursor-pointer whitespace-nowrap shrink-0 ${
                   subjectFilter === f.id
                     ? 'bg-sky-600 border-sky-400 text-white'
                     : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
@@ -803,6 +846,12 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
               <span className="w-2.5 h-2.5 rounded-sm bg-amber-400 inline-block" /> Vật lí
             </span>
             <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-teal-400 inline-block" /> Hóa học
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-pink-400 inline-block" /> Sinh học
+            </span>
+            <span className="inline-flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block" /> Tin học
             </span>
             <span className="inline-flex items-center gap-1.5">
@@ -824,6 +873,10 @@ export const NeuralGalaxyTwin3D: React.FC<NeuralGalaxyTwin3DProps> = ({ language
                     ? 'TOÁN HỌC'
                     : selectedPlanet.node.subject === 'physics'
                     ? 'VẬT LÍ'
+                    : selectedPlanet.node.subject === 'chemistry'
+                    ? 'HÓA HỌC'
+                    : selectedPlanet.node.subject === 'biology'
+                    ? 'SINH HỌC'
                     : 'TIN HỌC'}{' '}
                   · {selectedPlanet.node.grade}
                 </span>

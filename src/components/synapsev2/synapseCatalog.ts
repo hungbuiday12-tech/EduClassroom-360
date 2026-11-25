@@ -79,7 +79,7 @@ export interface MonumentDefinition {
   secondaryLabelEn: string;
   secondaryUnit: string;
   secondaryRange: [number, number, number];
-  relatedSubject: 'math' | 'physics' | 'cs';
+  relatedSubject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   relatedLabelVi: string;
   relatedLabelEn: string;
 }
@@ -387,9 +387,9 @@ export const MONUMENT_CATALOG: MonumentDefinition[] = [
     secondaryLabelEn: 'Nanobot Scan Speed',
     secondaryUnit: '%',
     secondaryRange: [20, 100, 70],
-    relatedSubject: 'cs',
-    relatedLabelVi: 'Mở Thuật toán Chuỗi & DP',
-    relatedLabelEn: 'Open String & DP Algos'
+    relatedSubject: 'biology',
+    relatedLabelVi: 'Mở Phòng Lab Sinh học 3D',
+    relatedLabelEn: 'Open Biology 3D Lab'
   },
   {
     id: 'penning_antimatter',

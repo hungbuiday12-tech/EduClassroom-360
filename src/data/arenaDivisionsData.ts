@@ -15,8 +15,8 @@ export const ARENA_DIVISIONS: ArenaDivisionMeta[] = [
     labelEn: 'Grade 9 · Standard',
     shortLabelVi: 'Lớp 9 Chuẩn',
     shortLabelEn: 'G9 Standard',
-    descriptionVi: 'Hệ phương trình, Vi-ét, hình tròn, Định luật Ôm, thấu kính & thuật toán cơ bản ôn thi vào lớp 10.',
-    descriptionEn: 'Equations, Vieta, circle geometry, Ohm law, lenses & foundational algorithms for Grade 10 entrance prep.',
+    descriptionVi: 'Hệ phương trình, Định luật Ôm, axit-bazơ, Menđen & thuật toán cơ bản ôn thi vào lớp 10.',
+    descriptionEn: 'Equations, Ohm law, acid-base reactions, Mendel genetics & foundational algorithms for G10 entrance.',
     badgeColor: 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-200 border-sky-300 dark:border-sky-700'
   },
   {
@@ -27,8 +27,8 @@ export const ARENA_DIVISIONS: ArenaDivisionMeta[] = [
     labelEn: 'Grade 9 · Specialized',
     shortLabelVi: 'Lớp 9 Chuyên',
     shortLabelEn: 'G9 Spec',
-    descriptionVi: 'Nghiệm nguyên, BĐT Cauchy, mạch cầu điện trở, quang hình ghép & số học/tham lam thi Chuyên vào 10.',
-    descriptionEn: 'Diophantine equations, AM-GM, bridge circuits, combined optics & number theory for Specialized HS entrance.',
+    descriptionVi: 'Nghiệm nguyên, mạch cầu điện trở, chuẩn độ kim loại, ADN/ARN & số học thi Chuyên vào 10.',
+    descriptionEn: 'Diophantine equations, bridge circuits, redox titration, DNA/RNA & number theory for Specialized HS.',
     badgeColor: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200 border-indigo-300 dark:border-indigo-700'
   },
   {
@@ -39,8 +39,8 @@ export const ARENA_DIVISIONS: ArenaDivisionMeta[] = [
     labelEn: 'Grade 10 · Standard',
     shortLabelVi: 'Lớp 10 Chuẩn',
     shortLabelEn: 'G10 Standard',
-    descriptionVi: 'Bất phương trình bậc 2, hệ thức lượng, rơi tự do, động lực học Newton & lập trình mảng/hàm cơ bản.',
-    descriptionEn: 'Quadratic inequalities, triangle law, free fall, Newton laws & basic array programming.',
+    descriptionVi: 'Bất phương trình, rơi tự do, bảng tuần hoàn, chu kì tế bào & lập trình mảng cơ bản.',
+    descriptionEn: 'Quadratic inequalities, free fall, periodic table, cell cycle & basic array programming.',
     badgeColor: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-200 border-cyan-300 dark:border-cyan-700'
   },
   {
@@ -51,8 +51,8 @@ export const ARENA_DIVISIONS: ArenaDivisionMeta[] = [
     labelEn: 'Grade 10 · Specialized',
     shortLabelVi: 'Lớp 10 Chuyên',
     shortLabelEn: 'G10 Spec',
-    descriptionVi: 'Bất đẳng thức Cauchy-Schwarz, tâm tỉ cự, ném xiên mặt nghiêng, va chạm đàn hồi & Prefix Sum / Hai con trỏ.',
-    descriptionEn: 'Cauchy-Schwarz, barycenter, inclined-plane projectile, elastic collisions & Two Pointers / Prefix Sum.',
+    descriptionVi: 'Cauchy-Schwarz, ném xiên, hình học VSEPR, enzim-hô hấp tế bào & Prefix Sum / Hai con trỏ.',
+    descriptionEn: 'Cauchy-Schwarz, inclined projectile, VSEPR geometry, enzymes/respiration & Two Pointers.',
     badgeColor: 'bg-violet-100 text-violet-800 dark:bg-violet-900/50 dark:text-violet-200 border-violet-300 dark:border-violet-700'
   },
   {
@@ -63,8 +63,8 @@ export const ARENA_DIVISIONS: ArenaDivisionMeta[] = [
     labelEn: 'Grade 11 · Standard',
     shortLabelVi: 'Lớp 11 Chuẩn',
     shortLabelEn: 'G11 Standard',
-    descriptionVi: 'Lượng giác, cấp số cộng/nhân, giới hạn, dao động điều hòa, sóng cơ & tìm kiếm sắp xếp.',
-    descriptionEn: 'Trigonometry, sequences, limits, harmonic oscillation, mechanical waves & search/sort algorithms.',
+    descriptionVi: 'Lượng giác, giới hạn, sóng cơ, pH-hiđrocacbon, quang hợp-tuần hoàn & tìm kiếm sắp xếp.',
+    descriptionEn: 'Trigonometry, limits, waves, pH-hydrocarbons, photosynthesis-circulation & search/sort.',
     badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700'
   },
   {
@@ -75,8 +75,8 @@ export const ARENA_DIVISIONS: ArenaDivisionMeta[] = [
     labelEn: 'Grade 11 · Specialized',
     shortLabelVi: 'Lớp 11 Chuyên',
     shortLabelEn: 'G11 Spec',
-    descriptionVi: 'Dãy số truy hồi, khoảng cách không gian nâng cao, hệ dao động ghép, tụ điện phức & đồ thị BFS/DFS/DP.',
-    descriptionEn: 'Recurrence sequences, 3D distances, coupled oscillators, capacitor networks & Graph BFS/DFS/DP.',
+    descriptionVi: 'Dãy số truy hồi, hệ dao động ghép, cân bằng Le Chatelier, thực vật C4-xinap & BFS/DFS/DP.',
+    descriptionEn: 'Recurrence sequences, coupled oscillators, Le Chatelier equilibrium, C4/synapse & Graph DP.',
     badgeColor: 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-200 border-teal-300 dark:border-teal-700'
   },
   {
@@ -87,8 +87,8 @@ export const ARENA_DIVISIONS: ArenaDivisionMeta[] = [
     labelEn: 'Grade 12 · Standard',
     shortLabelVi: 'Lớp 12 Chuẩn',
     shortLabelEn: 'G12 Standard',
-    descriptionVi: 'Cực trị, tích phân, hình Oxyz, khí lí tưởng, mạch RLC cơ bản, hạt nhân & AI / Mạng / Web chuẩn Bộ GD&ĐT 2025.',
-    descriptionEn: 'Extrema, integrals, Oxyz geometry, ideal gas, basic RLC, nuclear physics & AI/Networking/Web (2025 curriculum).',
+    descriptionVi: 'Cực trị, tích phân, khí lí tưởng, este-pin điện, di truyền quần thể & AI/Web chuẩn Bộ GD&ĐT.',
+    descriptionEn: 'Extrema, integrals, ideal gas, esters-galvanic cells, population genetics & AI/Web.',
     badgeColor: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border-amber-300 dark:border-amber-700'
   },
   {
@@ -99,8 +99,8 @@ export const ARENA_DIVISIONS: ArenaDivisionMeta[] = [
     labelEn: 'Grade 12 · Specialized',
     shortLabelVi: 'Lớp 12 Chuyên',
     shortLabelEn: 'G12 Spec',
-    descriptionVi: 'Tích phân hàm ẩn, cực trị hàm hợp, RLC biến thiên cộng hưởng, Lorentz & Segment Tree / DP Bitmask.',
-    descriptionEn: 'Implicit-function integrals, composite extrema, variable RLC resonance, Lorentz & Segment Tree / Bitmask DP.',
+    descriptionVi: 'Hàm ẩn, cộng hưởng RLC, điện phân-phức chất, CRISPR/Operon Lac & Segment Tree / DP Bitmask.',
+    descriptionEn: 'Composite extrema, RLC resonance, electrolysis-complexes, CRISPR/Operon & Segment Tree.',
     badgeColor: 'bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200 border-rose-300 dark:border-rose-700'
   },
   {
@@ -111,15 +111,15 @@ export const ARENA_DIVISIONS: ArenaDivisionMeta[] = [
     labelEn: 'Olympiad & National Team',
     shortLabelVi: 'HSG / Olympic',
     shortLabelEn: 'Olympiad',
-    descriptionVi: 'Đấu trường cấp Tỉnh / Quốc gia / Olympic 30-4 / VNOI: Số học Euler, cơ học vật rắn, nhiệt động lực học & Đồ thị nâng cao.',
-    descriptionEn: 'Provincial/National Olympiad & VNOI track: Euler totient, rigid body dynamics, thermodynamics & advanced graphs.',
+    descriptionVi: 'Đấu trường cấp Tỉnh / Quốc gia / Olympic / VNOI: Số học Euler, vật rắn, nhiệt động hóa học, Michaelis-Menten & Đồ thị.',
+    descriptionEn: 'National Olympiad & VNOI track: Euler totient, rigid body, chem thermodynamics, enzyme kinetics & graphs.',
     badgeColor: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200 border-purple-300 dark:border-purple-700'
   }
 ];
 
 export const ARENA_DIVISION_MCQ_BANK: Record<
   ArenaDivisionId,
-  Record<ArenaSubject, ArenaQuestionMCQ[]>
+  Record<'math' | 'physics' | 'cs', ArenaQuestionMCQ[]>
 > = {
   // ========================== LỚP 9 KHÔNG CHUYÊN ==========================
   '9k': {
@@ -1605,7 +1605,7 @@ if __name__ == '__main__':
 
 export const ARENA_DIVISION_ESSAY_BANK: Record<
   ArenaDivisionId,
-  Record<ArenaSubject, ArenaEssayPrompt[]>
+  Record<'math' | 'physics' | 'cs', ArenaEssayPrompt[]>
 > = {
   '9k': {
     math: [

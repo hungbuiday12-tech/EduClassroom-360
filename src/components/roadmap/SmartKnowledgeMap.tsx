@@ -22,11 +22,11 @@ import { getPhysicsSimCounts } from '../../data/physicsDomainsData';
 
 const SIM_COUNTS = getPhysicsSimCounts();
 
-type MapFocusFilter = 'all' | 'math' | 'physics' | 'cs';
+type MapFocusFilter = 'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 
 interface SmartKnowledgeMapSummary {
   lessonKey: string;
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   lessonTitle: string;
   overallMastery: number;
   weakPoints: string[];
@@ -37,13 +37,13 @@ interface SmartKnowledgeMapProps {
   isEn: boolean;
   completedNodeIds: string[];
   savedLessonSummaries: SmartKnowledgeMapSummary[];
-  aiRoadmaps: Partial<Record<'math' | 'physics' | 'cs', PersonalizedRoadmapResult>>;
+  aiRoadmaps: Partial<Record<'math' | 'physics' | 'chemistry' | 'biology' | 'cs', PersonalizedRoadmapResult>>;
   dailyStudyMinutes: Array<{ dayLabel: string; totalMinutes: number }>;
   activePlanGrade: string;
   activePlanHoursPerWeek: number;
   onSelectRoadmapNode: (nodeId: string) => void;
-  onOpenNodeLesson: (subject: 'math' | 'physics' | 'cs', lessonId?: string, csTrackId?: CSTrackId) => void;
-  onOpenDiagnosticAI: (subject: 'math' | 'physics' | 'cs', topicTitle?: string) => void;
+  onOpenNodeLesson: (subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs', lessonId?: string, csTrackId?: CSTrackId) => void;
+  onOpenDiagnosticAI: (subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs', topicTitle?: string) => void;
   onNavigateSubject: (subject: SubjectType) => void;
 }
 
@@ -51,6 +51,8 @@ type GraphNodeId =
   | 'student_profile'
   | 'math_pillar'
   | 'physics_pillar'
+  | 'chemistry_pillar'
+  | 'biology_pillar'
   | 'cs_pillar'
   | 'gap_detector'
   | 'practice_labs'
@@ -64,47 +66,69 @@ interface GraphNodeDef {
   labelEn: string;
   subVi: string;
   subEn: string;
-  tone: 'cyan' | 'sky' | 'amber' | 'emerald' | 'violet' | 'indigo';
-  subjectTag?: 'math' | 'physics' | 'cs';
+  tone: 'cyan' | 'sky' | 'amber' | 'teal' | 'rose' | 'emerald' | 'violet' | 'indigo';
+  subjectTag?: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 }
 
 const GRAPH_NODES: GraphNodeDef[] = [
   {
     id: 'student_profile',
-    xPct: 14,
-    yPct: 22,
+    xPct: 12,
+    yPct: 24,
     labelVi: 'Hồ Sơ Học Sinh',
     labelEn: 'Student Profile',
-    subVi: 'Dữ liệu năng lực',
-    subEn: 'Competency Vector',
+    subVi: 'Dữ liệu 5 môn STEM',
+    subEn: '5-Subject Vector',
     tone: 'sky'
   },
   {
     id: 'math_pillar',
-    xPct: 45,
-    yPct: 22,
+    xPct: 38,
+    yPct: 18,
     labelVi: 'Toán · Giải Tích & Oxyz',
     labelEn: 'Math · 2D & Oxyz',
-    subVi: 'Đồ thị & Hình không gian',
-    subEn: 'Calculus & Geometry',
+    subVi: 'Đồ thị & Hình 3D',
+    subEn: 'Calculus & 3D',
     tone: 'cyan',
     subjectTag: 'math'
   },
   {
     id: 'physics_pillar',
-    xPct: 77,
-    yPct: 20,
+    xPct: 64,
+    yPct: 18,
     labelVi: `Vật Lí · ${SIM_COUNTS.domainCount} Chuyên Đề`,
     labelEn: `Physics · ${SIM_COUNTS.domainCount} Domains`,
     subVi: `${SIM_COUNTS.count2D} Lab 2D + ${SIM_COUNTS.count3D} Lab 3D`,
-    subEn: 'Interactive 2D/3D Labs',
+    subEn: '2D/3D Physics Labs',
     tone: 'amber',
     subjectTag: 'physics'
   },
   {
+    id: 'chemistry_pillar',
+    xPct: 38,
+    yPct: 50,
+    labelVi: 'Hóa · Vô Cơ & Hữu Cơ',
+    labelEn: 'Chem · Reactions & 3D',
+    subVi: '52 Bài · 30 Lab 2D + 16 Lab 3D',
+    subEn: '52 Lessons · 2D/3D Lab',
+    tone: 'teal',
+    subjectTag: 'chemistry'
+  },
+  {
+    id: 'biology_pillar',
+    xPct: 64,
+    yPct: 50,
+    labelVi: 'Sinh · Tế Bào & Di Truyền',
+    labelEn: 'Bio · Genetics & Cell',
+    subVi: '34 Bài · 30 Lab 2D + 16 Lab 3D',
+    subEn: '34 Lessons · 2D/3D Lab',
+    tone: 'rose',
+    subjectTag: 'biology'
+  },
+  {
     id: 'gap_detector',
-    xPct: 33,
-    yPct: 60,
+    xPct: 13,
+    yPct: 68,
     labelVi: 'Syn AI Lọc Lỗ Hổng',
     labelEn: 'Syn AI Gap Analyzer',
     subVi: 'TN + Tự luận tự lưu',
@@ -113,32 +137,32 @@ const GRAPH_NODES: GraphNodeDef[] = [
   },
   {
     id: 'cs_pillar',
-    xPct: 58,
-    yPct: 48,
+    xPct: 38,
+    yPct: 82,
     labelVi: 'Tin · 5 Lộ Trình C++',
     labelEn: 'CS · 5 C++ Tracks',
-    subVi: 'VNOI + 4 Tracks (18 chặng)',
+    subVi: 'VNOI + 4 Tracks',
     subEn: 'VNOI + 4 Tracks',
     tone: 'emerald',
     subjectTag: 'cs'
   },
   {
     id: 'practice_labs',
-    xPct: 58,
-    yPct: 80,
+    xPct: 64,
+    yPct: 82,
     labelVi: 'Phòng Lab 3D & Judge',
-    labelEn: '3D Labs & Sublime IDE',
-    subVi: 'Synapse Pre · 10-Ngón · IDE',
-    subEn: 'Simulations & Judge',
+    labelEn: '3D Labs & IDE',
+    subVi: 'Synapse Pre · 28 Labs',
+    subEn: 'Synapse Pre · 28 Labs',
     tone: 'indigo'
   },
   {
     id: 'mastery_goal',
-    xPct: 85,
-    yPct: 72,
+    xPct: 88,
+    yPct: 50,
     labelVi: 'Đích Thông Thạo',
     labelEn: 'Mastery Target',
-    subVi: 'Thi THPT / HSG',
+    subVi: '1.750 Đề & Arena',
     subEn: 'Exam Readiness',
     tone: 'cyan'
   }
@@ -150,17 +174,18 @@ const GRAPH_STREAMS: Array<{
   color: string;
   reverse?: boolean;
   count: number;
-  subjectTag?: 'math' | 'physics' | 'cs';
+  subjectTag?: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 }> = [
-  { id: 's-1', d: 'M 140 62 C 250 32, 330 84, 450 62', color: '#22d3ee', count: 4, subjectTag: 'math' },
-  { id: 's-2', d: 'M 140 62 C 210 128, 250 155, 330 168', color: '#38bdf8', count: 2 },
-  { id: 's-3', d: 'M 450 62 C 560 40, 660 72, 770 56', color: '#f59e0b', count: 2, subjectTag: 'physics' },
-  { id: 's-4', d: 'M 450 62 C 500 95, 530 116, 580 134', color: '#34d399', count: 2, subjectTag: 'cs' },
-  { id: 's-5', d: 'M 330 168 C 430 155, 490 142, 580 134', color: '#a78bfa', reverse: true, count: 2 },
-  { id: 's-6', d: 'M 330 168 C 415 215, 485 228, 580 224', color: '#818cf8', count: 3 },
-  { id: 's-7', d: 'M 580 134 C 690 138, 760 156, 850 202', color: '#10b981', count: 2, subjectTag: 'cs' },
-  { id: 's-8', d: 'M 580 224 C 690 232, 770 220, 850 202', color: '#38bdf8', count: 2 },
-  { id: 's-9', d: 'M 770 56 C 835 110, 845 152, 850 202', color: '#fbbf24', count: 2, subjectTag: 'physics' }
+  { id: 's-1', d: 'M 120 67 C 220 35, 290 48, 380 50', color: '#22d3ee', count: 3, subjectTag: 'math' },
+  { id: 's-2', d: 'M 120 67 C 195 105, 285 130, 380 140', color: '#2dd4bf', count: 2, subjectTag: 'chemistry' },
+  { id: 's-3', d: 'M 120 67 C 115 120, 122 150, 130 190', color: '#a78bfa', count: 2 },
+  { id: 's-4', d: 'M 380 50 C 480 42, 540 52, 640 50', color: '#f59e0b', count: 2, subjectTag: 'physics' },
+  { id: 's-5', d: 'M 380 140 C 480 135, 540 142, 640 140', color: '#fb7185', count: 2, subjectTag: 'biology' },
+  { id: 's-6', d: 'M 130 190 C 220 218, 290 228, 380 230', color: '#34d399', count: 2, subjectTag: 'cs' },
+  { id: 's-7', d: 'M 380 230 C 490 230, 540 230, 640 230', color: '#818cf8', reverse: true, count: 2 },
+  { id: 's-8', d: 'M 640 50 C 750 68, 815 105, 880 140', color: '#fbbf24', count: 2, subjectTag: 'physics' },
+  { id: 's-9', d: 'M 640 140 C 745 140, 815 140, 880 140', color: '#fb7185', count: 2, subjectTag: 'biology' },
+  { id: 's-10', d: 'M 640 230 C 750 210, 815 175, 880 140', color: '#38bdf8', count: 2 }
 ];
 
 export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
@@ -192,14 +217,20 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
   const metrics = useMemo(() => {
     const mathNodes = ROADMAP_NODES.filter((n) => n.subject === 'math');
     const physNodes = ROADMAP_NODES.filter((n) => n.subject === 'physics');
+    const chemNodes = ROADMAP_NODES.filter((n) => n.subject === 'chemistry');
+    const bioNodes = ROADMAP_NODES.filter((n) => n.subject === 'biology');
     const csNodes = ROADMAP_NODES.filter((n) => n.subject === 'cs');
 
     const mathDone = mathNodes.filter((n) => completedNodeIds.includes(n.id)).length;
     const physDone = physNodes.filter((n) => completedNodeIds.includes(n.id)).length;
+    const chemDone = chemNodes.filter((n) => completedNodeIds.includes(n.id)).length;
+    const bioDone = bioNodes.filter((n) => completedNodeIds.includes(n.id)).length;
     const csDone = csNodes.filter((n) => completedNodeIds.includes(n.id)).length;
 
     const mathPct = mathNodes.length ? Math.round((mathDone / mathNodes.length) * 100) : 0;
     const physPct = physNodes.length ? Math.round((physDone / physNodes.length) * 100) : 0;
+    const chemPct = chemNodes.length ? Math.round((chemDone / chemNodes.length) * 100) : 0;
+    const bioPct = bioNodes.length ? Math.round((bioDone / bioNodes.length) * 100) : 0;
     const csPct = csNodes.length ? Math.round((csDone / csNodes.length) * 100) : 0;
 
     const totalTrackStages = CS_SPECIALIZED_TRACKS.reduce((acc, tr) => acc + tr.stages.length, 0);
@@ -240,6 +271,12 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
       physDone,
       physTotal: physNodes.length,
       physPct,
+      chemDone,
+      chemTotal: chemNodes.length,
+      chemPct,
+      bioDone,
+      bioTotal: bioNodes.length,
+      bioPct,
       csDone,
       csTotal: csNodes.length,
       csPct,
@@ -291,15 +328,15 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
     return { pts, linePath, areaPath };
   }, [savedLessonSummaries, metrics.overallRoadmapPct]);
 
-  // Left analytics vertical bars (12 knowledge vectors across Math/Physics/CS)
+  // Left analytics vertical bars (12 knowledge vectors across Math/Physics/Chem/Bio/CS)
   const analyticsHistogram = useMemo(() => {
     const rawValues = [
       Math.max(26, metrics.mathPct || 48),
       64,
       Math.max(32, metrics.physPct || 52),
-      84,
+      Math.max(30, metrics.chemPct || 50),
+      Math.max(30, metrics.bioPct || 46),
       Math.max(28, metrics.csPct || 44),
-      56,
       78,
       Math.max(35, metrics.csTrackPct || 62),
       92,
@@ -324,6 +361,12 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
     const nextPhys: RoadmapNode | undefined =
       ROADMAP_NODES.find((n) => n.subject === 'physics' && !completedNodeIds.includes(n.id)) ||
       ROADMAP_NODES.find((n) => n.subject === 'physics');
+    const nextChem: RoadmapNode | undefined =
+      ROADMAP_NODES.find((n) => n.subject === 'chemistry' && !completedNodeIds.includes(n.id)) ||
+      ROADMAP_NODES.find((n) => n.subject === 'chemistry');
+    const nextBio: RoadmapNode | undefined =
+      ROADMAP_NODES.find((n) => n.subject === 'biology' && !completedNodeIds.includes(n.id)) ||
+      ROADMAP_NODES.find((n) => n.subject === 'biology');
     const nextCs: RoadmapNode | undefined =
       ROADMAP_NODES.find((n) => n.subject === 'cs' && !completedNodeIds.includes(n.id)) ||
       ROADMAP_NODES.find((n) => n.subject === 'cs');
@@ -352,6 +395,32 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
           ctaLabel: isEn ? 'Launch Physics Lab' : 'Vào Lab & Bài Vật Lí',
           onLaunch: () => onOpenNodeLesson('physics', nextPhys?.targetLessonId),
           onInspect: () => nextPhys && onSelectRoadmapNode(nextPhys.id)
+        };
+      case 'chemistry_pillar':
+        return {
+          title: isEn
+            ? 'Chemistry · VSEPR 3D, Electrochemistry & Organic Synthesis'
+            : 'Hóa Học · Cấu Trúc VSEPR 3D, Pin Điện Hóa & Tổng Hợp Hữu Cơ',
+          metric: `${metrics.chemDone}/${metrics.chemTotal} (${metrics.chemPct}%)`,
+          desc: isEn
+            ? `52 lessons (2018, 2006, Olympiad) + 30 2D & 16 3D labs. Next: ${nextChem?.titleEn || 'Atomic Orbitals'}`
+            : `52 bài giảng (GDPT 2018, 2006, Chuyên Hóa) + 30 Lab 2D & 16 Lab 3D. Tiếp theo: ${nextChem?.title || 'Cấu tạo nguyên tử & VSEPR'}`,
+          ctaLabel: isEn ? 'Open Chemistry Lab' : 'Vào Lab & Bài Hóa Học',
+          onLaunch: () => onOpenNodeLesson('chemistry', nextChem?.targetLessonId),
+          onInspect: () => nextChem && onSelectRoadmapNode(nextChem.id)
+        };
+      case 'biology_pillar':
+        return {
+          title: isEn
+            ? 'Biology · 3D Eukaryotic Cell, CRISPR-Cas9 & Genetics'
+            : 'Sinh Học · Tế Bào 3D, CRISPR-Cas9 & Di Truyền Quần Thể',
+          metric: `${metrics.bioDone}/${metrics.bioTotal} (${metrics.bioPct}%)`,
+          desc: isEn
+            ? `34 lessons (2018, 2006, Olympiad) + 30 2D & 16 3D labs. Next: ${nextBio?.titleEn || 'Molecular Genetics'}`
+            : `34 bài giảng (GDPT 2018, 2006, Chuyên Sinh) + 30 Lab 2D & 16 Lab 3D. Tiếp theo: ${nextBio?.title || 'Di truyền phân tử & Tế bào'}`,
+          ctaLabel: isEn ? 'Open Biology Lab' : 'Vào Lab & Bài Sinh Học',
+          onLaunch: () => onOpenNodeLesson('biology', nextBio?.targetLessonId),
+          onInspect: () => nextBio && onSelectRoadmapNode(nextBio.id)
         };
       case 'cs_pillar':
         return {
@@ -470,6 +539,12 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
       amber: selected
         ? 'bg-amber-500/30 border-amber-300 shadow-[0_0_24px_rgba(251,191,36,0.5)] text-white'
         : 'bg-amber-950/85 border-amber-400/65 hover:border-amber-300 text-amber-100 shadow-[0_0_16px_rgba(245,158,11,0.24)]',
+      teal: selected
+        ? 'bg-teal-500/30 border-teal-300 shadow-[0_0_24px_rgba(45,212,191,0.55)] text-white'
+        : 'bg-teal-950/90 border-teal-400/70 hover:border-teal-300 text-teal-100 shadow-[0_0_16px_rgba(20,184,166,0.28)]',
+      rose: selected
+        ? 'bg-rose-500/30 border-rose-300 shadow-[0_0_24px_rgba(251,113,133,0.55)] text-white'
+        : 'bg-rose-950/90 border-rose-400/70 hover:border-rose-300 text-rose-100 shadow-[0_0_16px_rgba(244,63,94,0.28)]',
       emerald: selected
         ? 'bg-emerald-500/30 border-emerald-300 shadow-[0_0_24px_rgba(52,211,153,0.55)] text-white'
         : 'bg-emerald-950/90 border-emerald-400/70 hover:border-emerald-300 text-emerald-100 shadow-[0_0_16px_rgba(16,185,129,0.28)]',
@@ -512,21 +587,23 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
             </div>
             <h2 className="font-display text-base sm:text-lg font-extrabold text-white tracking-tight truncate">
               {isEn
-                ? 'AI Adaptive Knowledge Map (Math · Physics · 5 CS Tracks)'
-                : 'Sơ Đồ Liên Kết Tri Thức Thích Ứng · Toán · Vật Lí · 5 Lộ Trình Tin Học'}
+                ? 'AI Adaptive Knowledge Map (Math · Physics · Chem · Bio · CS)'
+                : 'Sơ Đồ Liên Kết Tri Thức Thích Ứng · Toán · Lí · Hóa · Sinh · Tin'}
             </h2>
           </div>
         </div>
 
         {/* Focus Filters + Quick Syn AI Trigger */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 p-1 rounded-md bg-slate-950/90 border border-slate-700/80">
+          <div className="flex flex-wrap items-center gap-1 p-1 rounded-md bg-slate-950/90 border border-slate-700/80">
             {(
               [
                 { id: 'all', vi: 'Tất cả', en: 'All' },
                 { id: 'math', vi: 'Toán', en: 'Math' },
                 { id: 'physics', vi: 'Lí', en: 'Physics' },
-                { id: 'cs', vi: 'Tin (5 Lộ trình)', en: 'CS (5 Paths)' }
+                { id: 'chemistry', vi: 'Hóa', en: 'Chem' },
+                { id: 'biology', vi: 'Sinh', en: 'Bio' },
+                { id: 'cs', vi: 'Tin', en: 'CS' }
               ] as const
             ).map((tab) => (
               <button
@@ -591,9 +668,11 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
               ))}
             </div>
 
-            <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 tabular-nums">
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10px] font-mono text-slate-400 tabular-nums">
               <span>TOÁN {metrics.mathPct}%</span>
               <span>LÍ {metrics.physPct}%</span>
+              <span>HÓA {metrics.chemPct}%</span>
+              <span>SINH {metrics.bioPct}%</span>
               <span>TIN {metrics.csPct}%</span>
             </div>
           </div>
@@ -688,7 +767,7 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
                   : 'MẠNG NƠ-RON KIẾN THỨC · BẤM VÀO NÚT ĐỂ MỞ CHI TIẾT'}
               </span>
               <span className="text-slate-400 tabular-nums">
-                {completedNodeIds.length}/{ROADMAP_NODES.length} CHẶNG · 5 LỘ TRÌNH TIN
+                {completedNodeIds.length}/{ROADMAP_NODES.length} CHẶNG · 5 MÔN STEM
               </span>
             </div>
 
@@ -935,6 +1014,18 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
                 subj: 'physics' as const
               },
               {
+                label: isEn ? 'Chemistry Labs' : 'Hóa học · 52 Bài 2D/3D',
+                pct: metrics.chemPct,
+                color: 'bg-teal-400',
+                subj: 'chemistry' as const
+              },
+              {
+                label: isEn ? 'Biology Labs' : 'Sinh học · 34 Bài 2D/3D',
+                pct: metrics.bioPct,
+                color: 'bg-rose-400',
+                subj: 'biology' as const
+              },
+              {
                 label: isEn ? 'CS · VNOI' : `Tin · VNOI (${CS_LESSONS.length} bài)`,
                 pct: metrics.csPct,
                 color: 'bg-emerald-400',
@@ -950,7 +1041,7 @@ export const SmartKnowledgeMap: React.FC<SmartKnowledgeMapProps> = ({
               <button
                 key={idx}
                 type="button"
-                onClick={() => onOpenNodeLesson(row.subj, undefined, idx === 3 ? 'openedg_cpp' : undefined)}
+                onClick={() => onOpenNodeLesson(row.subj, undefined, idx === 5 ? 'openedg_cpp' : undefined)}
                 className="w-full text-left group cursor-pointer space-y-1"
               >
                 <div className="flex items-center justify-between text-[11px]">

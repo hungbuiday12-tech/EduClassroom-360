@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { EXAM_PAPERS, findExamByCode, getExamCode, normalizeExamCode } from '../../data/examData';
 import {
+  BiologySimType,
+  ChemistrySimType,
   ExamImageEvaluation,
   ExamPaper,
   ExamQAMessage,
@@ -658,6 +660,8 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
     return {
       math: calc('math'),
       physics: calc('physics'),
+      chemistry: calc('chemistry'),
+      biology: calc('biology'),
       cs: calc('cs')
     };
   }, []);
@@ -854,6 +858,10 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                     ? isEn ? 'Mathematics' : 'Toán Học'
                     : activeExam.subject === 'physics'
                     ? isEn ? 'Physics' : 'Vật Lý'
+                    : activeExam.subject === 'chemistry'
+                    ? isEn ? 'Chemistry' : 'Hóa Học'
+                    : activeExam.subject === 'biology'
+                    ? isEn ? 'Biology' : 'Sinh Học'
                     : isEn ? 'Computer Science' : 'Tin Học'}
                 </span>{' '}
                 · {isEn ? 'Duration:' : 'Thời gian làm bài:'}{' '}
@@ -989,7 +997,19 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                               const tab = q.simulationLink.targetId as 'grapher' | 'geometry' | 'math3d';
                               navigate({ subject: 'math_sims', mathTab: tab });
                             } else if (q.simulationLink?.type === 'physics') {
-                              navigate({ subject: 'physics', physicsView: 'catalog' });
+                              navigate({ subject: 'physics_sims', physicsView: 'sim2d_hub' });
+                            } else if (q.simulationLink?.type === 'chemistry') {
+                              navigate({
+                                subject: 'chemistry_sims',
+                                chemistryView: 'sim2d_hub',
+                                chemistrySim2D: q.simulationLink.targetId as ChemistrySimType
+                              });
+                            } else if (q.simulationLink?.type === 'biology') {
+                              navigate({
+                                subject: 'biology_sims',
+                                biologyView: 'sim2d_hub',
+                                biologySim2D: q.simulationLink.targetId as BiologySimType
+                              });
                             } else if (q.simulationLink?.type === 'cs') {
                               navigate({ subject: 'cs', csViewMode: 'visualizer' });
                             }
@@ -1669,7 +1689,7 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
               </div>
               <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap items-center gap-1.5 text-[10px] scrollbar-none pb-0.5 sm:pb-0">
                 <span className="text-slate-400 font-semibold shrink-0">{isEn ? 'Try code:' : 'Tra nhanh:'}</span>
-                {['TC-001', 'TK-051', 'LC-010', 'LK-060', 'IC-005', 'IK-055'].map((sampleCode) => (
+                {['TC-001', 'LC-010', 'HC-001', 'SC-001', 'IC-005', 'HK-050', 'SK-050'].map((sampleCode) => (
                   <button
                     key={sampleCode}
                     type="button"
@@ -1779,7 +1799,19 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                               const tab = q.simulationLink.targetId as 'grapher' | 'geometry' | 'math3d';
                               navigate({ subject: 'math_sims', mathTab: tab });
                             } else if (q.simulationLink?.type === 'physics') {
-                              navigate({ subject: 'physics', physicsView: 'catalog' });
+                              navigate({ subject: 'physics_sims', physicsView: 'sim2d_hub' });
+                            } else if (q.simulationLink?.type === 'chemistry') {
+                              navigate({
+                                subject: 'chemistry_sims',
+                                chemistryView: 'sim2d_hub',
+                                chemistrySim2D: q.simulationLink.targetId as ChemistrySimType
+                              });
+                            } else if (q.simulationLink?.type === 'biology') {
+                              navigate({
+                                subject: 'biology_sims',
+                                biologyView: 'sim2d_hub',
+                                biologySim2D: q.simulationLink.targetId as BiologySimType
+                              });
                             } else if (q.simulationLink?.type === 'cs') {
                               navigate({ subject: 'cs', csViewMode: 'visualizer' });
                             }
@@ -1866,8 +1898,8 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0 self-start sm:self-center">
-                {(['math', 'physics', 'cs'] as ExamSubject[]).map((s) => (
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0 self-start sm:self-center flex-wrap">
+                {(['math', 'physics', 'chemistry', 'biology', 'cs'] as ExamSubject[]).map((s) => (
                   <button
                     key={s}
                     type="button"
@@ -1878,7 +1910,15 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    {s === 'math' ? (isEn ? 'Math' : 'Toán') : s === 'physics' ? (isEn ? 'Physics' : 'Vật lí') : isEn ? 'CS' : 'Tin học'}
+                    {s === 'math'
+                      ? isEn ? 'Math' : 'Toán'
+                      : s === 'physics'
+                      ? isEn ? 'Physics' : 'Vật lí'
+                      : s === 'chemistry'
+                      ? isEn ? 'Chem' : 'Hóa học'
+                      : s === 'biology'
+                      ? isEn ? 'Bio' : 'Sinh học'
+                      : isEn ? 'CS' : 'Tin học'}
                   </button>
                 ))}
               </div>
@@ -2085,6 +2125,34 @@ export const ExamHub: React.FC<ExamHubProps> = ({ onEarnXP, onBack }) => {
                 {isEn
                   ? `Physics (${subjectStats.physics.total}: ${subjectStats.physics.chuyen} Spec + ${subjectStats.physics.khongChuyen} Std)`
                   : `Vật Lý (${subjectStats.physics.total} đề: ${subjectStats.physics.chuyen} Chuyên + ${subjectStats.physics.khongChuyen} THPT)`}
+              </span>
+            </button>
+            <button
+              onClick={() => setSelectedSubject('chemistry')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+                selectedSubject === 'chemistry'
+                  ? 'bg-teal-600 text-white font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <span className="tabular-nums">
+                {isEn
+                  ? `Chemistry (${subjectStats.chemistry.total}: ${subjectStats.chemistry.chuyen} Spec + ${subjectStats.chemistry.khongChuyen} Std)`
+                  : `Hóa Học (${subjectStats.chemistry.total} đề: ${subjectStats.chemistry.chuyen} Chuyên + ${subjectStats.chemistry.khongChuyen} THPT)`}
+              </span>
+            </button>
+            <button
+              onClick={() => setSelectedSubject('biology')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+                selectedSubject === 'biology'
+                  ? 'bg-lime-600 text-white font-bold'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <span className="tabular-nums">
+                {isEn
+                  ? `Biology (${subjectStats.biology.total}: ${subjectStats.biology.chuyen} Spec + ${subjectStats.biology.khongChuyen} Std)`
+                  : `Sinh Học (${subjectStats.biology.total} đề: ${subjectStats.biology.chuyen} Chuyên + ${subjectStats.biology.khongChuyen} THPT)`}
               </span>
             </button>
             <button

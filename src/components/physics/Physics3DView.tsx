@@ -336,7 +336,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   const [autoOrbit3D, setAutoOrbit3D] = useState(false);
   const autoOrbit3DRef = useRef(false);
   autoOrbit3DRef.current = autoOrbit3D;
-  const { isRecording, seconds: recSeconds, toggleRecording } = useCanvasRecorder(
+  const { isRecording, recordSeconds: recSeconds, toggleRecording } = useCanvasRecorder(
     () => rendererRef.current?.domElement || null,
     `synapse-physics3d-${mode}`
   );
@@ -3256,8 +3256,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
 
               <RecordVideoButton
                 isRecording={isRecording}
-                seconds={recSeconds}
-                onClick={toggleRecording}
+                recordSeconds={recSeconds}
+                onToggle={toggleRecording}
                 compact
               />
 
@@ -3862,8 +3862,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
                 title={`Biểu đồ biến thiên theo thời gian (${loggedSamples3D.length} mẫu)`}
                 height={104}
                 series={[
-                  { label: 'Đại lượng đo #1', color: '#38bdf8', data: firstNumeric },
-                  { label: 'Thời gian t (s)', color: '#fbbf24', data: timeNumeric },
+                  { id: 'metric1', label: 'Đại lượng đo #1', color: '#38bdf8', values: firstNumeric },
+                  { id: 'time', label: 'Thời gian t (s)', color: '#fbbf24', values: timeNumeric },
                 ]}
               />
             );

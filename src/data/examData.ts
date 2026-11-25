@@ -3,6 +3,8 @@ import { EXTRA_EXAM_PAPERS } from './extraExamsData';
 import { EXTRA_EXAM_PAPERS_BATCH_2 } from './extraExamsBatch2Data';
 import { EXTRA_EXAM_PAPERS_BATCH_3 } from './extraExamsBatch3Data';
 import { EXTRA_EXAM_PAPERS_BATCH_4 } from './extraExamsBatch4Data';
+import { ALL_CHEMISTRY_EXAMS } from './chemistryExamsData';
+import { ALL_BIOLOGY_EXAMS } from './biologyExamsData';
 import { expandExamPaperToFullQuestions } from './examFullCompleter';
 
 const RAW_EXAM_PAPERS: ExamPaper[] = [
@@ -3769,7 +3771,9 @@ const RAW_EXAM_PAPERS: ExamPaper[] = [
   ...EXTRA_EXAM_PAPERS,
   ...EXTRA_EXAM_PAPERS_BATCH_2,
   ...EXTRA_EXAM_PAPERS_BATCH_3,
-  ...EXTRA_EXAM_PAPERS_BATCH_4
+  ...EXTRA_EXAM_PAPERS_BATCH_4,
+  ...ALL_CHEMISTRY_EXAMS,
+  ...ALL_BIOLOGY_EXAMS
 ];
 
 const EXAM_CODE_PREFIX: Record<string, string> = {
@@ -3777,6 +3781,10 @@ const EXAM_CODE_PREFIX: Record<string, string> = {
   'math:khong_chuyen': 'TK',
   'physics:chuyen': 'LC',
   'physics:khong_chuyen': 'LK',
+  'chemistry:chuyen': 'HC',
+  'chemistry:khong_chuyen': 'HK',
+  'biology:chuyen': 'SC',
+  'biology:khong_chuyen': 'SK',
   'cs:chuyen': 'IC',
   'cs:khong_chuyen': 'IK'
 };

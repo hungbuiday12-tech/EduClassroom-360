@@ -11,6 +11,9 @@ export function normalizeVoiceText(raw: string): string {
     .replace(/[^\p{L}\p{N}\s+./-]/gu, ' ')
     // Common Vietnamese/English voice STT phonetic corrections
     .replace(/\bvat ly\b/g, 'vat li')
+    .replace(/\bhoa hoc\b/g, 'hoa hoc')
+    .replace(/\bsinh hoc\b/g, 'sinh hoc')
+    .replace(/\ba de en\b/g, 'dna')
     .replace(/\bdai son\b/g, 'dyson')
     .replace(/\bto ca mac\b/g, 'tokamak')
     .replace(/\btet xo rac\b/g, 'tesseract')
@@ -320,6 +323,18 @@ const GENERAL_STEM_QA: { keywords: string[]; replyVi: string; replyEn: string; f
     replyVi: 'Mạng nơ-ron học bằng cách tính hàm mất mát và cập nhật trọng số ngược từ lớp ra về lớp vào (Gradient Descent). Còn mạch cộng 4-bit trong CPU kết hợp các cổng XOR và AND để tính tổng nhị phân và bit nhớ.',
     replyEn: 'Neural networks learn via backpropagation gradient descent, while a 4-bit CPU adder chains XOR and AND gates for binary sum and carry.',
     formula: 'w \\leftarrow w - \\eta \\frac{\\partial L}{\\partial w}, \\quad S = A \\oplus B \\oplus C_{\\text{in}}'
+  },
+  {
+    keywords: ['chuan do', 'axit bazo', 'ph', 'pin dien hoa', 'enthalpy', 'can bang hoa hoc', 'le chatelier'],
+    replyVi: 'Trong Hóa học, pH = -log[H+] đo độ acid hoặc base của dung dịch; còn sức điện động chuẩn của pin điện hóa bằng E°(cathode) - E°(anode) > 0 giúp phản ứng oxi hóa–khử sinh dòng điện tự phát.',
+    replyEn: 'In Chemistry, pH = -log[H+] measures acidity, while standard galvanic cell potential E°_cell = E°(cathode) - E°(anode) drives spontaneous electron flow.',
+    formula: '\\text{pH} = -\\log[\\text{H}^+], \\quad E^\\circ_{\\text{pin}} = E^\\circ_{\\text{cathode}} - E^\\circ_{\\text{anode}}'
+  },
+  {
+    keywords: ['adn', 'dna', 'crispr', 'te bao', 'nguyen phan', 'giam phan', 'hardy weinberg', 'nhan doi'],
+    replyVi: 'Phân tử DNA cấu trúc xoắn kép với 2 mạch bổ sung (A-T, G-C) có chiều dài L = (N/2) × 3,4 Å; còn phương trình Hardy–Weinberg p² + 2pq + q² = 1 mô tả trạng thái cân bằng di truyền của quần thể ngẫu phối.',
+    replyEn: 'Double-helix DNA pairs A-T and G-C across two antiparallel strands, while p² + 2pq + q² = 1 governs Hardy–Weinberg population equilibrium.',
+    formula: 'L = \\frac{N}{2} \\cdot 3{,}4\\text{ \\AA}, \\quad p^2 + 2pq + q^2 = 1'
   }
 ];
 
@@ -487,6 +502,24 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
     }
   },
   {
+    phrases: ['mo phong hoa', 'mo phong hoa hoc', 'hoa 2d', 'hoa 3d', 'sandbox hoa', 'thi nghiem hoa', 'chuan do hoa', 'chemistry sim'],
+    minScore: 0.45,
+    plan: {
+      replyVi: 'Đang mở Kho Mô phỏng & Sandbox Hóa học 2D/3D.',
+      actionType: 'navigate',
+      targetSubject: 'chemistry_sims'
+    }
+  },
+  {
+    phrases: ['mo phong sinh', 'mo phong sinh hoc', 'sinh 2d', 'sinh 3d', 'sandbox sinh', 'thi nghiem sinh', 'biology sim'],
+    minScore: 0.45,
+    plan: {
+      replyVi: 'Đang mở Kho Mô phỏng & Sandbox Sinh học 2D/3D.',
+      actionType: 'navigate',
+      targetSubject: 'biology_sims'
+    }
+  },
+  {
     phrases: ['mo phong code', 'mo phong tin hoc', 'mo phong thuat toan', 'code 2d', 'code 3d', 'mo phong code 3d', 'cs sim'],
     minScore: 0.45,
     plan: {
@@ -577,12 +610,30 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
     }
   },
   {
-    phrases: ['bai giang vat li', 'mon vat li', 'hoc vat li', 'chuong trinh vat li'],
+    phrases: ['bai giang vat li', 'mon vat li', 'hoc vat li', 'chuong trinh vat li', 'phong lab vat li'],
     minScore: 0.5,
     plan: {
-      replyVi: 'Đang mở Kho Bài giảng Vật lí.',
+      replyVi: 'Đang mở Phòng Lab & Bài giảng Vật lí.',
       actionType: 'navigate',
       targetSubject: 'physics'
+    }
+  },
+  {
+    phrases: ['bai giang hoa', 'mon hoa', 'hoc hoa', 'chuong trinh hoa', 'phong lab hoa', 'hoa hoc'],
+    minScore: 0.48,
+    plan: {
+      replyVi: 'Đang mở Phòng Lab & Bài giảng Hóa học.',
+      actionType: 'navigate',
+      targetSubject: 'chemistry'
+    }
+  },
+  {
+    phrases: ['bai giang sinh', 'mon sinh', 'hoc sinh', 'chuong trinh sinh', 'phong lab sinh', 'sinh hoc'],
+    minScore: 0.48,
+    plan: {
+      replyVi: 'Đang mở Phòng Lab & Bài giảng Sinh học.',
+      actionType: 'navigate',
+      targetSubject: 'biology'
     }
   },
   {
@@ -734,6 +785,42 @@ const FUZZY_VOICE_OS_TARGETS: FuzzyRouteTarget[] = [
       replyVi: 'Đang mở Phòng Lab Phẫu Thuật & Sửa Chữa Phần Cứng 3D trong Synapse Pre.',
       actionType: 'navigate_future',
       targetFutureTab: 'tech_teardown_3d'
+    }
+  },
+  {
+    phrases: ['phan ung hoa hoc 3d', 'lo phan ung hoa 3d', 'can bang nhiet hoa 3d'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Phòng Lab Phản ứng & Nhiệt động Hóa học 3D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'chem_reaction_3d'
+    }
+  },
+  {
+    phrases: ['orbital 3d', 'vsepr 3d', 'phan tu hoa 3d', 'lai hoa orbital'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Phòng Lab Orbital & Hình học Phân tử VSEPR 3D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'chem_orbital_3d'
+    }
+  },
+  {
+    phrases: ['te bao 3d', 'atlas te bao', 'bao quan 3d', 'ti the luc lap 3d'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Atlas Tế bào Nhân thực 3D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'bio_cell_3d'
+    }
+  },
+  {
+    phrases: ['crispr 3d', 'dna 3d', 'chinh sua gen 3d', 'adn 3d'],
+    minScore: 0.46,
+    plan: {
+      replyVi: 'Đang mở Phòng Lab DNA & Chỉnh sửa Gen CRISPR-Cas9 3D trong Synapse Pre.',
+      actionType: 'navigate_future',
+      targetFutureTab: 'bio_dna_3d'
     }
   },
   {
@@ -982,13 +1069,24 @@ export function matchFuzzyVoiceOSCommand(rawCmd: string, sttConfidence = 1): Voi
 
   // 6. Explicit "hỏi Syn AI / gia sư" opens Tutor directly
   if (/(hoi syn|gia su|giai bai|chi cach lam|tu van)/.test(cmd)) {
-    const subj: 'math' | 'physics' | 'cs' = /(code|tin|thuat toan|c\+\+|python)/.test(cmd)
+    const subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' = /(code|tin|thuat toan|c\+\+|python)/.test(cmd)
       ? 'cs'
+      : /(hoa|mol|axit|bazo|este|polime|dien phan|oxi hoa)/.test(cmd)
+      ? 'chemistry'
+      : /(sinh|adn|dna|te bao|gen|menden|di truyen|quang hop)/.test(cmd)
+      ? 'biology'
       : /(li|ly|quang|dien|song|nhiet|co hoc)/.test(cmd)
       ? 'physics'
       : 'math';
+    const labelMap = {
+      math: 'Toán học',
+      physics: 'Vật lí',
+      chemistry: 'Hóa học',
+      biology: 'Sinh học',
+      cs: 'Tin học'
+    } as const;
     return {
-      replyVi: `Đang mở Gia sư Syn AI (${subj === 'cs' ? 'Tin học' : subj === 'physics' ? 'Vật lí' : 'Toán học'}) để giải đáp câu hỏi của bạn.`,
+      replyVi: `Đang mở Gia sư Syn AI (${labelMap[subj]}) để giải đáp câu hỏi của bạn.`,
       actionType: 'open_tutor',
       tutorSubject: subj,
       tutorQuestion: rawCmd,

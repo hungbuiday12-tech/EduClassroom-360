@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { ViewportPortal } from '../common/ViewportPortal';
 import { exportRowsToCsv, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
+import { SimAnalysisProBar } from '../common/SimAnalysisProBar';
 
 const PRESET_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#0891b2'];
 
@@ -109,7 +110,7 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
   const [hoverCoord, setHoverCoord] = useState<{ x: number; y: number } | null>(null);
   const [resizeTick, setResizeTick] = useState(0);
 
-  const { isRecording, seconds: recSeconds, toggleRecording } = useCanvasRecorder(
+  const { isRecording, recordSeconds: recSeconds, toggleRecording } = useCanvasRecorder(
     () => canvasRef.current,
     'synapse-function-graph'
   );
@@ -805,7 +806,7 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
   };
 
   // Values table generator (-5 to 5)
-  const tableData = [];
+  const tableData: Array<{ x: number; y: string; dy: string }> = [];
   if (activeFunc) {
     for (let x = -5; x <= 5; x += 1) {
       const y = evaluateFunc(activeFunc, x);
@@ -900,8 +901,8 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
               </button>
               <RecordVideoButton
                 isRecording={isRecording}
-                seconds={recSeconds}
-                onClick={toggleRecording}
+                recordSeconds={recSeconds}
+                onToggle={toggleRecording}
                 compact
               />
               <button
@@ -1391,6 +1392,82 @@ export const FunctionGrapher: React.FC<FunctionGrapherProps> = ({ initialConfig 
               )}
             </div>
           </div>
+        )}
+
+        {activeFunc && (
+          <SimAnalysisProBar
+            simKey={`math-graph-${activeFunc.type}`}
+            title={`Đồ thị ${activeFunc.name}: ${activeFunc.formulaDisplay}`}
+            formula={activeFunc.formulaDisplay}
+            params={{
+              a: activeFunc.params.a,
+              b: activeFunc.params.b,
+              c: activeFunc.params.c,
+              d: activeFunc.params.d,
+              x0: activeFunc.tangentX0 ?? 0
+            }}
+            paramBounds={{
+              a: { min: -10, max: 10, step: 0.25, unit: '', label: 'Hệ số a' },
+              b: { min: -10, max: 10, step: 0.25, unit: '', label: 'Hệ số b' },
+              c: { min: -10, max: 10, step: 0.25, unit: '', label: 'Hệ số c' },
+              d: { min: -10, max: 10, step: 0.25, unit: '', label: 'Hệ số d' },
+              x0: { min: -8, max: 8, step: 0.1, unit: '', label: 'Điểm x₀' }
+            }}
+            metrics={(() => {
+              const x0 = activeFunc.tangentX0 ?? 0;
+              const y0 = evaluateFunc(activeFunc, x0);
+              const dy0 = evaluateDerivative(activeFunc, x0);
+              return [
+                { label: `f(${x0})`, value: y0 !== null ? Number(y0.toFixed(3)) : 'N/A' },
+                { label: `f'(${x0})`, value: dy0 !== null ? Number(dy0.toFixed(3)) : 'N/A' }
+              ];
+            })()}
+            onApplyParams={(next) => {
+              const nextParams = {
+                a: next.a ?? activeFunc.params.a,
+                b: next.b ?? activeFunc.params.b,
+                c: next.c ?? activeFunc.params.c,
+                d: next.d ?? activeFunc.params.d
+              };
+              const nextX0 = next.x0 ?? activeFunc.tangentX0 ?? 0;
+              setFunctions((list) =>
+                list.map((fn) =>
+                  fn.id === activeFuncId
+                    ? {
+                        ...fn,
+                        params: nextParams,
+                        tangentX0: nextX0,
+                        formulaDisplay: formatFormulaDisplay({
+                          type: fn.type,
+                          params: nextParams,
+                          customExpr: fn.customExpr
+                        })
+                      }
+                    : fn
+                )
+              );
+            }}
+            onTogglePlay={() => setIsSweepingTangent((s) => !s)}
+            onReset={() => setViewport({ cx: 0, cy: 0, scale: 40 })}
+            evaluateSweep={(paramKey, testVal, base) => {
+              const testX = paramKey === 'x0' ? testVal : base.x0 ?? 0;
+              const tempFn: FunctionPlotConfig = {
+                ...activeFunc,
+                params: {
+                  a: paramKey === 'a' ? testVal : base.a ?? activeFunc.params.a,
+                  b: paramKey === 'b' ? testVal : base.b ?? activeFunc.params.b,
+                  c: paramKey === 'c' ? testVal : base.c ?? activeFunc.params.c,
+                  d: paramKey === 'd' ? testVal : base.d ?? activeFunc.params.d
+                }
+              };
+              const val = evaluateFunc(tempFn, testX);
+              return {
+                value: val !== null && Number.isFinite(val) ? Number(val.toFixed(3)) : 0,
+                metricLabel: `f(${testX.toFixed(1)})`,
+                metricUnit: ''
+              };
+            }}
+          />
         )}
       </div>
     </div>

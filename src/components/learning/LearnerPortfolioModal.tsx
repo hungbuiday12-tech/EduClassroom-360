@@ -7,7 +7,9 @@ import {
   Code2,
   Compass,
   Copy,
+  Dna,
   Flame,
+  FlaskConical,
   Printer,
   ShieldCheck,
   X,
@@ -50,7 +52,7 @@ export const LearnerPortfolioModal: React.FC<LearnerPortfolioModalProps> = ({
     const customLessons = loadCustomLessons(uid);
     const mockResults = loadCustomMockResults(uid);
 
-    const calcSubjectAvg = (subj: 'math' | 'physics' | 'cs') => {
+    const calcSubjectAvg = (subj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs') => {
       const list = assessments.filter((a) => a.subject === subj);
       if (list.length === 0) return { count: 0, avgMastery: 0 };
       let totalM = 0;
@@ -73,6 +75,8 @@ export const LearnerPortfolioModal: React.FC<LearnerPortfolioModalProps> = ({
 
     const math = calcSubjectAvg('math');
     const physics = calcSubjectAvg('physics');
+    const chemistry = calcSubjectAvg('chemistry');
+    const biology = calcSubjectAvg('biology');
     const cs = calcSubjectAvg('cs');
 
     const strongTopics = assessments
@@ -96,6 +100,8 @@ export const LearnerPortfolioModal: React.FC<LearnerPortfolioModalProps> = ({
       level: Math.floor((user?.xp ?? xp) / 500) + 1,
       math,
       physics,
+      chemistry,
+      biology,
       cs,
       assessmentsCount: assessments.length,
       unresolvedErrors: errors.filter((e) => !e.resolved).length,
@@ -126,7 +132,7 @@ export const LearnerPortfolioModal: React.FC<LearnerPortfolioModalProps> = ({
     const text = [
       `HỒ SƠ NĂNG LỰC SYNAPSE STEM — ${summary.displayName} (${summary.handle})`,
       `Cấp độ: Lv.${summary.level} · ${summary.xp} XP · Chuỗi học: ${summary.streak.currentStreak} ngày`,
-      `Toán: ${summary.math.avgMastery}% (${summary.math.count} bài) | Vật lí: ${summary.physics.avgMastery}% (${summary.physics.count} bài) | Tin: ${summary.cs.avgMastery}% (${summary.cs.count} bài)`,
+      `Toán: ${summary.math.avgMastery}% (${summary.math.count} bài) | Vật lí: ${summary.physics.avgMastery}% (${summary.physics.count} bài) | Hóa học: ${summary.chemistry.avgMastery}% (${summary.chemistry.count} bài) | Sinh học: ${summary.biology.avgMastery}% (${summary.biology.count} bài) | Tin: ${summary.cs.avgMastery}% (${summary.cs.count} bài)`,
       `Pomodoro: ${summary.pomodoroCount} phiên · Huy hiệu: ${summary.unlockedBadges.length}/${summary.badges.length}`
     ].join('\n');
     navigator.clipboard.writeText(text);
@@ -228,11 +234,13 @@ export const LearnerPortfolioModal: React.FC<LearnerPortfolioModalProps> = ({
           {/* 3-Subject Mastery Bars */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-4 space-y-3">
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Mức độ làm chủ 3 môn học trọng tâm
+              Mức độ làm chủ 5 môn STEM
             </h3>
             {[
               { label: 'Toán học', icon: <Compass className="w-4 h-4 text-blue-600" />, data: summary.math, bar: 'bg-blue-600' },
               { label: 'Vật lí', icon: <Zap className="w-4 h-4 text-amber-500" />, data: summary.physics, bar: 'bg-amber-500' },
+              { label: 'Hóa học', icon: <FlaskConical className="w-4 h-4 text-teal-600" />, data: summary.chemistry, bar: 'bg-teal-600' },
+              { label: 'Sinh học', icon: <Dna className="w-4 h-4 text-rose-600" />, data: summary.biology, bar: 'bg-rose-600' },
               { label: 'Tin học', icon: <Code2 className="w-4 h-4 text-emerald-600" />, data: summary.cs, bar: 'bg-emerald-600' }
             ].map((row) => (
               <div key={row.label} className="space-y-1">
@@ -320,9 +328,11 @@ export const LearnerPortfolioModal: React.FC<LearnerPortfolioModalProps> = ({
               </div>
               <span className="text-xs font-mono">Ngày xuất: {new Date().toLocaleDateString('vi-VN')}</span>
             </div>
-            <div className="grid grid-cols-3 gap-4 border border-slate-300 p-4 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 border border-slate-300 p-4 text-sm">
               <div><strong>Toán học:</strong> {summary.math.avgMastery}% ({summary.math.count} bài)</div>
               <div><strong>Vật lí:</strong> {summary.physics.avgMastery}% ({summary.physics.count} bài)</div>
+              <div><strong>Hóa học:</strong> {summary.chemistry.avgMastery}% ({summary.chemistry.count} bài)</div>
+              <div><strong>Sinh học:</strong> {summary.biology.avgMastery}% ({summary.biology.count} bài)</div>
               <div><strong>Tin học:</strong> {summary.cs.avgMastery}% ({summary.cs.count} bài)</div>
             </div>
             <div className="text-sm space-y-1">

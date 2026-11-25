@@ -1189,7 +1189,7 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
   const capturePngRef = useRef<(() => void) | null>(null);
   const enteredNativeFsRef = useRef<boolean>(false);
 
-  const { isRecording, seconds: recSeconds, toggleRecording } = useCanvasRecorder(
+  const { isRecording, recordSeconds: recSeconds, toggleRecording } = useCanvasRecorder(
     () => canvasElRef.current,
     `synapse-cs3d-${mode}`
   );
@@ -2780,8 +2780,8 @@ export const CS3DVisualizer: React.FC<CS3DVisualizerProps> = ({ onBack, initialM
               </button>
               <RecordVideoButton
                 isRecording={isRecording}
-                seconds={recSeconds}
-                onClick={toggleRecording}
+                recordSeconds={recSeconds}
+                onToggle={toggleRecording}
                 compact
               />
               <button

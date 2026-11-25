@@ -1,6 +1,6 @@
-export type SubjectType = 'overview' | 'guide' | 'authors' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'math_sims' | 'physics' | 'physics_sims' | 'cs' | 'cs_sims' | 'exams' | 'arena' | 'live_meet' | 'forum' | 'growth_hub' | 'showcase' | 'future_lab';
+export type SubjectType = 'overview' | 'guide' | 'authors' | 'roadmap' | 'synapse_v2' | 'spatial_3d' | 'math' | 'math_sims' | 'physics' | 'physics_sims' | 'chemistry' | 'chemistry_sims' | 'biology' | 'biology_sims' | 'cs' | 'cs_sims' | 'exams' | 'arena' | 'live_meet' | 'forum' | 'growth_hub' | 'showcase' | 'future_lab';
 
-export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'cs' | 'exams';
+export type ForumSubject = 'announcements' | 'general' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' | 'exams';
 
 export interface ForumPollOption {
   id: string;
@@ -20,7 +20,7 @@ export interface ForumMessageReplyRef {
 }
 
 export interface ForumLessonAttachment {
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   lessonId: string;
   title: string;
   subtitle?: string;
@@ -71,7 +71,7 @@ export interface ForumMessage {
   createdAt: string;
 }
 
-export type ExamSubject = 'math' | 'physics' | 'cs';
+export type ExamSubject = 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 export type ExamTrack = 'chuyen' | 'khong_chuyen';
 
 export interface ExamQuestion {
@@ -81,7 +81,7 @@ export interface ExamQuestion {
   solution: string;
   keyFormulasOrHints?: string[];
   simulationLink?: {
-    type: 'math' | 'physics' | 'cs';
+    type: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
     targetId: string;
     label: string;
   };
@@ -344,7 +344,7 @@ export interface LessonProgressAnalysis {
 
 export interface LessonAssessmentRecord {
   lessonKey: string;
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   lessonTitle: string;
   grade?: string;
   totalSteps: number;
@@ -624,6 +624,192 @@ export interface PhysicsExperiment {
   }[];
 }
 
+// ============================================================================
+// CHEMISTRY TYPES
+// ============================================================================
+export type ChemistrySimType =
+  | 'atomic_orbitals_2d'
+  | 'periodic_trends_2d'
+  | 'vsepr_bonding_2d'
+  | 'crystal_packing_2d'
+  | 'enthalpy_hess_2d'
+  | 'reaction_kinetics_2d'
+  | 'maxwell_boltzmann_2d'
+  | 'equilibrium_shift_2d'
+  | 'acid_base_titration_2d'
+  | 'buffer_ph_2d'
+  | 'galvanic_cell_2d'
+  | 'electrolysis_faraday_2d'
+  | 'metal_activity_2d'
+  | 'halogen_displacement_2d'
+  | 'haber_ammonia_2d'
+  | 'contact_sulfuric_2d'
+  | 'redox_balancing_2d'
+  | 'hydrocarbon_isomers_2d'
+  | 'alkene_addition_2d'
+  | 'benzene_substitution_2d'
+  | 'esterification_2d'
+  | 'soap_micelle_2d'
+  | 'carbohydrate_ring_2d'
+  | 'amino_acid_zwitterion_2d'
+  | 'polymerization_2d'
+  | 'corrosion_protection_2d'
+  | 'colligative_boiling_2d'
+  | 'flame_spectroscopy_2d'
+  | 'complex_ligand_2d'
+  | 'stoichiometry_gas_2d';
+
+export type Chemistry3DMode =
+  | 'atomic_orbitals_3d'
+  | 'vsepr_geometry_3d'
+  | 'crystal_lattice_3d'
+  | 'galvanic_cell_3d'
+  | 'electrolysis_cell_3d'
+  | 'titration_bench_3d'
+  | 'activation_surface_3d'
+  | 'equilibrium_piston_3d'
+  | 'benzene_pi_3d'
+  | 'ester_reflux_3d'
+  | 'polymer_chain_3d'
+  | 'coordination_complex_3d'
+  | 'methane_ethane_3d'
+  | 'spectroscopy_prism_3d'
+  | 'periodic_tower_3d'
+  | 'colloid_micelle_3d';
+
+export type ChemistryDomainId =
+  | 'atomic_periodic'
+  | 'bonding_structure'
+  | 'kinetics_thermo'
+  | 'equilibrium_acidbase'
+  | 'electro_inorganic'
+  | 'organic_polymer';
+
+export interface ChemistryLesson {
+  id: string;
+  track: CurriculumTrack;
+  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  tier?: SpecializedTier;
+  stageLabel?: string;
+  sourceTag?: string;
+  lessonNumber: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  theorySections: {
+    heading: string;
+    content: string;
+  }[];
+  lectureSteps?: LectureStep[];
+  keyFormulas: string[];
+  simulationType: ChemistrySimType;
+  sim3dType: Chemistry3DMode;
+  defaultParams: Record<string, number>;
+  paramBounds: Record<string, { min: number; max: number; step: number; unit: string; label: string }>;
+  practiceExercises: {
+    source?: string;
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+    stepByStep?: string[];
+  }[];
+  essayExercises: PhysicsEssayExercise[];
+}
+
+// ============================================================================
+// BIOLOGY TYPES
+// ============================================================================
+export type BiologySimType =
+  | 'cell_organelles_2d'
+  | 'membrane_osmosis_2d'
+  | 'enzyme_kinetics_2d'
+  | 'photosynthesis_calvin_2d'
+  | 'cellular_respiration_2d'
+  | 'mitosis_meiosis_2d'
+  | 'dna_replication_2d'
+  | 'transcription_translation_2d'
+  | 'lac_operon_2d'
+  | 'crispr_editing_2d'
+  | 'mendel_punnett_2d'
+  | 'gene_linkage_2d'
+  | 'hardy_weinberg_2d'
+  | 'natural_selection_2d'
+  | 'plant_transpiration_2d'
+  | 'phytohormone_tropism_2d'
+  | 'cardiac_cycle_2d'
+  | 'bohr_hemoglobin_2d'
+  | 'nephron_filtration_2d'
+  | 'action_potential_2d'
+  | 'synapse_transmission_2d'
+  | 'glucose_insulin_2d'
+  | 'immune_antibody_2d'
+  | 'predator_prey_2d'
+  | 'logistic_population_2d'
+  | 'trophic_pyramid_2d'
+  | 'carbon_nitrogen_cycle_2d'
+  | 'viral_lytic_cycle_2d'
+  | 'pcr_electrophoresis_2d'
+  | 'blood_typing_2d';
+
+export type Biology3DMode =
+  | 'eukaryotic_cell_3d'
+  | 'mitochondria_atp_3d'
+  | 'chloroplast_thylakoid_3d'
+  | 'phospholipid_bilayer_3d'
+  | 'dna_double_helix_3d'
+  | 'ribosome_translation_3d'
+  | 'chromosome_mitosis_3d'
+  | 'enzyme_substrate_3d'
+  | 'neuron_synapse_3d'
+  | 'human_heart_3d'
+  | 'alveoli_capillary_3d'
+  | 'nephron_kidney_3d'
+  | 'antibody_antigen_3d'
+  | 'virus_bacteriophage_3d'
+  | 'plant_vascular_3d'
+  | 'ecosystem_biome_3d';
+
+export type BiologyDomainId =
+  | 'cell_membrane'
+  | 'metabolism_enzyme'
+  | 'genetics_molecular'
+  | 'evolution_population'
+  | 'physiology_organism'
+  | 'ecology_biosphere';
+
+export interface BiologyLesson {
+  id: string;
+  track: CurriculumTrack;
+  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  tier?: SpecializedTier;
+  stageLabel?: string;
+  sourceTag?: string;
+  lessonNumber: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  theorySections: {
+    heading: string;
+    content: string;
+  }[];
+  lectureSteps?: LectureStep[];
+  keyFormulas: string[];
+  simulationType: BiologySimType;
+  sim3dType: Biology3DMode;
+  defaultParams: Record<string, number>;
+  paramBounds: Record<string, { min: number; max: number; step: number; unit: string; label: string }>;
+  practiceExercises: {
+    source?: string;
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+    stepByStep?: string[];
+  }[];
+  essayExercises: PhysicsEssayExercise[];
+}
+
 // Computer Science Types
 export type CodeLanguage = 'cpp' | 'python';
 export type CSLevel = 'Cơ bản' | 'Trung cấp' | 'Nâng cao / HSG';
@@ -761,7 +947,7 @@ export interface WorkflowStage {
 
 export interface RoadmapNode {
   id: string;
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12' | 'Cơ bản' | 'Trung cấp' | 'Nâng cao / HSG';
   order: number;
   title: string;
@@ -816,13 +1002,13 @@ export interface PersonalizedRoadmapStage {
   durationWeeks: number;
   dailyMinutes: number;
   focusTopics: string[];
-  recommendedModule: 'math' | 'physics' | 'cs' | 'exams' | 'arena' | 'roadmap';
+  recommendedModule: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' | 'exams' | 'arena' | 'roadmap';
   concreteTasks: string[];
   targetMilestone: string;
 }
 
 export interface PersonalizedRoadmapResult {
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   grade: string;
   targetMajor: string;
   estimatedLevel: string;
@@ -838,7 +1024,7 @@ export interface PersonalizedRoadmapResult {
 }
 
 // Weekly Online Competition Arena Types
-export type ArenaSubject = 'math' | 'physics' | 'cs';
+export type ArenaSubject = 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 export type ArenaMode = 'mcq' | 'essay';
 export type ArenaGradeGroup = '9' | '10' | '11' | '12' | 'olp';
 export type ArenaTrack = 'khong_chuyen' | 'chuyen';
@@ -933,6 +1119,12 @@ export interface WeeklyLeaderboardEntry {
   physicsBest: number | null;
   physicsAvg: number | null;
   physicsAttempts: number;
+  chemistryBest?: number | null;
+  chemistryAvg?: number | null;
+  chemistryAttempts?: number;
+  biologyBest?: number | null;
+  biologyAvg?: number | null;
+  biologyAttempts?: number;
   csBest: number | null;
   csAvg: number | null;
   csAttempts: number;
@@ -991,7 +1183,7 @@ export interface ArenaRivalTarget {
 // GROWTH SUITE: ERROR NOTEBOOK, SM-2 FLASHCARDS, QUESTS, BADGES, SHOWCASE
 // ============================================================================
 
-export type GrowthSubject = 'math' | 'physics' | 'cs';
+export type GrowthSubject = 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 
 export interface ErrorNotebookEntry {
   id: string;
@@ -1159,7 +1351,11 @@ export type FutureLabTabId =
   | 'what_if_physics_3d'
   | 'algo_city_3d'
   | 'solar_system_3d'
-  | 'typing_parroto_sandbox';
+  | 'typing_parroto_sandbox'
+  | 'chem_reaction_3d'
+  | 'chem_orbital_vsepr_3d'
+  | 'bio_cell_atlas_3d'
+  | 'bio_dna_crispr_3d';
 
 export type PaperSimKind =
   | 'parabola'
@@ -1257,7 +1453,7 @@ export interface VoiceOSActionPlan {
   bgStyle?: string;
   darkMode?: boolean;
   timerAction?: 'start' | 'pause' | 'reset';
-  tutorSubject?: 'math' | 'physics' | 'cs';
+  tutorSubject?: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   tutorQuestion?: string;
   formulaHighlight?: string;
   confidence?: number;

@@ -94,11 +94,18 @@ interface SynapseV2StudioProps {
 }
 
 type CameraPresetId = 'overview' | 'core' | 'zenith' | 'drone' | 'side' | 'lowAngle';
-type RenderStyleId = 'pbr' | 'wireframe' | 'xray';
+type RenderStyleId = 'pbr' | 'wireframe' | 'xray' | 'thermal' | 'stress' | 'flux';
 type LightingMoodId = 'cosmic' | 'studio' | 'solar';
 type SliceAxisId = 'x' | 'y' | 'z';
 type SynapseResScale = 0.5 | 0.65 | 0.85 | 1.0 | 1.35;
 type SynapseFpsCap = 30 | 60;
+
+interface OutlinerNode {
+  key: string;
+  label: string;
+  obj: THREE.Object3D;
+  visible: boolean;
+}
 
 const SYNAPSE_PERF_KEY = 'synapse_v2_perf_prefs_v1';
 const SYNAPSE_PINNED_KEY = 'synapse_v2_pinned_v1';
@@ -321,6 +328,11 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
   const [measureMode, setMeasureMode] = useState<boolean>(false);
   const [measurePoints, setMeasurePoints] = useState<{ x: number; y: number; z: number }[]>([]);
   const [showTelemetryChart, setShowTelemetryChart] = useState<boolean>(false);
+  const [showSweepPanel, setShowSweepPanel] = useState<boolean>(false);
+  const [showOutliner, setShowOutliner] = useState<boolean>(false);
+  const [autoTourEnabled, setAutoTourEnabled] = useState<boolean>(false);
+  const [outlinerNodes, setOutlinerNodes] = useState<OutlinerNode[]>([]);
+  const [isolatedNodeKey, setIsolatedNodeKey] = useState<string | null>(null);
   const [telemetryHistory, setTelemetryHistory] = useState<
     { t: string; m1: number; m2: number; m3: number }[]
   >([]);
@@ -542,6 +554,9 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
         opacity: number;
         side: THREE.Side;
         transmission: number;
+        colorHex?: number;
+        emissiveHex?: number;
+        emissiveIntensity?: number;
       }
     >
   >(new WeakMap());
@@ -957,31 +972,60 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     };
   }, [studioMode]);
 
-  // Apply Render Material Style (PBR / Wireframe / X-Ray Glass) & adaptive low-spec transmission cleanly
+  // Apply Render Material Style (PBR / Wireframe / X-Ray Glass / Thermal / Stress / Flux) cleanly
   const applyRenderStyleToMonument = useCallback((root: THREE.Object3D | null, style: RenderStyleId) => {
     if (!root) return;
     const disableTransmission =
       isSoftwareGlRef.current || perfPrefsRef.current.resolutionScale <= 0.75;
+    const tmpBox = new THREE.Box3().setFromObject(root);
+    const maxR = Math.max(1.5, tmpBox.getSize(new THREE.Vector3()).length() * 0.5);
+    const tmpPos = new THREE.Vector3();
+    const cCool = new THREE.Color(0x0284c7);
+    const cMid = new THREE.Color(0xf59e0b);
+    const cHot = new THREE.Color(0xf43f5e);
+    const cFluxA = new THREE.Color(0x6366f1);
+    const cFluxB = new THREE.Color(0x10b981);
+
     root.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh && !(obj as THREE.Line).isLine) return;
+      mesh.getWorldPosition(tmpPos);
+      const radialNorm = Math.min(1, tmpPos.length() / maxR);
+      const heightNorm = Math.min(1, Math.max(0, (tmpPos.y - tmpBox.min.y) / Math.max(0.5, tmpBox.max.y - tmpBox.min.y)));
+
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       mats.forEach((mat) => {
         if (!mat) return;
         let orig = materialOrigRef.current.get(mat);
         if (!orig) {
+          const std = mat as THREE.MeshStandardMaterial;
           orig = {
-            wireframe: 'wireframe' in mat ? Boolean((mat as THREE.MeshStandardMaterial).wireframe) : false,
+            wireframe: 'wireframe' in mat ? Boolean(std.wireframe) : false,
             transparent: Boolean(mat.transparent),
             opacity: typeof mat.opacity === 'number' ? mat.opacity : 1,
             side: mat.side,
             transmission:
-              'transmission' in mat ? Number((mat as THREE.MeshPhysicalMaterial).transmission || 0) : 0
+              'transmission' in mat ? Number((mat as THREE.MeshPhysicalMaterial).transmission || 0) : 0,
+            colorHex: 'color' in std && std.color ? std.color.getHex() : undefined,
+            emissiveHex: 'emissive' in std && std.emissive ? std.emissive.getHex() : undefined,
+            emissiveIntensity: 'emissiveIntensity' in std ? std.emissiveIntensity : undefined
           };
           materialOrigRef.current.set(mat, orig);
         }
+        const std = mat as THREE.MeshStandardMaterial;
+        // Restore base colors first before applying analytic overlays
+        if (orig.colorHex !== undefined && 'color' in std && std.color) {
+          std.color.setHex(orig.colorHex);
+        }
+        if (orig.emissiveHex !== undefined && 'emissive' in std && std.emissive) {
+          std.emissive.setHex(orig.emissiveHex);
+        }
+        if (orig.emissiveIntensity !== undefined && 'emissiveIntensity' in std) {
+          std.emissiveIntensity = orig.emissiveIntensity;
+        }
+
         if (style === 'pbr') {
-          if ('wireframe' in mat) (mat as THREE.MeshStandardMaterial).wireframe = orig.wireframe;
+          if ('wireframe' in mat) std.wireframe = orig.wireframe;
           mat.transparent = orig.transparent;
           mat.opacity = orig.opacity;
           mat.side = orig.side;
@@ -989,23 +1033,56 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             (mat as THREE.MeshPhysicalMaterial).transmission = disableTransmission ? 0 : orig.transmission;
           }
         } else if (style === 'wireframe') {
-          if ('wireframe' in mat) (mat as THREE.MeshStandardMaterial).wireframe = true;
+          if ('wireframe' in mat) std.wireframe = true;
           mat.transparent = true;
           mat.opacity = Math.max(0.45, Math.min(0.95, orig.opacity));
           if ('transmission' in mat) (mat as THREE.MeshPhysicalMaterial).transmission = 0;
         } else if (style === 'xray') {
-          if ('wireframe' in mat) (mat as THREE.MeshStandardMaterial).wireframe = false;
+          if ('wireframe' in mat) std.wireframe = false;
           mat.transparent = true;
           mat.opacity = Math.min(0.36, orig.opacity);
           mat.side = THREE.DoubleSide;
           if ('transmission' in mat) (mat as THREE.MeshPhysicalMaterial).transmission = 0;
+        } else if (style === 'thermal') {
+          if ('wireframe' in mat) std.wireframe = false;
+          mat.transparent = orig.transparent;
+          mat.opacity = orig.opacity;
+          const heat = 1 - radialNorm;
+          if ('color' in std && std.color) {
+            if (heat < 0.5) std.color.lerpColors(cCool, cMid, heat * 2);
+            else std.color.lerpColors(cMid, cHot, (heat - 0.5) * 2);
+          }
+          if ('emissive' in std && std.emissive) {
+            std.emissive.copy(heat > 0.6 ? cHot : cCool);
+            std.emissiveIntensity = 0.2 + heat * 0.45;
+          }
+        } else if (style === 'stress') {
+          if ('wireframe' in mat) std.wireframe = false;
+          mat.transparent = orig.transparent;
+          mat.opacity = orig.opacity;
+          const load = 1 - heightNorm;
+          if ('color' in std && std.color) {
+            if (load < 0.5) std.color.lerpColors(cFluxB, cMid, load * 2);
+            else std.color.lerpColors(cMid, cHot, (load - 0.5) * 2);
+          }
+        } else if (style === 'flux') {
+          if ('wireframe' in mat) std.wireframe = false;
+          mat.transparent = true;
+          mat.opacity = Math.min(0.92, Math.max(0.55, orig.opacity));
+          if ('color' in std && std.color) {
+            std.color.lerpColors(cFluxA, cFluxB, radialNorm);
+          }
+          if ('emissive' in std && std.emissive) {
+            std.emissive.setHex(0x22d3ee);
+            std.emissiveIntensity = 0.35;
+          }
         }
         mat.needsUpdate = true;
       });
     });
   }, []);
 
-  // Swap Active Monument inside the persistent WebGL stage cleanly
+  // Swap Active Monument inside the persistent WebGL stage cleanly & index sub-assembly outliner
   useEffect(() => {
     if (studioMode !== 'stage') return;
     const slot = monumentSlotRef.current;
@@ -1024,7 +1101,36 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
     applyRenderStyleToMonument(nextBuilt.root, renderStyle);
     slot.add(nextBuilt.root);
     activeBuiltRef.current = nextBuilt;
-  }, [activeId, studioMode, applyRenderStyleToMonument]);
+
+    const nodes: OutlinerNode[] = nextBuilt.root.children.slice(0, 14).map((child, idx) => {
+      const geoType =
+        (child as THREE.Mesh).geometry?.type?.replace('Geometry', '') ||
+        (child.children?.length ? `Assembly (${child.children.length} parts)` : 'Module');
+      const label = child.name?.trim()
+        ? child.name
+        : `${isEn ? 'Sub-Assembly' : 'Cụm chi tiết'} #${String(idx + 1).padStart(2, '0')} · ${geoType}`;
+      return {
+        key: `${activeId}_sub_${idx}`,
+        label,
+        obj: child,
+        visible: true
+      };
+    });
+    setOutlinerNodes(nodes);
+    setIsolatedNodeKey(null);
+  }, [activeId, studioMode, applyRenderStyleToMonument, isEn]);
+
+  // Guided Camera Waypoint Auto-Tour
+  useEffect(() => {
+    if (!autoTourEnabled || studioMode !== 'stage') return;
+    const seq: CameraPresetId[] = ['overview', 'core', 'zenith', 'side', 'lowAngle', 'drone'];
+    let stepIdx = 0;
+    const id = window.setInterval(() => {
+      stepIdx = (stepIdx + 1) % seq.length;
+      applyCameraPreset(seq[stepIdx]);
+    }, 4200);
+    return () => window.clearInterval(id);
+  }, [autoTourEnabled, studioMode]);
 
   // Live updates for Resolution Scale, FOV, RenderStyle, LightingMood, Cross-Section Slice Plane, and Citadel Platform
   useEffect(() => {
@@ -1263,6 +1369,77 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
       rows
     );
   };
+
+  const handleExportMarkdownDossier = () => {
+    const lines = [
+      `# SYNAPSE PRE ENGINEERING DOSSIER — ${activeDef.code}`,
+      ``,
+      `- **${isEn ? 'Megastructure' : 'Đại công trình'}**: ${isEn ? activeDef.titleEn : activeDef.titleVi}`,
+      `- **${isEn ? 'Generated At' : 'Thời gian xuất'}**: ${new Date().toLocaleString('vi-VN')}`,
+      `- **${isEn ? 'Inspection Shader' : 'Chế độ vật liệu'}**: ${renderStyle.toUpperCase()}`,
+      `- **${isEn ? 'Exploded View' : 'Tách lớp cơ khí'}**: ${Math.round(explodeFactor * 100)}%`,
+      ``,
+      `## ${isEn ? '1. Operating Setpoints' : '1. Tham Số Vận Hành'}`,
+      `- **${isEn ? activeDef.primaryLabelEn : activeDef.primaryLabelVi}**: ${primaryParam} ${activeDef.primaryUnit}`,
+      `- **${isEn ? activeDef.secondaryLabelEn : activeDef.secondaryLabelVi}**: ${secondaryParam} ${activeDef.secondaryUnit}`,
+      ``,
+      `## ${isEn ? '2. Live Physical Telemetry' : '2. Chỉ Số Đo Đạc Kỹ Thuật'}`,
+      `- **${isEn ? telemetry.metric1LabelEn : telemetry.metric1LabelVi}**: ${telemetry.metric1Value}`,
+      `- **${isEn ? telemetry.metric2LabelEn : telemetry.metric2LabelVi}**: ${telemetry.metric2Value}`,
+      `- **${isEn ? telemetry.metric3LabelEn : telemetry.metric3LabelVi}**: ${telemetry.metric3Value}`,
+      ``,
+      `## ${isEn ? '3. Engineering Overview' : '3. Mô Tả Nguyên Lí'}`,
+      `${isEn ? activeDef.descriptionEn : activeDef.descriptionVi}`
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `synapse-dossier-${activeDef.id}.md`;
+    a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+  };
+
+  const toggleOutlinerVisibility = (key: string) => {
+    setOutlinerNodes((prev) =>
+      prev.map((n) => {
+        if (n.key !== key) return n;
+        const nextVis = !n.visible;
+        n.obj.visible = nextVis;
+        return { ...n, visible: nextVis };
+      })
+    );
+  };
+
+  const toggleIsolateOutlinerNode = (key: string) => {
+    const nextIso = isolatedNodeKey === key ? null : key;
+    setIsolatedNodeKey(nextIso);
+    setOutlinerNodes((prev) =>
+      prev.map((n) => {
+        const nextVis = nextIso === null ? true : n.key === nextIso;
+        n.obj.visible = nextVis;
+        return { ...n, visible: nextVis };
+      })
+    );
+  };
+
+  const sweepCurveData = useMemo(() => {
+    const [minP, maxP] = activeDef.primaryRange;
+    const pts: { x: number; y: number }[] = [];
+    for (let i = 0; i <= 20; i++) {
+      const p = minP + ((maxP - minP) * i) / 20;
+      const t = computeTelemetry(activeId, {
+        primaryParam: p,
+        secondaryParam,
+        explodeFactor,
+        timeScale
+      });
+      pts.push({ x: Math.round(p * 100) / 100, y: parseLeadingFloat(t.metric1Value) });
+    }
+    const minY = Math.min(...pts.map((p) => p.y));
+    const maxY = Math.max(...pts.map((p) => p.y));
+    return { pts, minY, maxY, minP, maxP };
+  }, [activeDef, activeId, explodeFactor, secondaryParam, timeScale]);
 
   const primaryDisplay =
     activeId === 'neural_aero' ? (primaryParam / 10).toFixed(1) : Math.round(primaryParam);
@@ -2081,6 +2258,34 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
               <button
                 type="button"
+                onClick={() => setAutoTourEnabled((v) => !v)}
+                className={`flex items-center gap-1 min-h-[36px] px-2.5 py-1.5 rounded-md border text-xs font-bold cursor-pointer whitespace-nowrap ${
+                  autoTourEnabled
+                    ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200'
+                    : 'bg-white/5 border-white/15 hover:border-sky-400/60 text-slate-200'
+                }`}
+                title={isEn ? 'Guided Camera Auto-Tour' : 'Bay Camera Tự Động qua 6 Góc Máy'}
+              >
+                <Compass className="w-3.5 h-3.5 text-cyan-300" />
+                <span className="hidden lg:inline">{isEn ? 'Auto Tour' : 'Bay Tour'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowOutliner((v) => !v)}
+                className={`flex items-center gap-1 min-h-[36px] px-2.5 py-1.5 rounded-md border text-xs font-bold cursor-pointer whitespace-nowrap ${
+                  showOutliner
+                    ? 'bg-amber-500/25 border-amber-400 text-amber-200'
+                    : 'bg-white/5 border-white/15 hover:border-sky-400/60 text-slate-200'
+                }`}
+                title={isEn ? 'Sub-Assembly Outliner Tree' : 'Cây Cụm Chi Tiết 3D'}
+              >
+                <Layers className="w-3.5 h-3.5 text-amber-300" />
+                <span className="hidden lg:inline">{isEn ? 'Parts' : 'Cấu Kiện'}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setIsDockOpen((v) => !v)}
                 className="flex items-center gap-1 min-h-[36px] px-2.5 py-1.5 rounded-md bg-white/5 border border-white/15 hover:border-sky-400/60 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap"
                 title={isEn ? 'Toggle Control Console (H)' : 'Bảng điều khiển thông số (Phím H)'}
@@ -2172,6 +2377,45 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
             </div>
           )}
         </div>
+
+      {/* Sub-Assembly Outliner Floating Drawer */}
+      {showOutliner && outlinerNodes.length > 0 && (
+        <div className="pointer-events-auto self-start w-72 max-h-64 overflow-y-auto rounded-xl bg-slate-950/95 border border-amber-400/50 p-2.5 space-y-1.5 shadow-2xl">
+          <div className="flex items-center justify-between text-[11px] font-bold text-amber-300 pb-1 border-b border-white/10">
+            <span>{isEn ? `Sub-Assemblies (${outlinerNodes.length})` : `Cây Cụm Chi Tiết (${outlinerNodes.length})`}</span>
+            {isolatedNodeKey && (
+              <button
+                type="button"
+                onClick={() => toggleIsolateOutlinerNode(isolatedNodeKey)}
+                className="text-[10px] text-sky-300 underline cursor-pointer"
+              >
+                {isEn ? 'Show All' : 'Hiện tất cả'}
+              </button>
+            )}
+          </div>
+          {outlinerNodes.map((n) => (
+            <div key={n.key} className="flex items-center justify-between gap-1.5 text-[11px] bg-white/[0.04] rounded-md px-2 py-1">
+              <button
+                type="button"
+                onClick={() => toggleIsolateOutlinerNode(n.key)}
+                className={`truncate text-left flex-1 cursor-pointer ${
+                  isolatedNodeKey === n.key ? 'text-cyan-300 font-bold' : 'text-slate-200 hover:text-white'
+                }`}
+              >
+                {n.label}
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleOutlinerVisibility(n.key)}
+                className="p-1 rounded hover:bg-white/10 text-slate-300 cursor-pointer shrink-0"
+                title={n.visible ? (isEn ? 'Hide part' : 'Ẩn cụm') : (isEn ? 'Show part' : 'Hiện cụm')}
+              >
+                {n.visible ? <Eye className="w-3 h-3 text-emerald-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 3D Observatory Canvas (Dedicated unobstructed stage on < lg, full-bleed on lg+) */}
       <div
@@ -2298,6 +2542,28 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
 
                 <button
                   type="button"
+                  onClick={() => setShowSweepPanel((v) => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer border whitespace-nowrap ${
+                    showSweepPanel
+                      ? 'bg-sky-500/25 border-sky-400/60 text-sky-200'
+                      : 'bg-white/10 border-transparent text-slate-200 hover:bg-white/20'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5 text-sky-300" />
+                  <span>{isEn ? 'Param Sweep' : 'Quét Biến'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportMarkdownDossier}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-200 cursor-pointer whitespace-nowrap"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>{isEn ? 'Dossier .md' : 'Hồ Sơ .md'}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setIsAdvancedDockOpen((v) => !v)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer border whitespace-nowrap ${
                     isAdvancedDockOpen
@@ -2368,6 +2634,36 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                 <span>{isEn ? 'Export CSV Report' : 'Xuất Báo cáo CSV'}</span>
               </button>
             </div>
+
+            {showSweepPanel && (
+              <div className="rounded-xl bg-slate-900/90 border border-sky-500/30 p-3 space-y-2">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-sky-300 font-bold">
+                    {isEn ? `Sweep Curve: ${telemetry.metric1LabelEn} vs ${activeDef.primaryLabelEn}` : `Đồ thị Quét Biến: ${telemetry.metric1LabelVi} theo ${activeDef.primaryLabelVi}`}
+                  </span>
+                  <span className="text-slate-400 tabular-nums">
+                    [{sweepCurveData.minP} .. {sweepCurveData.maxP} {activeDef.primaryUnit}]
+                  </span>
+                </div>
+                <svg viewBox="0 0 600 96" className="w-full h-24 rounded-lg bg-slate-950">
+                  {(() => {
+                    const { pts, minY, maxY, minP, maxP } = sweepCurveData;
+                    const spanY = maxY - minY || 1;
+                    const toX = (x: number) => 20 + ((x - minP) / (maxP - minP || 1)) * 560;
+                    const toY = (y: number) => 80 - ((y - minY) / spanY) * 60;
+                    const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(p.x).toFixed(1)} ${toY(p.y).toFixed(1)}`).join(' ');
+                    const curX = toX(primaryParam);
+                    return (
+                      <>
+                        <line x1="20" y1="80" x2="580" y2="80" stroke="#334155" strokeWidth="1" />
+                        <path d={d} fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeLinejoin="round" />
+                        <line x1={curX} y1="12" x2={curX} y2="80" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="4 3" />
+                      </>
+                    );
+                  })()}
+                </svg>
+              </div>
+            )}
 
             {showTelemetryChart && (
               <MiniTelemetryChart
@@ -2561,17 +2857,20 @@ export const SynapseV2Studio: React.FC<SynapseV2StudioProps> = ({
                   />
                 </div>
 
-                {/* Material / Render Style */}
+                {/* Material / Inspection Shader */}
                 <div className="bg-white/[0.03] border border-white/10 rounded-xl p-2 space-y-1">
                   <div className="text-[10px] font-semibold text-slate-400">
-                    {isEn ? 'Material Shader' : 'Chế độ Vật liệu'}
+                    {isEn ? 'Inspection Shader' : 'Chế độ Kiểm tra 3D'}
                   </div>
                   <div className="grid grid-cols-3 gap-1">
                     {(
                       [
                         { id: 'pbr', label: 'PBR' },
+                        { id: 'thermal', label: isEn ? 'Thermal' : 'Nhiệt' },
+                        { id: 'stress', label: isEn ? 'Stress' : 'Ứng suất' },
+                        { id: 'flux', label: isEn ? 'Flux' : 'Từ thông' },
                         { id: 'xray', label: 'X-Ray' },
-                        { id: 'wireframe', label: 'Lưới' }
+                        { id: 'wireframe', label: isEn ? 'Wire' : 'Lưới' }
                       ] as const
                     ).map((st) => (
                       <button

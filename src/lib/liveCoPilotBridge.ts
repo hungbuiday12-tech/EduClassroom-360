@@ -4,7 +4,7 @@ import { buildLocalVoiceMentorAnswer } from './voiceIntentEngine';
 import { stopVietnameseSpeech, speakVietnameseLecture } from './vietnameseSpeech';
 
 export interface LiveWorkspaceContext {
-  subject: 'math' | 'physics' | 'cs' | 'spatial_3d' | 'synapse_pre' | 'general';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' | 'spatial_3d' | 'synapse_pre' | 'general';
   title: string;
   summary: string;
   codeSnippet?: string;
@@ -18,7 +18,7 @@ export interface LiveWorkspaceContext {
 let currentWorkspaceCtx: LiveWorkspaceContext = {
   subject: 'general',
   title: 'Synapse STEM Observatory',
-  summary: 'Không gian học tập Toán · Vật lí · Tin học · 3D Lab.',
+  summary: 'Không gian học tập Toán · Vật lí · Hóa học · Sinh học · Tin học · 3D Lab.',
   updatedAt: Date.now()
 };
 

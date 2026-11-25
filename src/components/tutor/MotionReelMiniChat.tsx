@@ -54,7 +54,7 @@ export interface LectureReelStepSeed {
 
 interface MotionReelMiniChatProps {
   language: 'vi' | 'en';
-  subject: 'math' | 'physics' | 'cs';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
   initialTopic?: string;
   lectureTitle?: string;
   lectureSteps?: LectureReelStepSeed[];
@@ -63,7 +63,7 @@ interface MotionReelMiniChatProps {
 }
 
 function inferVisualKindForTopic(
-  subject: 'math' | 'physics' | 'cs',
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
   text: string,
   stepIdx: number
 ): MotionVisualKind {
@@ -73,6 +73,18 @@ function inferVisualKindForTopic(
       return 'binary_search';
     }
     return stepIdx % 2 === 0 ? 'binary_search' : 'vector_addition';
+  }
+  if (subject === 'chemistry') {
+    if (/enthalpy|năng lượng|nhiệt|tốc độ|hoạt hóa|phản ứng|tích phân/.test(lower)) return 'integral_area';
+    if (/cân bằng|ph|chuẩn độ|động học|đường cong/.test(lower)) return 'derivative_tangent';
+    if (/orbital|vsepr|liên kết|phân tử|lực|momen/.test(lower)) return 'vector_addition';
+    return stepIdx % 2 === 0 ? 'derivative_tangent' : 'vector_addition';
+  }
+  if (subject === 'biology') {
+    if (/quần thể|hardy|tăng trưởng|enzyme|động học|hoạt động/.test(lower)) return 'parabola_vertex';
+    if (/adn|sóng|xung|tim|chu kì|nhịp|điện thế/.test(lower)) return 'wave_superposition';
+    if (/tổng|năng lượng|hiệu suất|dòng/.test(lower)) return 'integral_area';
+    return stepIdx % 2 === 0 ? 'wave_superposition' : 'parabola_vertex';
   }
   if (subject === 'physics') {
     if (/sóng|giao thoa|wave|âm|ánh sáng|nhiễu xạ|quang/.test(lower)) return 'wave_superposition';
@@ -92,7 +104,7 @@ function inferVisualKindForTopic(
 
 function buildLectureAutoReel(
   lectureTitle: string,
-  subject: 'math' | 'physics' | 'cs',
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
   lectureSteps: LectureReelStepSeed[]
 ): MotionReelScript {
   const accents = ['#38bdf8', '#f59e0b', '#34d399', '#a855f7', '#fb7185'];

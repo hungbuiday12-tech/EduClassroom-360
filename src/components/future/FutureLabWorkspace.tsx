@@ -25,7 +25,7 @@ import { useNavigation } from '../../context/NavigationContext';
 import { useRemoteController } from '../../context/RemoteControllerContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 import { FutureLabTabId, SubjectType } from '../../types';
-import { PRE_SIDEBAR_GROUPS, PRE_STUDIOS, PreSidebarGroupId } from '../../data/preLabsData';
+import { PRE_SIDEBAR_GROUPS, PRE_STUDIOS, PRE_SUBJECT_ZONES, PreSidebarGroupId, PreSubjectZoneId } from '../../data/preLabsData';
 import { RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
 import { SynapseV2Studio } from '../synapsev2/SynapseV2Studio';
 import { NeuralGalaxyTwin3D } from './NeuralGalaxyTwin3D';
@@ -64,6 +64,18 @@ const SolarSystem3DLab = lazy(() =>
 const TypingParrotoSandbox = lazy(() =>
   import('./TypingParrotoSandbox').then((m) => ({ default: m.TypingParrotoSandbox }))
 );
+const ChemReaction3DLab = lazy(() =>
+  import('./ChemReaction3DLab').then((m) => ({ default: m.ChemReaction3DLab }))
+);
+const ChemOrbitalVsepr3DLab = lazy(() =>
+  import('./ChemOrbitalVsepr3DLab').then((m) => ({ default: m.ChemOrbitalVsepr3DLab }))
+);
+const BioCellAtlas3DLab = lazy(() =>
+  import('./BioCellAtlas3DLab').then((m) => ({ default: m.BioCellAtlas3DLab }))
+);
+const BioDnaCrispr3DLab = lazy(() =>
+  import('./BioDnaCrispr3DLab').then((m) => ({ default: m.BioDnaCrispr3DLab }))
+);
 
 interface FutureLabWorkspaceProps {
   onBack?: () => void;
@@ -94,6 +106,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [switcherQuery, setSwitcherQuery] = useState('');
   const [switcherGroup, setSwitcherGroup] = useState<'all' | 'pinned' | PreSidebarGroupId>('all');
+  const [switcherSubject, setSwitcherSubject] = useState<'all' | PreSubjectZoneId>('all');
   const [pinnedStudios, setPinnedStudios] = useState<FutureLabTabId[]>(() => {
     try {
       const raw = localStorage.getItem('synapse_pre_pinned_v1');
@@ -775,6 +788,50 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             <TypingParrotoSandbox onEarnXP={onEarnXP} />
           </Suspense>
         )}
+        {activeView === 'chem_reaction_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-amber-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-amber-300">
+                {isEn ? 'Initializing 3D Potential Energy Surface...' : 'Đang khởi tạo Bề Mặt Thế Năng Hóa Học 3D...'}
+              </div>
+            }
+          >
+            <ChemReaction3DLab onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
+        {activeView === 'chem_orbital_vsepr_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-sky-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-sky-300">
+                {isEn ? 'Initializing Quantum Orbitals & VSEPR...' : 'Đang khởi tạo Orbital Lượng Tử & VSEPR 3D...'}
+              </div>
+            }
+          >
+            <ChemOrbitalVsepr3DLab onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
+        {activeView === 'bio_cell_atlas_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-emerald-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-emerald-300">
+                {isEn ? 'Initializing 3D Eukaryotic Cell Atlas...' : 'Đang khởi tạo Atlas Tế Bào Nhân Thực 3D...'}
+              </div>
+            }
+          >
+            <BioCellAtlas3DLab onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
+        {activeView === 'bio_dna_crispr_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-cyan-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-cyan-300">
+                {isEn ? 'Initializing DNA & CRISPR-Cas9 Studio...' : 'Đang khởi tạo ADN 3D & CRISPR-Cas9...'}
+              </div>
+            }
+          >
+            <BioDnaCrispr3DLab onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
       </div>
 
       {/* Quick Studio Switcher Spotlight Modal (Ctrl+K) */}
@@ -796,8 +853,8 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
                 onChange={(e) => setSwitcherQuery(e.target.value)}
                 placeholder={
                   isEn
-                    ? 'Search all 24 Synapse Pre studios, megastructures, sandboxes...'
-                    : 'Tìm nhanh trong 24 phòng Lab, Mô phỏng & Sandboxes Synapse Pre...'
+                    ? `Search all ${PRE_STUDIOS.length} Synapse Pre studios, megastructures, sandboxes...`
+                    : `Tìm nhanh trong ${PRE_STUDIOS.length} phòng Lab, Mô phỏng & Sandboxes Synapse Pre...`
                 }
                 className="flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
               />
@@ -810,36 +867,66 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               </button>
             </div>
 
-            <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-1.5 bg-slate-50 dark:bg-slate-950/60">
-              {(
-                [
-                  { id: 'all', label: isEn ? `All (${PRE_STUDIOS.length})` : `Tất cả (${PRE_STUDIOS.length})` },
-                  { id: 'pinned', label: isEn ? `Pinned (${pinnedStudios.length})` : `Đã ghim (${pinnedStudios.length})` },
-                  ...PRE_SIDEBAR_GROUPS.map((g) => ({
-                    id: g.id,
-                    label: isEn ? g.labelEn : g.labelVi,
-                  })),
-                ] as const
-              ).map((tab) => (
+            <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 space-y-2 bg-slate-50 dark:bg-slate-950/60">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(
+                  [
+                    { id: 'all', label: isEn ? `All (${PRE_STUDIOS.length})` : `Tất cả (${PRE_STUDIOS.length})` },
+                    { id: 'pinned', label: isEn ? `Pinned (${pinnedStudios.length})` : `Đã ghim (${pinnedStudios.length})` },
+                    ...PRE_SIDEBAR_GROUPS.map((g) => ({
+                      id: g.id,
+                      label: isEn ? g.labelEn : g.labelVi,
+                    })),
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setSwitcherGroup(tab.id)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold cursor-pointer whitespace-nowrap transition-colors ${
+                      switcherGroup === tab.id
+                        ? 'bg-cyan-500 text-slate-950'
+                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
-                  key={tab.id}
                   type="button"
-                  onClick={() => setSwitcherGroup(tab.id)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-bold cursor-pointer transition-colors ${
-                    switcherGroup === tab.id
-                      ? 'bg-cyan-500 text-slate-950'
-                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                  onClick={() => setSwitcherSubject('all')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer whitespace-nowrap border ${
+                    switcherSubject === 'all'
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 border-slate-900 dark:border-white'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
                   }`}
                 >
-                  {tab.label}
+                  {isEn ? 'All Subjects' : 'Mọi môn học'}
                 </button>
-              ))}
+                {PRE_SUBJECT_ZONES.map((z) => (
+                  <button
+                    key={z.id}
+                    type="button"
+                    onClick={() => setSwitcherSubject(z.id)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer whitespace-nowrap border transition-colors ${
+                      switcherSubject === z.id
+                        ? z.badgeClass
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
+                    {isEn ? z.labelEn : z.labelVi}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="p-3 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {PRE_STUDIOS.filter((st) => {
                 if (switcherGroup === 'pinned' && !pinnedStudios.includes(st.id)) return false;
                 if (switcherGroup !== 'all' && switcherGroup !== 'pinned' && st.sidebarGroup !== switcherGroup) return false;
+                if (switcherSubject !== 'all' && st.subjectZone !== switcherSubject) return false;
                 const q = switcherQuery.trim().toLowerCase();
                 if (!q) return true;
                 return `${st.titleVi} ${st.titleEn} ${st.metaVi} ${st.keywords}`.toLowerCase().includes(q);

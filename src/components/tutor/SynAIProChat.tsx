@@ -53,7 +53,7 @@ import {
 import { AI_ROADMAPS_STORAGE_KEY } from './SocraticAITutor';
 
 export type SynProMode = 'pro_turbo' | 'pro_deep' | 'pro_roadmap' | 'motion_reel';
-export type SynProDomain = 'all' | 'math' | 'physics' | 'cs';
+export type SynProDomain = 'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 
 interface SynAIProChatProps {
   isOpen: boolean;
@@ -67,14 +67,16 @@ interface SynAIProChatProps {
 
 const PRO_THREADS_STORAGE_KEY = 'synapse_ai_pro_threads_v1';
 
-const PRO_DOMAINS: { id: SynProDomain; labelVi: string; labelEn: string; apiSubj: 'math' | 'physics' | 'cs' }[] = [
+const PRO_DOMAINS: { id: SynProDomain; labelVi: string; labelEn: string; apiSubj: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' }[] = [
   { id: 'all', labelVi: 'Toàn Năng STEM', labelEn: 'All-in-One STEM', apiSubj: 'math' },
   { id: 'math', labelVi: 'Toán Chuyên', labelEn: 'Advanced Math', apiSubj: 'math' },
   { id: 'physics', labelVi: 'Vật Lí 3D', labelEn: '3D Physics', apiSubj: 'physics' },
+  { id: 'chemistry', labelVi: 'Hóa Học 3D', labelEn: '3D Chemistry', apiSubj: 'chemistry' },
+  { id: 'biology', labelVi: 'Sinh Học 3D', labelEn: '3D Biology', apiSubj: 'biology' },
   { id: 'cs', labelVi: 'Thuật Toán & AI', labelEn: 'Algorithms & AI', apiSubj: 'cs' }
 ];
 
-const PRO_MAJORS_VI: Record<'math' | 'physics' | 'cs', string[]> = {
+const PRO_MAJORS_VI: Record<'math' | 'physics' | 'chemistry' | 'biology' | 'cs', string[]> = {
   math: [
     'Đội tuyển Chuyên Toán / HSG / Đánh giá năng lực 9+',
     'Công nghệ thông tin, Trí tuệ nhân tạo & Khoa học dữ liệu',
@@ -84,6 +86,16 @@ const PRO_MAJORS_VI: Record<'math' | 'physics' | 'cs', string[]> = {
     'Đội tuyển Chuyên Lí / HSG / Mục tiêu 9+ THPT QG',
     'Kỹ thuật Điện - Tự động hóa - Robotics',
     'Vi mạch bán dẫn - Vật lí kỹ thuật & Hàng không'
+  ],
+  chemistry: [
+    'Đội tuyển Chuyên Hóa / IChO / Mục tiêu 9+ THPT QG',
+    'Kỹ thuật Hóa học, Polyme & Vật liệu Pin Năng lượng',
+    'Dược học, Hóa Dược & Tổng hợp Hữu cơ'
+  ],
+  biology: [
+    'Đội tuyển Chuyên Sinh / IBO / Khối B00 Y Dược',
+    'Công nghệ Sinh học, Chỉnh sửa Gen CRISPR & Di truyền',
+    'Sinh học Phân tử, Miễn dịch & Tin sinh học'
   ],
   cs: [
     'Lập trình thi đấu (Chuyên Tin / HSG QG / VNOI / ICPC)',
@@ -143,7 +155,7 @@ export const SynAIProChat: React.FC<SynAIProChatProps> = ({
   screenStreamRef.current = screenStream;
 
   // Roadmap diagnostics inside Syn AI Pro
-  const apiSubject: 'math' | 'physics' | 'cs' =
+  const apiSubject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' =
     PRO_DOMAINS.find((d) => d.id === proDomain)?.apiSubj || 'math';
   const [diagGrade, setDiagGrade] = useState('Lớp 12');
   const [diagSelfLevel, setDiagSelfLevel] = useState('Khá');

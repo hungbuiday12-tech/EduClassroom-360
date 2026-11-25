@@ -40,7 +40,15 @@ interface GuideSceneDef {
   titleEn: string;
   subtitleVi: string;
   subtitleEn: string;
-  kind: 'workflow' | 'math_calc' | 'physics_snell' | 'cs_sort' | 'phasor_3b1b' | 'pre_cad';
+  kind:
+    | 'workflow'
+    | 'math_calc'
+    | 'physics_snell'
+    | 'chem_titration'
+    | 'bio_dna'
+    | 'cs_sort'
+    | 'phasor_3b1b'
+    | 'pre_cad';
   targetSubject: SubjectType;
   actionLabelVi: string;
   actionLabelEn: string;
@@ -62,9 +70,9 @@ const GUIDE_SCENES: GuideSceneDef[] = [
     titleVi: 'Quy trình 3 bước trên Synapse: Bài giảng · Phòng Lab · Kiểm tra',
     titleEn: 'Three-Stage Study Workflow: Lesson · Interactive Lab · Practice',
     subtitleVi:
-      'Mỗi chuyên đề Toán, Vật lí và Tin học đều gắn trực tiếp mô hình 2D/3D để bạn vừa xem lý thuyết, vừa kéo thông số kiểm chứng và hỏi đáp theo từng bước.',
+      'Mỗi chuyên đề Toán, Vật lí, Hóa học, Sinh học và Tin học đều có khu bài giảng, mô phỏng 2D/3D và phòng thực hành tách riêng từng môn.',
     subtitleEn:
-      'Every Math, Physics, and Computer Science module links structured notes directly to live 2D/3D sandboxes and step-by-step checks.',
+      'Every Math, Physics, Chemistry, Biology, and CS module links structured lessons directly to dedicated subject Sandboxes and 2D/3D labs.',
     kind: 'workflow',
     targetSubject: 'roadmap',
     actionLabelVi: 'Mở Lộ trình học',
@@ -82,8 +90,8 @@ const GUIDE_SCENES: GuideSceneDef[] = [
     blueprintTitleVi: 'Cấu trúc không gian làm việc',
     blueprintTitleEn: 'Workspace Architecture',
     blueprintSpecs: [
-      { labelVi: 'Khối lớp hỗ trợ', labelEn: 'Curriculum Span', value: 'Lớp 9 – 12 & Chuyên' },
-      { labelVi: 'Phòng thí nghiệm', labelEn: 'Lab Suites', value: 'Toán · Lí · Tin · Pre' },
+      { labelVi: 'Khối lớp hỗ trợ', labelEn: 'Curriculum Span', value: 'GDPT 2006 · 2018 · Chuyên' },
+      { labelVi: 'Phòng thí nghiệm', labelEn: 'Subject Labs', value: 'Toán · Lí · Hóa · Sinh · Tin' },
       { labelVi: 'Xuất báo cáo', labelEn: 'Exports', value: 'PNG · WebM · CSV' },
     ],
     blueprintNotesVi: [
@@ -184,8 +192,94 @@ const GUIDE_SCENES: GuideSceneDef[] = [
     ],
   },
   {
-    id: 'cs_sort',
+    id: 'chem_titration',
     chapterNumber: '04',
+    shortTitleVi: 'Hóa học 2D/3D',
+    shortTitleEn: 'Chemistry 2D/3D',
+    titleVi: 'Hóa học: Chuẩn độ Axit–Bazơ, Cân bằng & Orbital 3D',
+    titleEn: 'Chemistry: Acid–Base Titration, Equilibrium & 3D Orbitals',
+    subtitleVi:
+      'Kéo thể tích NaOH nhỏ giọt vào dung dịch CH₃COOH bên cạnh để quan sát đường cong pH, điểm tương đương và màu chất chỉ thị phenolphthalein.',
+    subtitleEn:
+      'Scrub added NaOH volume into CH₃COOH below to watch the live pH titration curve, equivalence jump, and phenolphthalein shift.',
+    kind: 'chem_titration',
+    targetSubject: 'chemistry_sims',
+    actionLabelVi: 'Vào Phòng Hóa 2D/3D',
+    actionLabelEn: 'Open Chemistry Labs',
+    stepsVi: [
+      'Học đầy đủ bài giảng Hóa học GDPT 2006, 2018 và Chuyên HSG (Lớp 9–12).',
+      'Thực hành 8+ mô phỏng chuẩn độ, tốc độ phản ứng, điện phân và cân bằng Le Chatelier kèm dữ liệu đo CSV.',
+      'Chuyển sang khu Synapse Pre Hóa học để soi mặt cắt bề mặt thế năng Ea và Orbital lai hóa sp–sp³d².'
+    ],
+    stepsEn: [
+      'Study complete Chemistry tracks across GDPT 2006, 2018, and Olympiad tiers (Grades 9–12).',
+      'Experiment with live titration, reaction rate, electrolysis, and equilibrium sandboxes.',
+      'Inspect 3D Potential Energy Surfaces (Ea) and VSEPR/hybrid orbital lobes inside Synapse Pre.'
+    ],
+    blueprintTitleVi: 'Phòng Lab & Sandbox Hóa học',
+    blueprintTitleEn: 'Chemistry Lab & Sandbox Spec',
+    blueprintSpecs: [
+      { labelVi: 'Bài giảng & Đề thi', labelEn: 'Lessons & Exams', value: '2006 · 2018 · 350 Đề' },
+      { labelVi: 'Mô phỏng 2D / 3D', labelEn: '2D & 3D Models', value: 'Chuẩn độ · VSEPR · Điện phân' },
+      { labelVi: 'Khu vực riêng', labelEn: 'Dedicated Zone', value: 'Sandbox Hóa + 2 Lab Pre 3D' },
+    ],
+    blueprintNotesVi: [
+      'Phòng thí nghiệm Hóa học có khu Sandbox và mô phỏng tách riêng hoàn toàn.',
+      'Tính trực tiếp độ pH, hiệu suất phản ứng, ∆H và cân bằng ion theo thời gian thực.',
+      'Hỗ trợ thanh phân tích SimAnalysisProBar đo bước nhảy và xuất dữ liệu CSV.'
+    ],
+    blueprintNotesEn: [
+      'Chemistry features its own separated Sandbox and 2D/3D simulation workspace.',
+      'Computes live pH, reaction yield, enthalpy ΔH, and equilibrium constants.',
+      'Includes SimAnalysisProBar sweep and CSV telemetry logging.'
+    ],
+  },
+  {
+    id: 'bio_dna',
+    chapterNumber: '05',
+    shortTitleVi: 'Sinh học 2D/3D',
+    shortTitleEn: 'Biology 2D/3D',
+    titleVi: 'Sinh học: Tế bào 3D, Nhân đôi ADN, CRISPR & Di truyền',
+    titleEn: 'Biology: 3D Cell Atlas, DNA Replication, CRISPR & Genetics',
+    subtitleVi:
+      'Điều chỉnh nhiệt độ và thành phần %GC bên dưới để quan sát đường cong biến tính kép ADN (Tm) và tự động phiên mã chuỗi mARN tương ứng.',
+    subtitleEn:
+      'Adjust temperature and %GC content below to observe the live DNA melting curve (Tm) and complementary mRNA transcription readout.',
+    kind: 'bio_dna',
+    targetSubject: 'biology_sims',
+    actionLabelVi: 'Vào Phòng Sinh 2D/3D',
+    actionLabelEn: 'Open Biology Labs',
+    stepsVi: [
+      'Học đầy đủ Sinh học tế bào, Sinh lý học, Di truyền & Tiến hóa theo GDPT 2006, 2018 và Chuyên.',
+      'Khám phá mô phỏng 2D/3D nhân đôi ADN, chuỗi truyền electron ATP, phân bào nguyên phân/giảm phân và lai Mendel.',
+      'Mở Synapse Pre Sinh học để tách lớp 6 bào quan tế bào nhân thực và mô phỏng 4 bước cắt chỉnh gen CRISPR-Cas9.'
+    ],
+    stepsEn: [
+      'Master Cell Biology, Physiology, Genetics, and Ecology across GDPT 2006, 2018, and Olympiad tracks.',
+      'Manipulate 2D/3D DNA replication, ATP synthase, mitosis/meiosis phases, and Hardy-Weinberg populations.',
+      'Dissect the 3D Eukaryotic Cell cutaway and step through 4-stage CRISPR-Cas9 editing in Synapse Pre.'
+    ],
+    blueprintTitleVi: 'Phòng Lab & Sandbox Sinh học',
+    blueprintTitleEn: 'Biology Lab & Sandbox Spec',
+    blueprintSpecs: [
+      { labelVi: 'Bài giảng & Đề thi', labelEn: 'Lessons & Exams', value: '2006 · 2018 · 350 Đề' },
+      { labelVi: 'Mô phỏng 2D / 3D', labelEn: '2D & 3D Models', value: 'Tế bào · ADN · Mendel · Sinh thái' },
+      { labelVi: 'Khu vực riêng', labelEn: 'Dedicated Zone', value: 'Sandbox Sinh + 2 Lab Pre 3D' },
+    ],
+    blueprintNotesVi: [
+      'Khu vực Sinh học tách riêng bài giảng, Sandbox di truyền và kính hiển vi 3D.',
+      'Tính tức thì nhiệt độ nóng chảy Tm, tỉ lệ kiểu hình F2 và tốc độ xúc tác enzyme.',
+      'Cho phép tách lớp và cô lập từng bào quan 3D kèm công thức sinh hóa.'
+    ],
+    blueprintNotesEn: [
+      'Biology separates lectures, genetics sandboxes, and 3D cellular specimens cleanly.',
+      'Calculates DNA melting temperature Tm, F2 phenotypic ratios, and enzyme kinetics live.',
+      'Interactive 3D organelle isolation and biochemistry reference cards.'
+    ],
+  },
+  {
+    id: 'cs_sort',
+    chapterNumber: '06',
     shortTitleVi: 'Tin học & Truy vết',
     shortTitleEn: 'CS & Code Trace',
     titleVi: 'Trình soạn thảo Sublime 4 & Truy vết Thuật toán 2D/3D từng bước',
@@ -228,7 +322,7 @@ const GUIDE_SCENES: GuideSceneDef[] = [
   },
   {
     id: 'phasor_3b1b',
-    chapterNumber: '05',
+    chapterNumber: '07',
     shortTitleVi: 'Giọng Việt & 3B1B',
     shortTitleEn: 'Audio & 3B1B',
     titleVi: 'Thuyết minh Tiếng Việt, Trình dựng Video 3B1B & Ôn Đề thi',
@@ -244,38 +338,38 @@ const GUIDE_SCENES: GuideSceneDef[] = [
     stepsVi: [
       'Bấm "Nghe giảng" ở đầu bài học hoặc từng mục để phát thuyết minh tiếng Việt rõ ràng.',
       'Mở tab "Video 3B1B" trong bài giảng để xem hoạt họa vector và xuất thành file video .webm.',
-      'Trong Kho Đề Thi, dán ảnh bài làm (Ctrl+V) để đối chiếu lời giải chi tiết từng bước.',
+      'Trong Kho Đề Thi 5 môn (1.750 đề), dán ảnh bài làm hoặc luyện trực tiếp kèm lời giải chi tiết.',
     ],
     stepsEn: [
       'Click Listen per section or full-lesson audio in the lecture header for hands-free study.',
       'Open the embedded Video 3B1B tab to inspect vector motion and export .webm clips.',
-      'Paste solution photos in the Exam Hub to review structured step-by-step feedback.',
+      'Browse 1,750 structured exams across all 5 subjects with step-by-step grading feedback.',
     ],
     blueprintTitleVi: 'Trình bày & Ôn tập đa phương thức',
     blueprintTitleEn: 'Multimodal Study Spec',
     blueprintSpecs: [
       { labelVi: 'Thuyết minh bài học', labelEn: 'Narration', value: 'Giọng Việt từng mục' },
       { labelVi: 'Xuất Video 3B1B', labelEn: 'Reel Export', value: 'Canvas → .webm' },
-      { labelVi: 'Kho Đề & Chấm bài', labelEn: 'Exam Practice', value: 'Chấm từng ý 0–10' },
+      { labelVi: 'Kho Đề & Chấm bài', labelEn: 'Exam Practice', value: '1.750 Đề (5 Môn)' },
     ],
     blueprintNotesVi: [
       'Hoạt họa vector và đồ thị được dựng trực tiếp bằng Canvas/Math nên luôn sắc nét.',
       'Hỗ trợ tua đoạn, đổi tốc độ đọc và xuất file video không cần phần mềm ngoài.',
-      'Kho đề thi phân loại theo học kỳ, thi vào 10, THPT Quốc gia và HSG.',
+      'Kho đề thi phân loại đầy đủ Toán, Vật lí, Hóa học, Sinh học, Tin học (Chuyên & Không chuyên).',
     ],
     blueprintNotesEn: [
       'Vector reels render mathematically on canvas for crisp typography at any resolution.',
       'Supports section seek, narration speed control, and built-in .webm export.',
-      'Exam archive organizes papers by grade level, entrance exams, and olympiad tracks.',
+      'Exam archive covers Math, Physics, Chemistry, Biology, and CS (Standard & Olympiad).',
     ],
   },
   {
     id: 'pre_cad',
-    chapterNumber: '06',
+    chapterNumber: '08',
     shortTitleVi: 'Synapse Pre & 3D',
     shortTitleEn: 'Synapse Pre & 3D',
-    titleVi: 'Synapse Pre: 30 Đại Công Trình, Thước đo 3D & Mặt cắt X/Y/Z',
-    titleEn: 'Synapse Pre: 30 Megastructures, 3D Laser Ruler & X/Y/Z Cutaways',
+    titleVi: 'Synapse Pre: 28 Phòng Lab 5 Môn, 30 Đại Công Trình & CAD 3D',
+    titleEn: 'Synapse Pre: 28 Subject Labs, 30 Megastructures & CAD Cutaways',
     subtitleVi:
       'Kéo thanh "Tách lớp CAD" và bật "Mặt cắt tiết diện" ngay bên cạnh để xem cách hệ thống Synapse Pre mổ xẻ kết cấu 3D thời gian thực.',
     subtitleEn:
@@ -285,13 +379,13 @@ const GUIDE_SCENES: GuideSceneDef[] = [
     actionLabelVi: 'Khám phá Synapse Pre',
     actionLabelEn: 'Explore Synapse Pre',
     stepsVi: [
-      'Khám phá 21+ phòng Lab Pre (Cơ khí lắp ráp 3D, Hệ Mặt Trời Kepler, Máy tính Lượng tử, Vũ trụ What-If).',
-      'Trong 30 Đại Công Trình: dùng Thước đo khoảng cách 3D, Mặt cắt 3 trục X/Y/Z, đồ thị Telemetry và So sánh 2 công trình.',
+      'Khám phá 28 phòng Lab Pre phân khu theo môn: Vật lí, Hóa học (Phản ứng Ea & Orbital), Sinh học (Tế bào & CRISPR), Toán và Tin học.',
+      'Trong 30 Đại Công Trình: dùng Thước đo 3D, Mặt cắt X/Y/Z, Outliner từng khối, Chế độ Nhiệt/Ứng suất/Từ thông, Auto-Tour và xuất Hồ sơ .md.',
       'Quét mã QR để biến điện thoại thành tay cầm xoay 3D hoặc tham gia phòng Syn Meet cùng bạn học.',
     ],
     stepsEn: [
-      'Launch 21+ Pre Labs (3D Mechanical Assembly, Kepler Solar System, Quantum Bloch, What-If Physics).',
-      'Inside 30 Megastructures: use 3D Point-to-Point Ruler, X/Y/Z Cutaway Planes, Telemetry Oscilloscope, and Spec Comparator.',
+      'Launch 28 Pre Labs organized by subject zone: Physics, Chemistry (Ea Surface & Orbitals), Biology (Cell & CRISPR), Math, and CS.',
+      'Inside 30 Megastructures: use 3D Ruler, X/Y/Z Cutaways, Sub-Assembly Outliner, Thermal/Stress/Flux shaders, Camera Tour, and .md Engineering Dossier export.',
       'Scan QR to turn your phone into a 3D controller or collaborate live inside Syn Meet.',
     ],
     blueprintTitleVi: 'Bộ công cụ Kỹ thuật Synapse Pre',
@@ -334,7 +428,14 @@ const GuideInteractiveStage: React.FC<{
   const [incAngleDeg, setIncAngleDeg] = useState<number>(42);
   const [mediumN2, setMediumN2] = useState<number>(1.5);
 
-  // Chapter 04: CS Sort Interactive Tracer
+  // Chapter 04: Chemistry Titration Interactive State (25 mL 0.1 M CH3COOH + 0.1 M NaOH)
+  const [naohVol, setNaohVol] = useState<number>(25.0);
+
+  // Chapter 05: Biology DNA Melting Curve & Transcription Interactive State
+  const [dnaTemp, setDnaTemp] = useState<number>(72);
+  const [gcPercent, setGcPercent] = useState<number>(52);
+
+  // Chapter 06: CS Sort Interactive Tracer
   const sortTraceSteps = useMemo(() => {
     const arr = [38, 16, 64, 24, 52, 44];
     const frames: {
@@ -952,6 +1053,186 @@ const GuideInteractiveStage: React.FC<{
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === 'chem_titration') {
+    // 25 mL 0.10 M CH3COOH (Ka = 1.8e-5) titrated with 0.10 M NaOH
+    const calcPh = (v: number) => {
+      const ka = 1.8e-5;
+      const va = 25.0;
+      const ca = 0.1;
+      const cb = 0.1;
+      if (v <= 0.01) return -Math.log10(Math.sqrt(ka * ca));
+      const totalV = va + v;
+      if (v < 24.98) {
+        const ratio = v / (va - v);
+        return -Math.log10(ka) + Math.log10(ratio);
+      }
+      if (Math.abs(v - 25) <= 0.05) {
+        const cSalt = (va * ca) / totalV;
+        const oh = Math.sqrt((1e-14 / ka) * cSalt);
+        return 14 + Math.log10(oh);
+      }
+      const excessOh = ((v - va) * cb) / totalV;
+      return 14 + Math.log10(Math.max(1e-7, excessOh));
+    };
+    const currentPh = calcPh(naohVol);
+    const indicatorColor = currentPh >= 8.3 ? '#ec4899' : '#38bdf8';
+
+    // Build SVG titration curve points
+    const pts: string[] = [];
+    for (let v = 0; v <= 50; v += 0.5) {
+      const x = 36 + (v / 50) * 412;
+      const y = 196 - (calcPh(v) / 14) * 168;
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    const curX = 36 + (naohVol / 50) * 412;
+    const curY = 196 - (currentPh / 14) * 168;
+
+    return (
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4 space-y-3 h-full flex flex-col justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+          <span className="font-bold text-slate-800 dark:text-slate-200">
+            25 mL CH₃COOH 0.1M + NaOH 0.1M
+          </span>
+          <span className="font-bold tabular-nums" style={{ color: indicatorColor }}>
+            V = {naohVol.toFixed(1)} mL → pH = {currentPh.toFixed(2)}
+          </span>
+        </div>
+
+        <svg
+          viewBox="0 0 480 220"
+          className="w-full h-[220px] rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+        >
+          {/* Phenolphthalein transition band pH 8.2–10.0 */}
+          <rect x={36} y={196 - (10 / 14) * 168} width={412} height={(1.8 / 14) * 168} fill="rgba(236, 72, 153, 0.12)" />
+          {/* Equivalence vertical line at V = 25 mL */}
+          <line x1={36 + 206} y1={24} x2={36 + 206} y2={196} stroke="#94a3b8" strokeDasharray="4 4" strokeWidth={1.1} />
+          {/* Axes */}
+          <line x1={36} y1={24} x2={36} y2={196} stroke="#64748b" strokeWidth={1.5} />
+          <line x1={36} y1={196} x2={448} y2={196} stroke="#64748b" strokeWidth={1.5} />
+          {/* Curve */}
+          <polyline fill="none" stroke="#0d9488" strokeWidth={2.5} points={pts.join(' ')} />
+          {/* Live marker */}
+          <circle cx={curX} cy={curY} r={5.5} fill={indicatorColor} stroke="#ffffff" strokeWidth={1.5} />
+          <text x={42} y={36} fontSize={10} fontFamily="monospace" fill="#64748b">pH 14</text>
+          <text x={42} y={190} fontSize={10} fontFamily="monospace" fill="#64748b">pH 0</text>
+          <text x={242} y={210} textAnchor="middle" fontSize={10} fontFamily="monospace" fill="#64748b">
+            V_eq = 25.0 mL
+          </text>
+        </svg>
+
+        <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1 text-xs">
+          <div className="flex justify-between font-mono tabular-nums">
+            <span className="text-slate-600 dark:text-slate-300">
+              {isEn ? 'Added NaOH volume' : 'Thể tích NaOH nhỏ giọt'}
+            </span>
+            <span className="font-bold text-teal-600 dark:text-teal-400">
+              {naohVol.toFixed(1)} mL ({currentPh >= 8.3 ? (isEn ? 'Pink' : 'Hồng') : isEn ? 'Colorless' : 'Không màu'})
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={50}
+            step={0.5}
+            value={naohVol}
+            onChange={(e) => {
+              onUserInteract();
+              setNaohVol(Number(e.target.value));
+            }}
+            className="w-full accent-teal-600 cursor-pointer"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === 'bio_dna') {
+    const tm = 69.3 + 0.41 * gcPercent;
+    const fracDenatured = (temp: number) => 1 / (1 + Math.exp(-(temp - tm) / 2.2));
+    const currentDenatured = fracDenatured(dnaTemp) * 100;
+
+    const pts: string[] = [];
+    for (let temp = 45; temp <= 100; temp += 1) {
+      const x = 36 + ((temp - 45) / 55) * 412;
+      const y = 192 - fracDenatured(temp) * 158;
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    const curX = 36 + ((dnaTemp - 45) / 55) * 412;
+    const curY = 192 - fracDenatured(dnaTemp) * 158;
+    const tmX = 36 + ((tm - 45) / 55) * 412;
+
+    return (
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4 space-y-3 h-full flex flex-col justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+          <span className="font-bold text-slate-800 dark:text-slate-200">
+            Tm = {tm.toFixed(1)}°C (%GC = {gcPercent}%)
+          </span>
+          <span className="text-emerald-700 dark:text-emerald-300 font-bold tabular-nums">
+            T = {dnaTemp}°C → {currentDenatured.toFixed(0)}% {isEn ? 'melted' : 'tách mạch'}
+          </span>
+        </div>
+
+        <svg
+          viewBox="0 0 480 220"
+          className="w-full h-[220px] rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+        >
+          {/* Tm marker line */}
+          <line x1={tmX} y1={24} x2={tmX} y2={192} stroke="#f59e0b" strokeDasharray="4 4" strokeWidth={1.3} />
+          <line x1={36} y1={24} x2={36} y2={192} stroke="#64748b" strokeWidth={1.5} />
+          <line x1={36} y1={192} x2={448} y2={192} stroke="#64748b" strokeWidth={1.5} />
+          <polyline fill="none" stroke="#10b981" strokeWidth={2.5} points={pts.join(' ')} />
+          <circle cx={curX} cy={curY} r={5.5} fill="#059669" stroke="#ffffff" strokeWidth={1.5} />
+          <text x={tmX + 6} y={38} fontSize={10} fontFamily="monospace" fill="#d97706">
+            Tm={tm.toFixed(1)}°C
+          </text>
+          <text x={42} y={208} fontSize={10} fontFamily="monospace" fill="#64748b">45°C</text>
+          <text x={420} y={208} fontSize={10} fontFamily="monospace" fill="#64748b">100°C</text>
+        </svg>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+            <div className="flex justify-between font-mono tabular-nums">
+              <span className="text-slate-600 dark:text-slate-300">
+                {isEn ? 'Temperature T' : 'Nhiệt độ biến tính'}
+              </span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">{dnaTemp}°C</span>
+            </div>
+            <input
+              type="range"
+              min={45}
+              max={100}
+              step={1}
+              value={dnaTemp}
+              onChange={(e) => {
+                onUserInteract();
+                setDnaTemp(Number(e.target.value));
+              }}
+              className="w-full accent-emerald-600 cursor-pointer"
+            />
+          </div>
+          <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+            <div className="flex justify-between font-mono tabular-nums">
+              <span className="text-slate-600 dark:text-slate-300">%G–C (3 H-bonds)</span>
+              <span className="font-bold text-amber-600 dark:text-amber-400">{gcPercent}%</span>
+            </div>
+            <input
+              type="range"
+              min={20}
+              max={85}
+              step={1}
+              value={gcPercent}
+              onChange={(e) => {
+                onUserInteract();
+                setGcPercent(Number(e.target.value));
+              }}
+              className="w-full accent-amber-600 cursor-pointer"
+            />
           </div>
         </div>
       </div>
@@ -1586,8 +1867,8 @@ export const GuideTourPage: React.FC<GuideTourPageProps> = ({
                 <div className="space-y-4">
                   <div className="text-xs font-mono text-sky-700 dark:text-sky-300 tabular-nums">
                     {isEn
-                      ? `Chapter ${activeScene.chapterNumber} / 06`
-                      : `Phần ${activeScene.chapterNumber} / 06`}
+                      ? `Chapter ${activeScene.chapterNumber} / ${String(GUIDE_SCENES.length).padStart(2, '0')}`
+                      : `Phần ${activeScene.chapterNumber} / ${String(GUIDE_SCENES.length).padStart(2, '0')}`}
                   </div>
 
                   <h2 className="font-display text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white leading-snug text-balance">
@@ -1660,37 +1941,37 @@ export const GuideTourPage: React.FC<GuideTourPageProps> = ({
             {
               num: '01',
               icon: BookOpen,
-              titleVi: 'Kho Bài giảng & Lộ trình',
-              titleEn: 'Curriculum & Lectures',
-              descVi: 'Bài giảng Toán, Vật lí, Tin học lớp 9–12 kèm thuyết minh tiếng Việt và ví dụ mẫu.',
-              descEn: 'Grades 9–12 Math, Physics, and CS lessons with audio narration and worked examples.',
+              titleVi: 'Kho Bài giảng 5 Môn & Lộ trình',
+              titleEn: '5-Subject Curriculum & Roadmap',
+              descVi: 'Bài giảng Toán, Vật lí, Hóa học, Sinh học, Tin học (GDPT 2006, 2018 & Chuyên) kèm thuyết minh tiếng Việt.',
+              descEn: 'Grades 9–12 Math, Physics, Chemistry, Biology, and CS lessons across 2006/2018/Olympiad tracks.',
               subject: 'roadmap' as SubjectType,
             },
             {
               num: '02',
               icon: Compass,
-              titleVi: 'Phòng Mô phỏng 2D/3D',
-              titleEn: '2D/3D Simulation Labs',
-              descVi: '36 dụng cụ đo Vật lí, đồ thị giải tích Oxy/Oxyz và 16 + 10 thuật toán Tin học.',
-              descEn: '36 physics tools, Oxy/Oxyz math plots, and 2D/3D computer science visualizers.',
-              subject: 'physics_sims' as SubjectType,
+              titleVi: 'Phòng Lab & Sandbox Riêng Từng Môn',
+              titleEn: 'Subject-Separated Sandboxes & 2D/3D',
+              descVi: 'Khu vực mô phỏng & sandbox tách riêng cho Toán Oxy/Oxyz, Vật lí 36 dụng cụ, Hóa chuẩn độ, Sinh tế bào/ADN và Tin học.',
+              descEn: 'Dedicated interactive sandboxes & 2D/3D labs for Math, Physics, Chemistry, Biology, and CS.',
+              subject: 'chemistry_sims' as SubjectType,
             },
             {
               num: '03',
               icon: Code2,
-              titleVi: 'IDE Code & Luyện Đề',
-              titleEn: 'Code IDE & Exam Bank',
-              descVi: 'Biên dịch C++20/Python 3 trực tiếp, truy vết biến từng dòng và chấm bài theo đề thi.',
-              descEn: 'Run C++20/Python 3 code, trace variables line by line, and practice full exam sets.',
-              subject: 'cs_sims' as SubjectType,
+              titleVi: 'IDE Code & Kho 1.750 Đề Thi',
+              titleEn: 'Code IDE & 1,750-Exam Archive',
+              descVi: 'Biên dịch C++20/Python 3 trực tiếp, truy vết biến từng dòng và luyện 350 đề/môn trên cả 5 môn học.',
+              descEn: 'Run C++20/Python 3 code, trace variables, and practice 350 exam sets per subject across all 5 subjects.',
+              subject: 'exams' as SubjectType,
             },
             {
               num: '04',
               icon: Box,
-              titleVi: 'Synapse Pre & Công trình 3D',
-              titleEn: 'Synapse Pre & Megastructures',
-              descVi: '30 Đại Công Trình 3D kèm thước đo laser, mặt cắt X/Y/Z, đồ thị Telemetry và 21 phòng Lab Pre.',
-              descEn: '30 WebGL megastructures with 3D ruler, X/Y/Z cutaways, telemetry charts, and 21 Pre labs.',
+              titleVi: 'Synapse Pre: 28 Lab & 30 Công Trình',
+              titleEn: 'Synapse Pre: 28 Labs & 30 Builds',
+              descVi: '30 Đại Công Trình 3D kèm thước đo 3D, mặt cắt X/Y/Z, chế độ Nhiệt/Ứng suất và 28 Lab Pre phân khu theo 5 môn.',
+              descEn: '30 WebGL megastructures with 3D ruler, X/Y/Z cutaways, thermal/stress modes, and 28 subject-zoned Pre labs.',
               subject: 'synapse_v2' as SubjectType,
             },
           ].map((card, idx) => {
@@ -1733,7 +2014,7 @@ export const GuideTourPage: React.FC<GuideTourPageProps> = ({
           </h2>
           <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
             <Cpu className="w-3.5 h-3.5" />
-            <span>{isEn ? 'Works across classroom & labs' : 'Áp dụng trên toàn bộ phòng học & mô phỏng'}</span>
+            <span>{isEn ? 'Works across all 5 subjects & labs' : 'Áp dụng trên toàn bộ 5 môn học & phòng mô phỏng'}</span>
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
@@ -1741,7 +2022,7 @@ export const GuideTourPage: React.FC<GuideTourPageProps> = ({
             { keys: 'Ctrl + D', labelVi: 'Mở nhanh Gia sư Toán', labelEn: 'Open Math Tutor' },
             { keys: 'Ctrl + F', labelVi: 'Mở nhanh Gia sư Vật lí', labelEn: 'Open Physics Tutor' },
             { keys: 'Ctrl + G', labelVi: 'Mở nhanh Gia sư Tin học', labelEn: 'Open CS Tutor' },
-            { keys: 'Alt + Space', labelVi: 'Bật / Tắt Voice OS', labelEn: 'Toggle Voice OS' },
+            { keys: 'Alt + Space', labelVi: 'Bật / Tắt Voice OS (5 Môn)', labelEn: 'Toggle Voice OS (5 Subjects)' },
           ].map((sc) => (
             <div
               key={sc.keys}

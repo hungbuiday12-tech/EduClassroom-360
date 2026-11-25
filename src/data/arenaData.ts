@@ -12,11 +12,47 @@ import {
 } from '../types';
 import {
   ARENA_DIVISIONS,
-  ARENA_DIVISION_ESSAY_BANK,
-  ARENA_DIVISION_MCQ_BANK
+  ARENA_DIVISION_ESSAY_BANK as BASE_DIVISION_ESSAY_BANK,
+  ARENA_DIVISION_MCQ_BANK as BASE_DIVISION_MCQ_BANK
 } from './arenaDivisionsData';
+import {
+  CHEM_BIO_BASE_ESSAY,
+  CHEM_BIO_BASE_MCQ,
+  CHEM_BIO_DIVISION_ESSAY,
+  CHEM_BIO_DIVISION_MCQ
+} from './arenaChemBioData';
 
-export { ARENA_DIVISIONS, ARENA_DIVISION_ESSAY_BANK, ARENA_DIVISION_MCQ_BANK };
+export { ARENA_DIVISIONS };
+
+export const ARENA_DIVISION_MCQ_BANK: Record<
+  ArenaDivisionId,
+  Record<ArenaSubject, ArenaQuestionMCQ[]>
+> = (Object.keys(BASE_DIVISION_MCQ_BANK) as ArenaDivisionId[]).reduce(
+  (acc, divId) => {
+    acc[divId] = {
+      ...BASE_DIVISION_MCQ_BANK[divId],
+      chemistry: CHEM_BIO_DIVISION_MCQ[divId].chemistry,
+      biology: CHEM_BIO_DIVISION_MCQ[divId].biology
+    };
+    return acc;
+  },
+  {} as Record<ArenaDivisionId, Record<ArenaSubject, ArenaQuestionMCQ[]>>
+);
+
+export const ARENA_DIVISION_ESSAY_BANK: Record<
+  ArenaDivisionId,
+  Record<ArenaSubject, ArenaEssayPrompt[]>
+> = (Object.keys(BASE_DIVISION_ESSAY_BANK) as ArenaDivisionId[]).reduce(
+  (acc, divId) => {
+    acc[divId] = {
+      ...BASE_DIVISION_ESSAY_BANK[divId],
+      chemistry: CHEM_BIO_DIVISION_ESSAY[divId].chemistry,
+      biology: CHEM_BIO_DIVISION_ESSAY[divId].biology
+    };
+    return acc;
+  },
+  {} as Record<ArenaDivisionId, Record<ArenaSubject, ArenaEssayPrompt[]>>
+);
 
 export function getArenaDivisionMeta(division: ArenaDivisionId): ArenaDivisionMeta {
   return ARENA_DIVISIONS.find((d) => d.id === division) || ARENA_DIVISIONS[6]; // default 12k
@@ -330,7 +366,9 @@ export const ARENA_MCQ_BANK: Record<ArenaSubject, ArenaQuestionMCQ[]> = {
       explanation: 'Mỗi lời gọi đẻ thêm 2 nhánh con nên cây đệ quy phình theo hàm mũ $\\approx \\mathcal{O}(1{,}618^N) \\subset \\mathcal{O}(2^N)$.',
       points: 20
     }
-  ]
+  ],
+  chemistry: CHEM_BIO_BASE_MCQ.chemistry,
+  biology: CHEM_BIO_BASE_MCQ.biology
 };
 
 export const ARENA_ESSAY_BANK: Record<ArenaSubject, ArenaEssayPrompt[]> = {
@@ -468,7 +506,9 @@ if __name__ == '__main__':
       },
       maxScore: 100
     }
-  ]
+  ],
+  chemistry: CHEM_BIO_BASE_ESSAY.chemistry,
+  biology: CHEM_BIO_BASE_ESSAY.biology
 };
 
 /**
@@ -603,6 +643,8 @@ export function computeArenaEloAndTier(
   const bestFromRow = Math.max(
     leaderboardRow?.mathBest ?? 0,
     leaderboardRow?.physicsBest ?? 0,
+    leaderboardRow?.chemistryBest ?? 0,
+    leaderboardRow?.biologyBest ?? 0,
     leaderboardRow?.csBest ?? 0
   );
   const bestScore = Math.max(bestFromRow, scores.length > 0 ? Math.max(...scores) : 0);
@@ -686,14 +728,14 @@ export function computeArenaAchievements(
       progressText: `${Math.min(attempts.length, 1)}/1 lượt`
     },
     {
-      id: 'trinity_master',
-      titleVi: 'Tam Môn Toàn Năng',
-      titleEn: 'STEM Tri-Subject',
-      descriptionVi: 'Ghi điểm cả 3 môn Toán, Vật lí và Tin học trong cùng tuần.',
-      descriptionEn: 'Record scores across Math, Physics & CS in the week.',
+      id: 'pentathlon_master',
+      titleVi: 'Ngũ Môn STEM Toàn Năng',
+      titleEn: 'STEM Pentathlon',
+      descriptionVi: 'Ghi điểm cả 5 môn Toán, Lí, Hóa, Sinh và Tin học trong cùng tuần.',
+      descriptionEn: 'Record scores across Math, Physics, Chemistry, Biology & CS in the week.',
       tier: 'silver',
-      unlocked: distinctSubjs.size >= 3,
-      progressText: `${distinctSubjs.size}/3 môn`
+      unlocked: distinctSubjs.size >= 5,
+      progressText: `${distinctSubjs.size}/5 môn`
     },
     {
       id: 'speed_demon',

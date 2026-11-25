@@ -1,5 +1,19 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { FunctionPlotConfig, FutureLabTabId, MathLecture, Physics3DMode, PhysicsDomainId, PhysicsSimType, SubjectType } from '../types';
+import {
+  Biology3DMode,
+  BiologyDomainId,
+  BiologySimType,
+  Chemistry3DMode,
+  ChemistryDomainId,
+  ChemistrySimType,
+  FunctionPlotConfig,
+  FutureLabTabId,
+  MathLecture,
+  Physics3DMode,
+  PhysicsDomainId,
+  PhysicsSimType,
+  SubjectType
+} from '../types';
 import { CSTrackId } from '../data/csTracksData';
 import { CURRICULUM_COUNTS } from '../data/curriculumCounts';
 import { PHYSICS_DOMAINS } from '../data/physicsDomainsData';
@@ -15,6 +29,18 @@ export interface NavLocation {
   physicsSim3D: Physics3DMode;
   physicsLessonId: string;
   physicsTab: 'theory' | 'simulation' | 'sim3d' | 'practice';
+  chemistryView: 'catalog' | 'lecture' | 'sim2d_hub' | 'sim3d_hub' | 'sandbox';
+  chemistryDomain: ChemistryDomainId;
+  chemistrySim2D: ChemistrySimType;
+  chemistrySim3D: Chemistry3DMode;
+  chemistryLessonId: string;
+  chemistryTab: 'theory' | 'simulation' | 'sim3d' | 'practice';
+  biologyView: 'catalog' | 'lecture' | 'sim2d_hub' | 'sim3d_hub' | 'sandbox';
+  biologyDomain: BiologyDomainId;
+  biologySim2D: BiologySimType;
+  biologySim3D: Biology3DMode;
+  biologyLessonId: string;
+  biologyTab: 'theory' | 'simulation' | 'sim3d' | 'practice';
   csViewMode: 'curriculum' | 'judge' | 'custom' | 'visualizer';
   csSubView: 'roadmap' | 'lecture';
   csTrackId: CSTrackId;
@@ -51,6 +77,18 @@ const DEFAULT_LOCATION: NavLocation = {
   physicsSim3D: 'kinematics_3d',
   physicsLessonId: CURRICULUM_COUNTS.defaultPhysicsLessonId,
   physicsTab: 'theory',
+  chemistryView: 'catalog',
+  chemistryDomain: 'atomic_periodic',
+  chemistrySim2D: 'atomic_orbitals_2d',
+  chemistrySim3D: 'atomic_orbitals_3d',
+  chemistryLessonId: CURRICULUM_COUNTS.defaultChemistryLessonId,
+  chemistryTab: 'theory',
+  biologyView: 'catalog',
+  biologyDomain: 'cell_membrane',
+  biologySim2D: 'cell_organelles_2d',
+  biologySim3D: 'eukaryotic_cell_3d',
+  biologyLessonId: CURRICULUM_COUNTS.defaultBiologyLessonId,
+  biologyTab: 'theory',
   csViewMode: 'curriculum',
   csSubView: 'roadmap',
   csTrackId: 'vnoi',
@@ -120,7 +158,11 @@ function getInitialLocation(): NavLocation {
           'tech_teardown_3d',
           'assembly_3d',
           'solar_system_3d',
-          'typing_parroto_sandbox'
+          'typing_parroto_sandbox',
+          'chem_reaction_3d',
+          'chem_orbital_vsepr_3d',
+          'bio_cell_atlas_3d',
+          'bio_dna_crispr_3d'
         ].includes(rawFutureTab)
       ) {
         return {
@@ -139,6 +181,10 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
   if (loc.tutorOpen) {
     return loc.tutorSubject === 'physics'
       ? 'Syn Physics'
+      : loc.tutorSubject === 'chemistry'
+      ? 'Syn Chem'
+      : loc.tutorSubject === 'biology'
+      ? 'Syn Bio'
       : loc.tutorSubject === 'cs'
       ? 'Syn Code'
       : 'Syn Math';
@@ -176,6 +222,10 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       if (loc.futureTab === 'assembly_3d') return isEn ? 'Synapse Pre · Interactive 3D Assembly Studio' : 'Synapse Pre · Mô Phỏng Lắp Ráp Cơ Khí 3D';
       if (loc.futureTab === 'solar_system_3d') return isEn ? 'Synapse Pre · Solar System 3D Ephemeris' : 'Synapse Pre · Hệ Mặt Trời 3D';
       if (loc.futureTab === 'typing_parroto_sandbox') return isEn ? 'Synapse Pre · Parroto Typing Arena' : 'Synapse Pre · Đấu Trường Luyện Gõ Parroto';
+      if (loc.futureTab === 'chem_reaction_3d') return isEn ? 'Synapse Pre · 3D Chemical Reaction & Kinetics' : 'Synapse Pre · Lò Phản Ứng & Động Hóa 3D';
+      if (loc.futureTab === 'chem_orbital_vsepr_3d') return isEn ? 'Synapse Pre · 3D Orbital & VSEPR Atlas' : 'Synapse Pre · Orbital & Phân Tử VSEPR 3D';
+      if (loc.futureTab === 'bio_cell_atlas_3d') return isEn ? 'Synapse Pre · 3D Cell & Organelle Atlas' : 'Synapse Pre · Atlas Tế Bào & Bào Quan 3D';
+      if (loc.futureTab === 'bio_dna_crispr_3d') return isEn ? 'Synapse Pre · DNA Helix & CRISPR-Cas9 3D' : 'Synapse Pre · DNA & Chỉnh Sửa Gen CRISPR 3D';
       return loc.synapseMode === 'stage'
         ? isEn
           ? 'Synapse Pre · 3D Megastructure Stage'
@@ -214,6 +264,22 @@ export function getLocationLabel(loc: NavLocation, lang: 'vi' | 'en' = 'vi'): st
       }
       return isEn ? 'Physics' : 'Vật lí';
     }
+    case 'chemistry_sims':
+      return isEn ? 'Chemistry 2D & 3D Virtual Lab' : 'Khu Mô phỏng & Lab Hóa học 2D/3D';
+    case 'chemistry':
+      if (loc.chemistryView === 'sim2d_hub') return isEn ? 'Chemistry 2D Lab' : 'Mô phỏng Hóa học 2D';
+      if (loc.chemistryView === 'sim3d_hub') return isEn ? 'Chemistry 3D Molecular Lab' : 'Mô phỏng Hóa học 3D';
+      if (loc.chemistryView === 'sandbox') return isEn ? 'Chemistry Sandboxes' : 'Sandbox Hóa học';
+      if (loc.chemistryView === 'lecture') return isEn ? 'Chemistry Lecture' : 'Bài giảng Hóa học';
+      return isEn ? 'Chemistry' : 'Hóa học';
+    case 'biology_sims':
+      return isEn ? 'Biology 2D & 3D Virtual Lab' : 'Khu Mô phỏng & Lab Sinh học 2D/3D';
+    case 'biology':
+      if (loc.biologyView === 'sim2d_hub') return isEn ? 'Biology 2D Lab' : 'Mô phỏng Sinh học 2D';
+      if (loc.biologyView === 'sim3d_hub') return isEn ? 'Biology 3D Cell & Bio Lab' : 'Mô phỏng Sinh học 3D';
+      if (loc.biologyView === 'sandbox') return isEn ? 'Biology Sandboxes' : 'Sandbox Sinh học';
+      if (loc.biologyView === 'lecture') return isEn ? 'Biology Lecture' : 'Bài giảng Sinh học';
+      return isEn ? 'Biology' : 'Sinh học';
     case 'cs':
       if (loc.csViewMode === 'visualizer') return isEn ? 'Algorithm Graph & Sim' : 'Đồ thị & Mô phỏng Thuật toán';
       if (loc.csViewMode === 'judge') return 'Online Judge';
@@ -263,6 +329,18 @@ function isSameLocation(a: NavLocation, b: NavLocation): boolean {
     a.physicsSim3D === b.physicsSim3D &&
     a.physicsLessonId === b.physicsLessonId &&
     a.physicsTab === b.physicsTab &&
+    a.chemistryView === b.chemistryView &&
+    a.chemistryDomain === b.chemistryDomain &&
+    a.chemistrySim2D === b.chemistrySim2D &&
+    a.chemistrySim3D === b.chemistrySim3D &&
+    a.chemistryLessonId === b.chemistryLessonId &&
+    a.chemistryTab === b.chemistryTab &&
+    a.biologyView === b.biologyView &&
+    a.biologyDomain === b.biologyDomain &&
+    a.biologySim2D === b.biologySim2D &&
+    a.biologySim3D === b.biologySim3D &&
+    a.biologyLessonId === b.biologyLessonId &&
+    a.biologyTab === b.biologyTab &&
     a.csViewMode === b.csViewMode &&
     a.csSubView === b.csSubView &&
     a.csTrackId === b.csTrackId &&
@@ -291,8 +369,8 @@ interface NavigationContextValue {
   reviewScrollTick: number;
   requestScrollToReviews: () => void;
   directoryScrollTick: number;
-  directoryFilterRequest: 'all' | 'math' | 'physics' | 'cs';
-  requestScrollToDirectory: (filter?: 'all' | 'math' | 'physics' | 'cs') => void;
+  directoryFilterRequest: 'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
+  requestScrollToDirectory: (filter?: 'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs') => void;
   mathGraphConfig: Partial<FunctionPlotConfig> | null;
   setMathGraphConfig: (cfg: Partial<FunctionPlotConfig> | null) => void;
   math3DMode: NonNullable<MathLecture['sim3dMode']>;
@@ -308,7 +386,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [historyStack, setHistoryStack] = useState<NavLocation[]>([]);
   const [reviewScrollTick, setReviewScrollTick] = useState<number>(0);
   const [directoryScrollTick, setDirectoryScrollTick] = useState<number>(0);
-  const [directoryFilterRequest, setDirectoryFilterRequest] = useState<'all' | 'math' | 'physics' | 'cs'>('all');
+  const [directoryFilterRequest, setDirectoryFilterRequest] = useState<'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs'>('all');
   const [mathGraphConfig, setMathGraphConfig] = useState<Partial<FunctionPlotConfig> | null>(null);
   const [math3DMode, setMath3DMode] = useState<NonNullable<MathLecture['sim3dMode']>>('oxyz_vector');
   const [mathGeoPreset, setMathGeoPreset] = useState<string | null>(null);
@@ -392,6 +470,22 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       } else if (subject === 'physics') {
         patch.physicsView = 'catalog';
         patch.physicsTab = 'theory';
+      } else if (subject === 'chemistry_sims') {
+        patch.chemistryView =
+          prev.chemistryView === 'sim2d_hub' || prev.chemistryView === 'sim3d_hub' || prev.chemistryView === 'sandbox'
+            ? prev.chemistryView
+            : 'sim2d_hub';
+      } else if (subject === 'chemistry') {
+        patch.chemistryView = 'catalog';
+        patch.chemistryTab = 'theory';
+      } else if (subject === 'biology_sims') {
+        patch.biologyView =
+          prev.biologyView === 'sim2d_hub' || prev.biologyView === 'sim3d_hub' || prev.biologyView === 'sandbox'
+            ? prev.biologyView
+            : 'sim2d_hub';
+      } else if (subject === 'biology') {
+        patch.biologyView = 'catalog';
+        patch.biologyTab = 'theory';
       } else if (subject === 'cs') {
         patch.csViewMode = 'curriculum';
         patch.csSubView = 'roadmap';
@@ -471,7 +565,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [navigate]);
 
   const requestScrollToDirectory = useCallback(
-    (filter: 'all' | 'math' | 'physics' | 'cs' = 'all') => {
+    (filter: 'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' = 'all') => {
       const prev = locationRef.current;
       setDirectoryFilterRequest(filter);
       if (prev.subject !== 'overview' || prev.tutorOpen) {

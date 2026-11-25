@@ -56,6 +56,8 @@ import { parseCoopForumInviteContent } from '../spatial3d/coopTypes';
 import { MonokaiCodeBlock } from '../cs/SublimeEditor';
 import { MATH_LECTURES } from '../../data/curriculumData';
 import { PHYSICS_LESSONS } from '../../data/physicsLessonsData';
+import { CHEMISTRY_LESSONS } from '../../data/chemistryLessonsData';
+import { BIOLOGY_LESSONS } from '../../data/biologyLessonsData';
 import { CS_LESSONS } from '../../data/csLessonsData';
 import {
   auth,
@@ -94,6 +96,8 @@ const SUBJECT_OPTIONS: Array<{
   { id: 'announcements', labelVi: 'Thông báo Admin', labelEn: 'Admin Notices' },
   { id: 'math', labelVi: 'Toán học', labelEn: 'Math' },
   { id: 'physics', labelVi: 'Vật lí', labelEn: 'Physics' },
+  { id: 'chemistry', labelVi: 'Hóa học', labelEn: 'Chemistry' },
+  { id: 'biology', labelVi: 'Sinh học', labelEn: 'Biology' },
   { id: 'cs', labelVi: 'Tin học', labelEn: 'CS & Code' },
   { id: 'exams', labelVi: 'Luyện đề', labelEn: 'Exams' },
   { id: 'general', labelVi: 'Thảo luận chung', labelEn: 'General' }
@@ -107,6 +111,8 @@ const CREATE_SUBJECT_OPTIONS: Array<{
   { id: 'general', labelVi: 'Thảo luận chung', labelEn: 'General Study' },
   { id: 'math', labelVi: 'Toán học (Đại số / Hình học)', labelEn: 'Mathematics' },
   { id: 'physics', labelVi: 'Vật lí (2D / 3D / Bài tập)', labelEn: 'Physics' },
+  { id: 'chemistry', labelVi: 'Hóa học (Vô cơ / Hữu cơ / 3D)', labelEn: 'Chemistry' },
+  { id: 'biology', labelVi: 'Sinh học (Tế bào / Di truyền / 3D)', labelEn: 'Biology' },
   { id: 'cs', labelVi: 'Tin học (C++ / Python / VNOI)', labelEn: 'Computer Science' },
   { id: 'exams', labelVi: 'Giải đề thi & Ôn thi', labelEn: 'Exam Prep' }
 ];
@@ -116,8 +122,9 @@ const GRADE_TAG_OPTIONS = ['Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12', 'Chuy�
 const TOPIC_TAG_OPTIONS = [
   'Giải tích',
   'Hình học',
-  'Cơ học',
-  'Điện - Sóng',
+  'Cơ - Điện',
+  'Hóa Vô/Hữu cơ',
+  'Di truyền - Tế bào',
   'C++ / Python',
   'Mẹo phòng thi'
 ];
@@ -137,6 +144,18 @@ const SUBJECT_FORMULA_CHEATSHEET: Record<
     { label: 'Định luật Ohm toàn mạch', formula: '$I = \\frac{\\mathcal{E}}{R_N + r}$', note: 'Hiệu suất $H = \\frac{R_N}{R_N + r}$' },
     { label: 'Thấu kính mỏng', formula: '$\\frac{1}{f} = \\frac{1}{d} + \\frac{1}{d\'}$', note: 'Độ phóng đại $k = -\\frac{d\'}{d}$' },
     { label: 'Khí lí tưởng', formula: '$pV = nRT$', note: '$R = 8.31\\;\\text{J/(mol}\\cdot\\text{K)}$' }
+  ],
+  chemistry: [
+    { label: 'Số mol đkc (25°C, 1 bar)', formula: '$n = \\frac{V}{24{,}79} = \\frac{m}{M}$', note: 'Chuẩn GDPT 2018 ($24{,}79\\text{ L/mol}$)' },
+    { label: 'Biến thiên Enthalpy chuẩn', formula: '$\\Delta_r H^\\circ_{298} = \\sum \\Delta_f H^\\circ(\\text{sp}) - \\sum \\Delta_f H^\\circ(\\text{cđ})$', note: '$\\Delta H < 0$: Tỏa nhiệt' },
+    { label: 'pH & Chuẩn độ', formula: '$\\text{pH} = -\\log[\\text{H}^+],\\; [\\text{H}^+][\\text{OH}^-] = 10^{-14}$', note: 'Tại $25^\\circ\\text{C}$' },
+    { label: 'Pin điện hóa & Faraday', formula: '$E^\\circ_{\\text{pin}} = E^\\circ_{\\text{catot}} - E^\\circ_{\\text{anot}},\\; m = \\frac{A I t}{n F}$', note: '$F = 96500\\;\\text{C/mol}$' }
+  ],
+  biology: [
+    { label: 'Cấu trúc ADN', formula: '$N = 2A + 2G,\\; H = 2A + 3G,\\; L = \\frac{N}{2}\\cdot 3{,}4\\text{ \\AA}$', note: 'Nguyên tắc bổ sung $A=T, G=X$' },
+    { label: 'Số axit amin chuỗi polipeptit', formula: '$n_{aa} = \\frac{rN}{3} - 1$', note: 'Tính cho phân tử protein hoàn chỉnh' },
+    { label: 'Cân bằng Hardy–Weinberg', formula: '$p^2 AA + 2pq Aa + q^2 aa = 1$', note: '$p + q = 1$' },
+    { label: 'Quang hợp & Hô hấp', formula: '$6\\text{CO}_2 + 6\\text{H}_2\\text{O} \\xrightarrow{\\text{as}} \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2$', note: 'Tổng cộng ~30–32 ATP/glucose' }
   ],
   cs: [
     { label: 'Mảng cộng dồn 1D', formula: '$\\text{sum}[l..r] = P[r] - P[l-1]$', note: 'Truy vấn $O(1)$' },
@@ -222,7 +241,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
   const [composerTags, setComposerTags] = useState<string[]>([]);
   const [composerAttachment, setComposerAttachment] = useState<ForumLessonAttachment | null>(null);
   const [isAttachOpen, setIsAttachOpen] = useState(false);
-  const [attachSubjectTab, setAttachSubjectTab] = useState<'math' | 'physics' | 'cs'>('math');
+  const [attachSubjectTab, setAttachSubjectTab] = useState<'math' | 'physics' | 'chemistry' | 'biology' | 'cs'>('math');
   const [attachQuery, setAttachQuery] = useState('');
   const [attachOpenSim, setAttachOpenSim] = useState(false);
 
@@ -1052,11 +1071,13 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
     setErrorMsg(null);
     preserveViewportScroll();
     try {
-      const subjectMap: Record<ForumSubject, 'math' | 'physics' | 'cs'> = {
+      const subjectMap: Record<ForumSubject, 'math' | 'physics' | 'chemistry' | 'biology' | 'cs'> = {
         announcements: 'math',
         general: 'math',
         math: 'math',
         physics: 'physics',
+        chemistry: 'chemistry',
+        biology: 'biology',
         cs: 'cs',
         exams: 'math'
       };
@@ -1291,6 +1312,22 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
         physicsTab: att.openSim ? 'simulation' : 'theory',
         tutorOpen: false
       });
+    } else if (att.subject === 'chemistry') {
+      navigate({
+        subject: 'chemistry',
+        chemistryView: 'lecture',
+        chemistryLessonId: att.lessonId,
+        chemistryTab: att.openSim ? 'simulation' : 'theory',
+        tutorOpen: false
+      });
+    } else if (att.subject === 'biology') {
+      navigate({
+        subject: 'biology',
+        biologyView: 'lecture',
+        biologyLessonId: att.lessonId,
+        biologyTab: att.openSim ? 'simulation' : 'theory',
+        tutorOpen: false
+      });
     } else {
       navigate({
         subject: 'cs',
@@ -1314,6 +1351,18 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
           }))
         : attachSubjectTab === 'physics'
         ? PHYSICS_LESSONS.map((l) => ({
+            id: l.id,
+            title: l.title,
+            subtitle: `${l.grade} · ${l.subtitle}`
+          }))
+        : attachSubjectTab === 'chemistry'
+        ? CHEMISTRY_LESSONS.map((l) => ({
+            id: l.id,
+            title: l.title,
+            subtitle: `${l.grade} · ${l.subtitle}`
+          }))
+        : attachSubjectTab === 'biology'
+        ? BIOLOGY_LESSONS.map((l) => ({
             id: l.id,
             title: l.title,
             subtitle: `${l.grade} · ${l.subtitle}`
@@ -1477,7 +1526,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-3xl leading-relaxed">
               {isEn
                 ? 'Join topic study groups to discuss Math, Physics, and Computer Science with KaTeX support. Only signed-in users can create groups, message, or enter the mandatory Admin Synapse channel.'
-                : 'Tạo nhóm trao đổi kiến thức Toán, Vật lí, Tin học và theo dõi thông báo hoạt động web chính thức. Chỉ tài khoản đã đăng nhập mới có thể tạo nhóm, nhắn tin và vào nhóm Admin quản lí.'}
+                : 'Tạo nhóm trao đổi kiến thức Toán, Vật lí, Hóa học, Sinh học, Tin học và theo dõi thông báo hoạt động web chính thức. Chỉ tài khoản đã đăng nhập mới có thể tạo nhóm, nhắn tin và vào nhóm Admin quản lí.'}
             </p>
           </div>
 
@@ -2373,6 +2422,10 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
                                               ? 'Toán học'
                                               : msg.attachment.subject === 'physics'
                                               ? 'Vật lí'
+                                              : msg.attachment.subject === 'chemistry'
+                                              ? 'Hóa học'
+                                              : msg.attachment.subject === 'biology'
+                                              ? 'Sinh học'
                                               : 'Tin học'}{' '}
                                             · {msg.attachment.openSim ? 'Mở thẳng Lab 2D/3D' : 'Bài giảng tương tác'}
                                           </div>
@@ -3120,12 +3173,14 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
               </button>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {(
                 [
-                  { id: 'math', label: isEn ? 'Mathematics' : 'Toán học' },
+                  { id: 'math', label: isEn ? 'Math' : 'Toán học' },
                   { id: 'physics', label: isEn ? 'Physics' : 'Vật lí' },
-                  { id: 'cs', label: isEn ? 'Computer Science' : 'Tin học' }
+                  { id: 'chemistry', label: isEn ? 'Chemistry' : 'Hóa học' },
+                  { id: 'biology', label: isEn ? 'Biology' : 'Sinh học' },
+                  { id: 'cs', label: isEn ? 'CS' : 'Tin học' }
                 ] as const
               ).map((tab) => (
                 <button

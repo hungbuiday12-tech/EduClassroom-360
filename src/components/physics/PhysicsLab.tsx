@@ -70,6 +70,7 @@ import { renderPhysics2DSimulation } from './physics2DEngine';
 import { LabDataLoggerPanel } from '../common/LabDataLoggerPanel';
 import { LabTimeMachineBar } from './LabTimeMachineBar';
 import { SimToCodeModal } from './SimToCodeModal';
+import { SimAnalysisProBar, SimParamBoundMeta } from '../common/SimAnalysisProBar';
 
 interface OverlayState {
   showRulerGrid: boolean;
@@ -2011,6 +2012,23 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         onClear={() => setDataLogs([])}
                       />
                     )}
+
+                    <SimAnalysisProBar
+                      simKey={`phys-lec-${activeSimType}`}
+                      title={activeSimTitle}
+                      formula={telemetry.metric1Label}
+                      params={params}
+                      paramBounds={activeParamBounds as Record<string, SimParamBoundMeta>}
+                      metrics={[
+                        { label: telemetry.metric1Label, value: telemetry.metric1Val },
+                        { label: telemetry.metric2Label, value: telemetry.metric2Val },
+                        { label: telemetry.metric3Label, value: telemetry.metric3Val }
+                      ]}
+                      onApplyParams={(next) => setParams((prev) => ({ ...prev, ...next }))}
+                      onTogglePlay={() => setIsRunning((r) => !r)}
+                      onReset={() => setParams(activeDefaultParams)}
+                      onSpeedDelta={(d) => setSimSpeed((s) => Math.max(0.25, Math.min(3, s + d)))}
+                    />
                   </div>
 
                   {/* Interactive Parameters Numeric Panel (1 col) */}
@@ -2614,6 +2632,23 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                       onClear={() => setDataLogs([])}
                     />
                   )}
+
+                  <SimAnalysisProBar
+                    simKey={`phys-hub-${activeSimType}`}
+                    title={activeSimTitle}
+                    formula={telemetry.metric1Label}
+                    params={params}
+                    paramBounds={activeParamBounds as Record<string, SimParamBoundMeta>}
+                    metrics={[
+                      { label: telemetry.metric1Label, value: telemetry.metric1Val },
+                      { label: telemetry.metric2Label, value: telemetry.metric2Val },
+                      { label: telemetry.metric3Label, value: telemetry.metric3Val }
+                    ]}
+                    onApplyParams={(next) => setParams((prev) => ({ ...prev, ...next }))}
+                    onTogglePlay={() => setIsRunning((r) => !r)}
+                    onReset={() => setParams(activeDefaultParams)}
+                    onSpeedDelta={(d) => setSimSpeed((s) => Math.max(0.25, Math.min(3, s + d)))}
+                  />
                 </div>
 
                 {/* Numeric Parameters Panel */}

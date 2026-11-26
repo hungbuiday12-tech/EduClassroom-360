@@ -43,6 +43,7 @@ import { applySphericalOrbitDelta } from '../../lib/remoteControlBus';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 import {
   createCrispLine2,
+  createLeaderArrowLabel,
   createPostProcessingPipeline,
   createTroikaLabel,
   GPUParticlePool,
@@ -339,8 +340,8 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
 
     const w = container.clientWidth || 720;
     const h = container.clientHeight || 430;
-    const camera = new THREE.PerspectiveCamera(44, w / h, 0.1, 100);
-    camera.position.set(5.0, 3.5, 6.2);
+    const camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
+    camera.position.set(4.2, 2.9, 5.2);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -349,7 +350,7 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
       powerPreference: 'high-performance'
     });
     renderer.setSize(w, h);
-    const maxDpr = isUltra ? 2.0 : isSmooth ? 1.2 : 1.5;
+    const maxDpr = isUltra ? 2.0 : isSmooth ? 1.35 : 1.85;
     renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -428,8 +429,8 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
     let pipeline: PostProcessPipeline | null = null;
     if (!isSmooth && !isSoftwareGl) {
       pipeline = createPostProcessingPipeline(renderer, scene, camera, {
-        bloomIntensity: isUltra ? 0.52 : 0.34,
-        luminanceThreshold: isUltra ? 0.72 : 0.82,
+        bloomIntensity: isUltra ? 0.36 : 0.24,
+        luminanceThreshold: isUltra ? 0.88 : 0.92,
         enableSmaa: true
       });
     }
@@ -473,13 +474,29 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
       }
     };
 
-    const addLabel = (text: string, pos: [number, number, number], color: number = 0xd1fae5) => {
+    const addLabel = (
+      text: string,
+      pos: [number, number, number],
+      color: number = 0xd1fae5,
+      anchorPos?: [number, number, number]
+    ) => {
+      if (anchorPos) {
+        const leader = createLeaderArrowLabel({
+          text,
+          labelPos: pos,
+          anchorPos,
+          fontSize: 0.23,
+          color,
+        });
+        labelGroup.add(leader);
+        return leader;
+      }
       const lbl = createTroikaLabel({
         text,
         position: pos,
-        fontSize: 0.22,
+        fontSize: 0.25,
         color,
-        outlineWidth: 0.024
+        outlineWidth: 0.018
       });
       labelGroup.add(lbl);
       return lbl;
@@ -1402,11 +1419,12 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
           barEntries.push({ mesh: bar, targetH: b.h });
         });
 
-        addLabel('Thụ phấn chéo (P₁ ♂ → P₂/F₁ ♀)', [-1.05, 2.2, 0.2], 0xfde047);
+        addLabel('Thụ phấn chéo (P₁ ♂ → P₂/F₁ ♀)', [-2.15, 2.25, 0.15], 0xfde047, [-0.65, 1.35, 0]);
         addLabel(
           isDihybrid ? 'Tỉ lệ F₂: 9 : 3 : 3 : 1' : isTest ? 'Lai phân tích 1 : 1 : 1 : 1' : 'Phân li F₂: 3 : 1',
-          [2.15, 1.15, 0],
-          0x86efac
+          [2.45, 1.55, 0],
+          0x86efac,
+          [1.65, 0.55, 0]
         );
 
         let podReveal = 0;

@@ -1,5 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Atom, Beaker, Calculator, CheckCircle2, Download, Droplets, Flame, FlaskConical, RotateCcw, Scale } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Atom,
+  Beaker,
+  Calculator,
+  CheckCircle2,
+  Download,
+  Droplets,
+  Flame,
+  FlaskConical,
+  GitBranch,
+  RotateCcw,
+  Scale,
+  Sparkles,
+  Trophy
+} from 'lucide-react';
 import { MathFormula } from '../common/MathRenderer';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 
@@ -236,9 +252,227 @@ function evaluateQualitativeReaction(ion: QualIonId, reagent: QualReagentId): {
   return { result: 'Không có hiện tượng kết tủa hay khí đặc trưng', solColor: 'rgba(148,163,184,0.18)', pptColor: null, gasColor: null, equation: 'Không phản ứng' };
 }
 
+interface RedoxStepPreset {
+  id: string;
+  label: string;
+  unbalanced: string;
+  oxStates: string;
+  halfOxidation: string;
+  halfReduction: string;
+  multipliers: string;
+  balancedLatex: string;
+  balancedPlain: string;
+  note: string;
+}
+
+const REDOX_PRESETS: RedoxStepPreset[] = [
+  {
+    id: 'cu-hno3',
+    label: 'Cu + HNO₃ (loãng) → NO↑',
+    unbalanced: 'Cu + HNO₃ → Cu(NO₃)₂ + NO↑ + H₂O',
+    oxStates: 'Cu⁰ → Cu⁺² (chất khử) ; N⁺⁵ → N⁺² (chất oxi hóa)',
+    halfOxidation: 'Cu⁰ → Cu⁺² + 2e   (nhường 2e)',
+    halfReduction: 'N⁺⁵ + 3e → N⁺²   (nhận 3e)',
+    multipliers: 'BCNN(2, 3) = 6 → nhân 3 cho Cu, nhân 2 cho NO',
+    balancedLatex: '3\\text{Cu} + 8\\text{HNO}_3 \\rightarrow 3\\text{Cu(NO}_3)_2 + 2\\text{NO}\\uparrow + 4\\text{H}_2\\text{O}',
+    balancedPlain: '3Cu + 8HNO₃ → 3Cu(NO₃)₂ + 2NO↑ + 4H₂O',
+    note: 'Tổng N ở vế phải = 3×2 (muối) + 2 (NO) = 8 nên hệ số HNO₃ là 8, H₂O là 4.'
+  },
+  {
+    id: 'fes2-o2',
+    label: 'FeS₂ + O₂ → Fe₂O₃ + SO₂',
+    unbalanced: 'FeS₂ + O₂ → Fe₂O₃ + SO₂↑',
+    oxStates: 'FeS₂⁰ (tổng nhóm = 0) → Fe⁺³ + 2S⁺⁴ ; O₂⁰ → 2O⁻²',
+    halfOxidation: '2FeS₂⁰ → 2Fe⁺³ + 4S⁺⁴ + 22e   (1 FeS₂ nhường 11e)',
+    halfReduction: 'O₂⁰ + 4e → 2O⁻²   (nhận 4e)',
+    multipliers: 'BCNN(22, 4) = 44 → nhân 2 cho 2FeS₂ (tức 4 FeS₂), nhân 11 cho O₂',
+    balancedLatex: '4\\text{FeS}_2 + 11\\text{O}_2 \\xrightarrow{t^\\circ} 2\\text{Fe}_2\\text{O}_3 + 8\\text{SO}_2\\uparrow',
+    balancedPlain: '4FeS₂ + 11O₂ → 2Fe₂O₃ + 8SO₂↑',
+    note: 'Mẹo: Coi cả phân tử FeS₂ có số oxi hóa tổng bằng 0 để tránh tách nhầm S⁻¹.'
+  },
+  {
+    id: 'fes2-hno3',
+    label: 'FeS₂ + HNO₃ → H₂SO₄ + NO↑',
+    unbalanced: 'FeS₂ + HNO₃ → Fe(NO₃)₃ + H₂SO₄ + NO↑ + H₂O',
+    oxStates: 'FeS₂⁰ → Fe⁺³ + 2S⁺⁶ ; N⁺⁵ → N⁺²',
+    halfOxidation: 'FeS₂⁰ → Fe⁺³ + 2S⁺⁶ + 15e   (1 phân tử nhường 15e!)',
+    halfReduction: 'N⁺⁵ + 3e → N⁺²   (nhận 3e)',
+    multipliers: 'BCNN(15, 3) = 15 → nhân 1 cho FeS₂, nhân 5 cho NO',
+    balancedLatex: '\\text{FeS}_2 + 8\\text{HNO}_3 \\rightarrow \\text{Fe(NO}_3)_3 + 2\\text{H}_2\\text{SO}_4 + 5\\text{NO}\\uparrow + 2\\text{H}_2\\text{O}',
+    balancedPlain: 'FeS₂ + 8HNO₃ → Fe(NO₃)₃ + 2H₂SO₄ + 5NO↑ + 2H₂O',
+    note: 'Cả Fe và S đều tăng lên số oxi hóa cực đại (+3 và +6): 1×3 + 2×6 = 15e.'
+  },
+  {
+    id: 'kmno4-hcl',
+    label: 'KMnO₄ + HCl → Cl₂↑ (điều chế Cl₂)',
+    unbalanced: 'KMnO₄ + HCl (đặc) → KCl + MnCl₂ + Cl₂↑ + H₂O',
+    oxStates: 'Mn⁺⁷ → Mn⁺² (chất oxi hóa) ; 2Cl⁻¹ → Cl₂⁰ (chất khử)',
+    halfOxidation: '2Cl⁻¹ → Cl₂⁰ + 2e   (nhường 2e)',
+    halfReduction: 'Mn⁺⁷ + 5e → Mn⁺²   (nhận 5e)',
+    multipliers: 'BCNN(2, 5) = 10 → nhân 5 cho Cl₂, nhân 2 cho KMnO₄',
+    balancedLatex: '2\\text{KMnO}_4 + 16\\text{HCl} \\rightarrow 2\\text{KCl} + 2\\text{MnCl}_2 + 5\\text{Cl}_2\\uparrow + 8\\text{H}_2\\text{O}',
+    balancedPlain: '2KMnO₄ + 16HCl → 2KCl + 2MnCl₂ + 5Cl₂↑ + 8H₂O',
+    note: 'Trong 16 mol HCl có 10 mol tạo Cl₂ (khử) và 6 mol tạo muối KCl, MnCl₂ (môi trường).'
+  },
+  {
+    id: 'fe3o4-hno3',
+    label: 'Fe₃O₄ + HNO₃ → Fe(NO₃)₃ + NO↑',
+    unbalanced: 'Fe₃O₄ + HNO₃ → Fe(NO₃)₃ + NO↑ + H₂O',
+    oxStates: 'Fe⁺⁸/³ (3 nguyên tử Fe) → 3Fe⁺³ ; N⁺⁵ → N⁺²',
+    halfOxidation: '3Fe⁺⁸/³ → 3Fe⁺³ + 1e   (1 phân tử Fe₃O₄ nhường 1e)',
+    halfReduction: 'N⁺⁵ + 3e → N⁺²   (nhận 3e)',
+    multipliers: 'BCNN(1, 3) = 3 → nhân 3 cho Fe₃O₄, nhân 1 cho NO',
+    balancedLatex: '3\\text{Fe}_3\\text{O}_4 + 28\\text{HNO}_3 \\rightarrow 9\\text{Fe(NO}_3)_3 + \\text{NO}\\uparrow + 14\\text{H}_2\\text{O}',
+    balancedPlain: '3Fe₃O₄ + 28HNO₃ → 9Fe(NO₃)₃ + NO↑ + 14H₂O',
+    note: 'Fe₃O₄ = FeO·Fe₂O₃ nên thực chất chỉ có 1 Fe⁺² lên Fe⁺³, nhường đúng 1e/phân tử.'
+  },
+  {
+    id: 'kmno4-feso4',
+    label: 'KMnO₄ + FeSO₄ + H₂SO₄',
+    unbalanced: 'KMnO₄ + FeSO₄ + H₂SO₄ → Fe₂(SO₄)₃ + K₂SO₄ + MnSO₄ + H₂O',
+    oxStates: 'Fe⁺² → Fe⁺³ ; Mn⁺⁷ → Mn⁺²',
+    halfOxidation: '2Fe⁺² → 2Fe⁺³ + 2e   (cân bằng sẵn Fe₂)',
+    halfReduction: 'Mn⁺⁷ + 5e → Mn⁺²',
+    multipliers: 'BCNN(2, 5) = 10 → nhân 5 cho Fe₂(SO₄)₃ (tức 10 FeSO₄), nhân 2 cho KMnO₄',
+    balancedLatex: '2\\text{KMnO}_4 + 10\\text{FeSO}_4 + 8\\text{H}_2\\text{SO}_4 \\rightarrow 5\\text{Fe}_2(\\text{SO}_4)_3 + \\text{K}_2\\text{SO}_4 + 2\\text{MnSO}_4 + 8\\text{H}_2\\text{O}',
+    balancedPlain: '2KMnO₄ + 10FeSO₄ + 8H₂SO₄ → 5Fe₂(SO₄)₃ + K₂SO₄ + 2MnSO₄ + 8H₂O',
+    note: 'Phản ứng chuẩn độ Permanganat kinh điển xác định hàm lượng muối sắt (II).'
+  },
+  {
+    id: 'al-hno3-nh4no3',
+    label: 'Al + HNO₃ (rất loãng) → NH₄NO₃',
+    unbalanced: 'Al + HNO₃ → Al(NO₃)₃ + NH₄NO₃ + H₂O',
+    oxStates: 'Al⁰ → Al⁺³ ; N⁺⁵ → N⁻³ (trong NH₄⁺)',
+    halfOxidation: 'Al⁰ → Al⁺³ + 3e   (nhường 3e)',
+    halfReduction: 'N⁺⁵ + 8e → N⁻³   (nhận 8e)',
+    multipliers: 'BCNN(3, 8) = 24 → nhân 8 cho Al, nhân 3 cho NH₄NO₃',
+    balancedLatex: '8\\text{Al} + 30\\text{HNO}_3 \\rightarrow 8\\text{Al(NO}_3)_3 + 3\\text{NH}_4\\text{NO}_3 + 9\\text{H}_2\\text{O}',
+    balancedPlain: '8Al + 30HNO₃ → 8Al(NO₃)₃ + 3NH₄NO₃ + 9H₂O',
+    note: 'Lưu ý: Sản phẩm khử không khí (NH₄NO₃) rất dễ bị bỏ sót khi dùng Bảo toàn Electron!'
+  },
+  {
+    id: 'so2-kmno4',
+    label: 'SO₂ + KMnO₄ + H₂O (mất màu thuốc tím)',
+    unbalanced: 'SO₂ + KMnO₄ + H₂O → K₂SO₄ + MnSO₄ + H₂SO₄',
+    oxStates: 'S⁺⁴ → S⁺⁶ ; Mn⁺⁷ → Mn⁺²',
+    halfOxidation: 'S⁺⁴ → S⁺⁶ + 2e   (nhường 2e)',
+    halfReduction: 'Mn⁺⁷ + 5e → Mn⁺²   (nhận 5e)',
+    multipliers: 'BCNN(2, 5) = 10 → nhân 5 cho SO₂, nhân 2 cho KMnO₄',
+    balancedLatex: '5\\text{SO}_2 + 2\\text{KMnO}_4 + 2\\text{H}_2\\text{O} \\rightarrow \\text{K}_2\\text{SO}_4 + 2\\text{MnSO}_4 + 2\\text{H}_2\\text{SO}_4',
+    balancedPlain: '5SO₂ + 2KMnO₄ + 2H₂O → K₂SO₄ + 2MnSO₄ + 2H₂SO₄',
+    note: 'Phản ứng dùng để nhận biết khí SO₂ làm mất màu dung dịch thuốc tím KMnO₄.'
+  }
+];
+
+interface ReactionChainPuzzle {
+  id: string;
+  title: string;
+  category: string;
+  nodes: string[];
+  steps: {
+    prompt: string;
+    options: string[];
+    correctIdx: number;
+    equation: string;
+  }[];
+}
+
+const CHAIN_PUZZLES: ReactionChainPuzzle[] = [
+  {
+    id: 'iron_chain',
+    title: 'Chuỗi Sắt & Hợp chất (Vô cơ 12)',
+    category: 'Vô cơ · Kim loại chuyển tiếp',
+    nodes: ['Fe', 'FeCl₂', 'Fe(OH)₂', 'Fe(OH)₃', 'Fe₂O₃'],
+    steps: [
+      {
+        prompt: 'Fe → FeCl₂',
+        options: ['+ Cl₂ (t°)', '+ HCl loãng', '+ HNO₃ đặc nguội', '+ CuSO₄'],
+        correctIdx: 1,
+        equation: 'Fe + 2HCl → FeCl₂ + H₂↑'
+      },
+      {
+        prompt: 'FeCl₂ → Fe(OH)₂↓',
+        options: ['+ NaOH (tránh không khí)', '+ H₂O (đun sôi)', '+ NaCl', '+ NH₄Cl'],
+        correctIdx: 0,
+        equation: 'FeCl₂ + 2NaOH → Fe(OH)₂↓ (trắng xanh) + 2NaCl'
+      },
+      {
+        prompt: 'Fe(OH)₂ → Fe(OH)₃↓',
+        options: ['+ H₂ (t°)', '+ O₂ + H₂O (trong không khí)', '+ NaOH dư', '+ CO₂'],
+        correctIdx: 1,
+        equation: '4Fe(OH)₂ + O₂ + 2H₂O → 4Fe(OH)₃↓ (nâu đỏ)'
+      },
+      {
+        prompt: 'Fe(OH)₃ → Fe₂O₃',
+        options: ['+ H₂SO₄ loãng', '+ HCl dư', 'Nhiệt phân (t° cao)', '+ Na₂CO₃'],
+        correctIdx: 2,
+        equation: '2Fe(OH)₃ (t°) → Fe₂O₃ + 3H₂O'
+      }
+    ]
+  },
+  {
+    id: 'aluminum_chain',
+    title: 'Chuỗi Lưỡng tính Nhôm (Al)',
+    category: 'Vô cơ · Tính lưỡng tính',
+    nodes: ['Al', 'Al₂O₃', 'AlCl₃', 'Al(OH)₃', 'Na[Al(OH)₄]'],
+    steps: [
+      {
+        prompt: 'Al → Al₂O₃',
+        options: ['+ H₂O lạnh', '+ O₂ (t°)', '+ NaOH', '+ HCl'],
+        correctIdx: 1,
+        equation: '4Al + 3O₂ (t°) → 2Al₂O₃'
+      },
+      {
+        prompt: 'Al₂O₃ → AlCl₃',
+        options: ['+ HCl', '+ NaCl', '+ Cl₂', '+ NH₃'],
+        correctIdx: 0,
+        equation: 'Al₂O₃ + 6HCl → 2AlCl₃ + 3H₂O'
+      },
+      {
+        prompt: 'AlCl₃ → Al(OH)₃↓',
+        options: ['+ NaOH rất dư', '+ Dung dịch NH₃ dư', '+ H₂SO₄', '+ KNO₃'],
+        correctIdx: 1,
+        equation: 'AlCl₃ + 3NH₃ + 3H₂O → Al(OH)₃↓ + 3NH₄Cl (không tan trong NH₃ dư)'
+      },
+      {
+        prompt: 'Al(OH)₃ → Na[Al(OH)₄]',
+        options: ['+ NaCl', '+ NaOH (kiềm mạnh)', '+ CO₂ + H₂O', '+ NH₄Cl'],
+        correctIdx: 1,
+        equation: 'Al(OH)₃ + NaOH → Na[Al(OH)₄] (phức tan trong suốt)'
+      }
+    ]
+  },
+  {
+    id: 'ester_chain',
+    title: 'Chuỗi Hữu cơ Etilen → Etyl Axetat',
+    category: 'Hữu cơ · Ancol – Axit – Este',
+    nodes: ['C₂H₄', 'C₂H₅OH', 'CH₃COOH', 'CH₃COOC₂H₅'],
+    steps: [
+      {
+        prompt: 'C₂H₄ → C₂H₅OH',
+        options: ['+ H₂O (xúc tác H⁺, t°)', '+ NaOH', '+ H₂ (Ni, t°)', '+ Br₂'],
+        correctIdx: 0,
+        equation: 'CH₂=CH₂ + H₂O (H⁺, t°) → C₂H₅OH'
+      },
+      {
+        prompt: 'C₂H₅OH → CH₃COOH',
+        options: ['+ H₂SO₄ đặc (170°C)', '+ O₂ (xúc tác men giấm)', '+ Na kim loại', '+ CuO (t°)'],
+        correctIdx: 1,
+        equation: 'C₂H₅OH + O₂ (men giấm) → CH₃COOH + H₂O'
+      },
+      {
+        prompt: 'CH₃COOH → CH₃COOC₂H₅',
+        options: ['+ C₂H₅OH (H₂SO₄ đặc, t°)', '+ NaOH', '+ C₂H₄', '+ CH₃OH (H₂SO₄ đặc)'],
+        correctIdx: 0,
+        equation: 'CH₃COOH + C₂H₅OH ⇌ CH₃COOC₂H₅ + H₂O (H₂SO₄ đặc, t°)'
+      }
+    ]
+  }
+];
+
 export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false }) => {
   const { perfMode } = useBackgroundTheme();
-  const [activeTab, setActiveTab] = useState<'periodic' | 'stoich' | 'titration' | 'vsepr' | 'qualitative'>('periodic');
+  const [activeTab, setActiveTab] = useState<'periodic' | 'stoich' | 'titration' | 'vsepr' | 'qualitative' | 'redox'>('periodic');
 
   // 1. Periodic table state
   const [selectedZ, setSelectedZ] = useState<number>(6);
@@ -298,8 +532,8 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
   const stoichCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const titrationCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // 5. Qualitative Ion & Flame Bench state
-  const [qualMode, setQualMode] = useState<'ion' | 'flame'>('ion');
+  // 5. Qualitative Ion, Flame Bench & Reaction Chain Game state
+  const [qualMode, setQualMode] = useState<'ion' | 'flame' | 'chain'>('ion');
   const [selectedIon, setSelectedIon] = useState<QualIonId>('Cu^2+');
   const [mysteryMode, setMysteryMode] = useState(false);
   const [mysteryIon, setMysteryIon] = useState<QualIonId>('Al^3+');
@@ -308,6 +542,68 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
   const [qualLogs, setQualLogs] = useState<{ reagent: string; obs: string; eq: string }[]>([]);
   const [flameId, setFlameId] = useState<string>('Na+');
   const qualCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Chain reaction puzzle state
+  const [chainId, setChainId] = useState<string>('iron_chain');
+  const [chainAnswers, setChainAnswers] = useState<Record<string, number>>({});
+  const activeChain = useMemo(
+    () => CHAIN_PUZZLES.find((c) => c.id === chainId) || CHAIN_PUZZLES[0],
+    [chainId]
+  );
+  const chainScore = useMemo(() => {
+    let correct = 0;
+    activeChain.steps.forEach((st, idx) => {
+      if (chainAnswers[`${activeChain.id}-${idx}`] === st.correctIdx) correct++;
+    });
+    return correct;
+  }, [activeChain, chainAnswers]);
+
+  // 6. Redox Balancer & Conservation Laws Solver state
+  const [redoxId, setRedoxId] = useState<string>('cu-hno3');
+  const [redoxStep, setRedoxStep] = useState<number>(4);
+  const activeRedox = useMemo(
+    () => REDOX_PRESETS.find((r) => r.id === redoxId) || REDOX_PRESETS[0],
+    [redoxId]
+  );
+  const [consMetal, setConsMetal] = useState<'Cu' | 'Fe' | 'Al' | 'Mg'>('Cu');
+  const [consMassG, setConsMassG] = useState<number>(9.6);
+  const [consAcid, setConsAcid] = useState<'hno3_no' | 'hno3_no2' | 'h2so4_so2'>('hno3_no');
+  const consCalc = useMemo(() => {
+    const metalSpec = {
+      Cu: { M: 64, val: 2, saltName: 'Cu(NO₃)₂', sulfName: 'CuSO₄' },
+      Fe: { M: 56, val: 3, saltName: 'Fe(NO₃)₃', sulfName: 'Fe₂(SO₄)₃' },
+      Al: { M: 27, val: 3, saltName: 'Al(NO₃)₃', sulfName: 'Al₂(SO₄)₃' },
+      Mg: { M: 24, val: 2, saltName: 'Mg(NO₃)₂', sulfName: 'MgSO₄' }
+    }[consMetal];
+    const nMetal = consMassG / metalSpec.M;
+    const neGive = nMetal * metalSpec.val;
+    const acidInfo = {
+      hno3_no: { gas: 'NO', ePerGas: 3, anionMass: 62, label: 'HNO₃ loãng → NO↑' },
+      hno3_no2: { gas: 'NO₂', ePerGas: 1, anionMass: 62, label: 'HNO₃ đặc → NO₂↑' },
+      h2so4_so2: { gas: 'SO₂', ePerGas: 2, anionMass: 48, label: 'H₂SO₄ đặc, t° → SO₂↑' }
+    }[consAcid];
+    const nGas = neGive / acidInfo.ePerGas;
+    const vGasDkc = nGas * 24.79;
+    const nAcidUsed = consAcid === 'h2so4_so2' ? neGive / 2 + nGas : neGive + nGas;
+    const mSalt = consMassG + acidInfo.anionMass * neGive;
+    const nWater = consAcid === 'h2so4_so2' ? nAcidUsed : nAcidUsed / 2;
+    const massReactants = consMassG + nAcidUsed * (consAcid === 'h2so4_so2' ? 98 : 63);
+    const gasMolarMass = consAcid === 'hno3_no' ? 30 : consAcid === 'hno3_no2' ? 46 : 64;
+    const massProducts = mSalt + nGas * gasMolarMass + nWater * 18;
+    return {
+      metalSpec,
+      nMetal,
+      neGive,
+      acidInfo,
+      nGas,
+      vGasDkc,
+      nAcidUsed,
+      mSalt,
+      nWater,
+      massReactants,
+      massProducts
+    };
+  }, [consMetal, consMassG, consAcid]);
 
   const effectiveIon = mysteryMode ? mysteryIon : selectedIon;
   const currentQualRx = useMemo(
@@ -746,12 +1042,12 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
         <div className="space-y-1">
           <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <FlaskConical className="w-5 h-5 text-emerald-600 icon-anim-flask shrink-0" />
-            <span>{isEn ? 'Interactive Chemistry Sandbox Workbench (5 Labs)' : 'Sandbox Hóa Học Tương Tác (5 Phòng Thực Hành)'}</span>
+            <span>{isEn ? 'Interactive Chemistry Sandbox Workbench (6 Labs)' : 'Sandbox Hóa Học Tương Tác (6 Phòng Thực Hành)'}</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {isEn
-              ? 'Explore Periodic Table Z=1..36, Stoichiometry Calculator, Acid–Base Burette Titration, 3D-Projected VSEPR, and Qualitative Ion / Flame Bench.'
-              : 'Thực hành tra cứu Bảng Tuần Hoàn Z=1..36, Tính mol hết/dư, Buret Chuẩn độ pH, Hình học VSEPR 3D và Nhận biết Ion / Thử Ngọn lửa.'}
+              ? 'Periodic Table Z=1..36, Stoichiometry, Burette pH, VSEPR 3D, Ion/Reaction Chain Game, and Step-by-Step Redox & Conservation Solver.'
+              : 'Bảng Tuần Hoàn Z=1..36, Mol hết/dư, Buret pH, VSEPR 3D, Trò chơi Nhận biết Ion & Chuỗi Phản ứng, và Cân bằng Oxi hóa–Khử / Bảo toàn.'}
           </p>
         </div>
 
@@ -762,7 +1058,8 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
               { id: 'stoich', label: isEn ? 'Stoichiometry' : 'Tính Mol Hết/Dư', icon: Scale },
               { id: 'titration', label: isEn ? 'Burette pH' : 'Buret Chuẩn Độ pH', icon: Beaker },
               { id: 'vsepr', label: isEn ? 'VSEPR 3D' : 'Hình học VSEPR', icon: FlaskConical },
-              { id: 'qualitative', label: isEn ? 'Ion & Flame' : 'Nhận biết Ion & Lửa', icon: Flame }
+              { id: 'qualitative', label: isEn ? 'Ion & Chain Game' : 'Nhận biết & Chuỗi PƯ', icon: Flame },
+              { id: 'redox', label: isEn ? 'Redox & Conservation' : 'Cân bằng OXH & Bảo toàn', icon: Calculator }
             ] as const
           ).map((tab) => {
             const Icon = tab.icon;
@@ -1273,180 +1570,514 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
         </div>
       )}
 
-      {/* TAB 5: QUALITATIVE ION BENCH & FLAME SPECTROSCOPY */}
+      {/* TAB 5: QUALITATIVE ION BENCH, FLAME SPECTROSCOPY & REACTION CHAIN GAME */}
       {activeTab === 'qualitative' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="space-y-4">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-xs">
               <button
                 type="button"
                 onClick={() => setQualMode('ion')}
-                className={`flex-1 py-1.5 px-2.5 rounded-md font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                className={`py-1.5 px-3 rounded-md font-bold cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap ${
                   qualMode === 'ion' ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
                 <Droplets className="w-3.5 h-3.5" />
-                <span>Nhận biết Ion</span>
+                <span>Nhận biết Ion &amp; Lọ mất nhãn</span>
               </button>
               <button
                 type="button"
                 onClick={() => setQualMode('flame')}
-                className={`flex-1 py-1.5 px-2.5 rounded-md font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                className={`py-1.5 px-3 rounded-md font-bold cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap ${
                   qualMode === 'flame' ? 'bg-amber-500 text-slate-950' : 'text-slate-600 dark:text-slate-300'
                 }`}
               >
                 <Flame className="w-3.5 h-3.5" />
                 <span>Thử Ngọn lửa</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setQualMode('chain')}
+                className={`py-1.5 px-3 rounded-md font-bold cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap ${
+                  qualMode === 'chain' ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <GitBranch className="w-3.5 h-3.5" />
+                <span>Trò chơi Chuỗi Phản Ứng</span>
+              </button>
             </div>
+          </div>
 
-            {qualMode === 'ion' ? (
-              <div className="space-y-3 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-700 dark:text-slate-200">
-                    {mysteryMode ? 'Chế độ Mẫu Ẩn (Đoán Ion!)' : 'Chọn Ion cần nhận biết:'}
+          {qualMode === 'chain' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs">
+              <div className="lg:col-span-4 space-y-3">
+                <div className="font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
+                  <span>Chọn sơ đồ chuyển hóa:</span>
+                  <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-mono">
+                    <Trophy className="w-3.5 h-3.5" />
+                    {chainScore}/{activeChain.steps.length} mắt xích
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = !mysteryMode;
-                      setMysteryMode(next);
-                      setMysteryGuess('');
-                      setQualLogs([]);
-                      if (next) {
-                        const rnd = QUAL_IONS[Math.floor(Math.random() * QUAL_IONS.length)].id;
-                        setMysteryIon(rnd);
-                      }
-                    }}
-                    className={`px-2.5 py-1 rounded-md font-bold cursor-pointer border ${
-                      mysteryMode
-                        ? 'bg-amber-500 text-slate-950 border-amber-500'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    {mysteryMode ? 'Thoát Mẫu Ẩn' : 'Thử thách Mẫu Ẩn'}
-                  </button>
+                </div>
+                <div className="space-y-2">
+                  {CHAIN_PUZZLES.map((puz) => (
+                    <button
+                      key={puz.id}
+                      type="button"
+                      onClick={() => setChainId(puz.id)}
+                      className={`w-full text-left p-3 rounded-xl border cursor-pointer transition-colors ${
+                        puz.id === activeChain.id
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <div className="font-bold">{puz.title}</div>
+                      <div className={`text-[11px] mt-0.5 ${puz.id === activeChain.id ? 'text-indigo-100' : 'text-slate-500'}`}>
+                        {puz.category}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setChainAnswers({})}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Làm lại tất cả chuỗi</span>
+                </button>
+              </div>
+
+              <div className="lg:col-span-8 space-y-4">
+                <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 p-4 flex flex-wrap items-center justify-center gap-2">
+                  {activeChain.nodes.map((node, i) => {
+                    const stepDone = i > 0 && chainAnswers[`${activeChain.id}-${i - 1}`] === activeChain.steps[i - 1].correctIdx;
+                    return (
+                      <React.Fragment key={node}>
+                        <div
+                          className={`px-3.5 py-2 rounded-lg border font-mono font-bold text-sm ${
+                            i === 0 || stepDone
+                              ? 'bg-emerald-950/70 border-emerald-500 text-emerald-300'
+                              : 'bg-slate-900 border-slate-700 text-slate-200'
+                          }`}
+                        >
+                          {node}
+                        </div>
+                        {i < activeChain.steps.length && (
+                          <div className="flex flex-col items-center px-1">
+                            <span className="text-[10px] font-mono text-amber-400">({i + 1})</span>
+                            <ArrowRight className={`w-4 h-4 ${chainAnswers[`${activeChain.id}-${i}`] === activeChain.steps[i].correctIdx ? 'text-emerald-400' : 'text-slate-500'}`} />
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
 
-                {!mysteryMode && (
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {QUAL_IONS.map((ion) => (
+                <div className="space-y-3">
+                  {activeChain.steps.map((st, idx) => {
+                    const key = `${activeChain.id}-${idx}`;
+                    const picked = chainAnswers[key];
+                    const isRight = picked === st.correctIdx;
+                    return (
+                      <div
+                        key={key}
+                        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-3.5 space-y-2.5"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-mono font-extrabold text-slate-900 dark:text-white">
+                            Mắt xích ({idx + 1}): {st.prompt}
+                          </span>
+                          {picked !== undefined && (
+                            <span
+                              className={`inline-flex items-center gap-1 font-bold ${
+                                isRight ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                              }`}
+                            >
+                              {isRight ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+                              <span>{isRight ? 'Chính xác!' : 'Chưa đúng điều kiện/thuốc thử'}</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {st.options.map((opt, oi) => {
+                            const selected = picked === oi;
+                            const cls = selected
+                              ? oi === st.correctIdx
+                                ? 'bg-emerald-600 text-white border-emerald-600'
+                                : 'bg-rose-600 text-white border-rose-600'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-500';
+                            return (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => setChainAnswers((prev) => ({ ...prev, [key]: oi }))}
+                                className={`px-2.5 py-2 rounded-lg border font-semibold text-left cursor-pointer transition-colors ${cls}`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {isRight && (
+                          <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-3 py-2 font-mono text-[11px] text-emerald-800 dark:text-emerald-200">
+                            PTHH: {st.equation}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              <div className="space-y-4">
+                {qualMode === 'ion' ? (
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-700 dark:text-slate-200">
+                        {mysteryMode ? 'Chế độ Lọ Mất Nhãn (Đoán Ion!)' : 'Chọn Ion cần nhận biết:'}
+                      </span>
                       <button
-                        key={ion.id}
                         type="button"
-                        onClick={() => setSelectedIon(ion.id)}
-                        className={`py-1.5 px-2 rounded-md border font-mono font-bold cursor-pointer ${
-                          selectedIon === ion.id
-                            ? 'bg-emerald-600 text-white border-emerald-600'
+                        onClick={() => {
+                          const next = !mysteryMode;
+                          setMysteryMode(next);
+                          setMysteryGuess('');
+                          setQualLogs([]);
+                          if (next) {
+                            const rnd = QUAL_IONS[Math.floor(Math.random() * QUAL_IONS.length)].id;
+                            setMysteryIon(rnd);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-md font-bold cursor-pointer border ${
+                          mysteryMode
+                            ? 'bg-amber-500 text-slate-950 border-amber-500'
                             : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
                         }`}
                       >
-                        {ion.label}
+                        {mysteryMode ? 'Thoát Lọ Mất Nhãn' : 'Thử thách Lọ Mất Nhãn'}
                       </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="space-y-1.5">
-                  <span className="font-bold text-slate-700 dark:text-slate-200 block">Nhỏ thuốc thử vào ống nghiệm:</span>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {(
-                      [
-                        { id: 'agno3', label: 'AgNO₃' },
-                        { id: 'bacl2', label: 'BaCl₂' },
-                        { id: 'naoh', label: 'NaOH loãng' },
-                        { id: 'naoh_ex', label: 'NaOH dư' },
-                        { id: 'nh3_ex', label: 'NH₃ dư' },
-                        { id: 'litmus_heat', label: 'Kiềm + Quỳ (t°)' }
-                      ] as const
-                    ).map((r) => (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => {
-                          setActiveReagent(r.id);
-                          const rx = evaluateQualitativeReaction(effectiveIon, r.id);
-                          setQualLogs((prev) => [{ reagent: r.label, obs: rx.result, eq: rx.equation }, ...prev].slice(0, 5));
-                        }}
-                        className={`py-1.5 px-2.5 rounded-md border text-left font-semibold cursor-pointer ${
-                          activeReagent === r.id
-                            ? 'bg-sky-600 text-white border-sky-600'
-                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        + {r.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {mysteryMode && (
-                  <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2 bg-slate-50 dark:bg-slate-800/60">
-                    <div className="font-bold">Kết luận mẫu ẩn là ion nào?</div>
-                    <div className="grid grid-cols-3 gap-1">
-                      {QUAL_IONS.map((ion) => (
-                        <button
-                          key={ion.id}
-                          type="button"
-                          onClick={() => setMysteryGuess(ion.id)}
-                          className={`py-1 rounded font-mono font-bold cursor-pointer border ${
-                            mysteryGuess === ion.id
-                              ? ion.id === mysteryIon
-                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                : 'bg-rose-600 text-white border-rose-600'
-                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
-                          }`}
-                        >
-                          {ion.label}
-                        </button>
-                      ))}
                     </div>
-                    {mysteryGuess && (
-                      <div className={`font-bold ${mysteryGuess === mysteryIon ? 'text-emerald-600' : 'text-rose-500'}`}>
-                        {mysteryGuess === mysteryIon ? 'Chính xác hoàn toàn!' : 'Chưa đúng, thử thêm thuốc thử khác nhé!'}
+
+                    {!mysteryMode && (
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {QUAL_IONS.map((ion) => (
+                          <button
+                            key={ion.id}
+                            type="button"
+                            onClick={() => setSelectedIon(ion.id)}
+                            className={`py-1.5 px-2 rounded-md border font-mono font-bold cursor-pointer ${
+                              selectedIon === ion.id
+                                ? 'bg-emerald-600 text-white border-emerald-600'
+                                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            {ion.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <span className="font-bold text-slate-700 dark:text-slate-200 block">Nhỏ thuốc thử vào ống nghiệm:</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {(
+                          [
+                            { id: 'agno3', label: 'AgNO₃' },
+                            { id: 'bacl2', label: 'BaCl₂' },
+                            { id: 'naoh', label: 'NaOH loãng' },
+                            { id: 'naoh_ex', label: 'NaOH dư' },
+                            { id: 'nh3_ex', label: 'NH₃ dư' },
+                            { id: 'litmus_heat', label: 'Kiềm + Quỳ (t°)' }
+                          ] as const
+                        ).map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveReagent(r.id);
+                              const rx = evaluateQualitativeReaction(effectiveIon, r.id);
+                              setQualLogs((prev) => [{ reagent: r.label, obs: rx.result, eq: rx.equation }, ...prev].slice(0, 5));
+                            }}
+                            className={`py-1.5 px-2.5 rounded-md border text-left font-semibold cursor-pointer ${
+                              activeReagent === r.id
+                                ? 'bg-sky-600 text-white border-sky-600'
+                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            + {r.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {mysteryMode && (
+                      <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2 bg-slate-50 dark:bg-slate-800/60">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold">Kết luận lọ mất nhãn chứa ion nào?</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const rnd = QUAL_IONS[Math.floor(Math.random() * QUAL_IONS.length)].id;
+                              setMysteryIon(rnd);
+                              setMysteryGuess('');
+                              setQualLogs([]);
+                            }}
+                            className="text-[11px] font-semibold text-sky-600 hover:underline cursor-pointer"
+                          >
+                            Đổi lọ mới
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1">
+                          {QUAL_IONS.map((ion) => (
+                            <button
+                              key={ion.id}
+                              type="button"
+                              onClick={() => setMysteryGuess(ion.id)}
+                              className={`py-1 rounded font-mono font-bold cursor-pointer border ${
+                                mysteryGuess === ion.id
+                                  ? ion.id === mysteryIon
+                                    ? 'bg-emerald-600 text-white border-emerald-600'
+                                    : 'bg-rose-600 text-white border-rose-600'
+                                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              {ion.label}
+                            </button>
+                          ))}
+                        </div>
+                        {mysteryGuess && (
+                          <div className={`font-bold ${mysteryGuess === mysteryIon ? 'text-emerald-600' : 'text-rose-500'}`}>
+                            {mysteryGuess === mysteryIon ? 'Chính xác hoàn toàn!' : 'Chưa đúng, thử thêm thuốc thử khác nhé!'}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
+                ) : (
+                  <div className="space-y-2 text-xs">
+                    <div className="font-bold text-slate-700 dark:text-slate-200">Chọn muối Kim loại đốt trên dây Platin:</div>
+                    {FLAME_SALTS.map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setFlameId(f.id)}
+                        className={`w-full text-left p-2.5 rounded-lg border cursor-pointer flex items-center justify-between ${
+                          flameId === f.id
+                            ? 'bg-slate-900 text-white border-amber-500'
+                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <span className="font-bold">{f.name}</span>
+                        <span className="font-mono text-[11px]">{f.lines[0]} nm</span>
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="space-y-2 text-xs">
-                <div className="font-bold text-slate-700 dark:text-slate-200">Chọn muối Kim loại đốt trên dây Platin:</div>
-                {FLAME_SALTS.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setFlameId(f.id)}
-                    className={`w-full text-left p-2.5 rounded-lg border cursor-pointer flex items-center justify-between ${
-                      flameId === f.id
-                        ? 'bg-slate-900 text-white border-amber-500'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    <span className="font-bold">{f.name}</span>
-                    <span className="font-mono text-[11px]">{f.lines[0]} nm</span>
-                  </button>
-                ))}
+
+              <div className="lg:col-span-2 space-y-3">
+                <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 p-3">
+                  <canvas ref={qualCanvasRef} width={640} height={290} className="w-full h-72 rounded-lg" />
+                </div>
+                {qualMode === 'ion' && qualLogs.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-3 space-y-1.5 text-xs">
+                    <div className="font-bold text-slate-700 dark:text-slate-200">Nhật kí nhỏ giọt thuốc thử gần nhất</div>
+                    {qualLogs.map((l, i) => (
+                      <div key={i} className="flex flex-wrap justify-between gap-2 border-t border-slate-200 dark:border-slate-700 pt-1.5">
+                        <span className="font-bold text-sky-600 dark:text-sky-400">+{l.reagent}</span>
+                        <span className="text-slate-700 dark:text-slate-200">{l.obs}</span>
+                        <span className="font-mono text-[11px] text-slate-500">{l.eq}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 6: STEP-BY-STEP REDOX BALANCER & CONSERVATION LAWS SOLVER */}
+      {activeTab === 'redox' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs">
+          {/* Left: 4-step Redox Balancer */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <span>Cân Bằng Oxi Hóa – Khử 4 Bước (Thăng Bằng Electron)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRedoxStep((s) => (s >= 4 ? 1 : s + 1))}
+                className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer"
+              >
+                {redoxStep >= 4 ? 'Xem từng bước (1/4)' : `Bước tiếp (${redoxStep + 1}/4)`}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {REDOX_PRESETS.map((rx) => (
+                <button
+                  key={rx.id}
+                  type="button"
+                  onClick={() => {
+                    setRedoxId(rx.id);
+                    setRedoxStep(4);
+                  }}
+                  className={`p-2 rounded-lg border text-left font-semibold cursor-pointer transition-colors ${
+                    rx.id === activeRedox.id
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  {rx.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 space-y-3">
+              <div className="font-mono font-bold text-slate-800 dark:text-slate-100">
+                Sơ đồ chưa cân bằng: <span className="text-sky-600 dark:text-sky-400">{activeRedox.unbalanced}</span>
+              </div>
+
+              <div className="space-y-2">
+                <div className={`rounded-lg border p-3 ${redoxStep >= 1 ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700' : 'opacity-40 bg-slate-100 dark:bg-slate-900/40 border-dashed border-slate-300'}`}>
+                  <div className="font-bold text-indigo-600 dark:text-indigo-400">Bước 1 · Xác định số oxi hóa thay đổi</div>
+                  {redoxStep >= 1 && <div className="font-mono mt-1 text-slate-800 dark:text-slate-100">{activeRedox.oxStates}</div>}
+                </div>
+
+                <div className={`rounded-lg border p-3 ${redoxStep >= 2 ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700' : 'opacity-40 bg-slate-100 dark:bg-slate-900/40 border-dashed border-slate-300'}`}>
+                  <div className="font-bold text-emerald-600 dark:text-emerald-400">Bước 2 · Viết quá trình Oxi hóa (nhường e) &amp; Khử (nhận e)</div>
+                  {redoxStep >= 2 && (
+                    <div className="font-mono mt-1 space-y-0.5 text-slate-800 dark:text-slate-100">
+                      <div>• Quá trình oxi hóa: <span className="text-amber-600 dark:text-amber-400">{activeRedox.halfOxidation}</span></div>
+                      <div>• Quá trình khử: <span className="text-sky-600 dark:text-sky-400">{activeRedox.halfReduction}</span></div>
+                    </div>
+                  )}
+                </div>
+
+                <div className={`rounded-lg border p-3 ${redoxStep >= 3 ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700' : 'opacity-40 bg-slate-100 dark:bg-slate-900/40 border-dashed border-slate-300'}`}>
+                  <div className="font-bold text-amber-600 dark:text-amber-400">Bước 3 · Nhân hệ số thăng bằng (∑e nhường = ∑e nhận)</div>
+                  {redoxStep >= 3 && <div className="font-mono mt-1 text-slate-800 dark:text-slate-100">{activeRedox.multipliers}</div>}
+                </div>
+
+                <div className={`rounded-lg border p-3 ${redoxStep >= 4 ? 'bg-emerald-50 dark:bg-emerald-950/35 border-emerald-300 dark:border-emerald-700' : 'opacity-40 bg-slate-100 dark:bg-slate-900/40 border-dashed border-slate-300'}`}>
+                  <div className="font-bold text-emerald-700 dark:text-emerald-300 mb-1.5">Bước 4 · Phương trình hóa học hoàn chỉnh</div>
+                  {redoxStep >= 4 && (
+                    <div className="space-y-1.5">
+                      <MathFormula formula={activeRedox.balancedLatex} />
+                      <div className="text-[11px] text-slate-600 dark:text-slate-300">{activeRedox.note}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="lg:col-span-2 space-y-3">
-            <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 p-3">
-              <canvas ref={qualCanvasRef} width={640} height={290} className="w-full h-72 rounded-lg" />
+          {/* Right: 3-Conservation Laws Step-by-Step Solver */}
+          <div className="lg:col-span-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 space-y-4">
+            <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+              <Scale className="w-4 h-4 text-sky-600" />
+              <span>Giải Toán Tư Duy 3 Định Luật Bảo Toàn</span>
             </div>
-            {qualMode === 'ion' && qualLogs.length > 0 && (
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-3 space-y-1.5 text-xs">
-                <div className="font-bold text-slate-700 dark:text-slate-200">Nhật kí nhỏ giọt thuốc thử gần nhất</div>
-                {qualLogs.map((l, i) => (
-                  <div key={i} className="flex flex-wrap justify-between gap-2 border-t border-slate-200 dark:border-slate-700 pt-1.5">
-                    <span className="font-bold text-sky-600 dark:text-sky-400">+{l.reagent}</span>
-                    <span className="text-slate-700 dark:text-slate-200">{l.obs}</span>
-                    <span className="font-mono text-[11px] text-slate-500">{l.eq}</span>
-                  </div>
-                ))}
+
+            <div className="space-y-2.5">
+              <div>
+                <span className="font-bold text-slate-700 dark:text-slate-200 block mb-1">1. Chọn Kim loại phản ứng hoàn toàn:</span>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(['Cu', 'Fe', 'Al', 'Mg'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setConsMetal(m)}
+                      className={`py-1.5 rounded-md border font-mono font-bold cursor-pointer ${
+                        consMetal === m ? 'bg-sky-600 text-white border-sky-600' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
+
+              <label className="block space-y-1">
+                <div className="flex justify-between font-semibold">
+                  <span>Khối lượng kim loại m({consMetal})</span>
+                  <span className="font-mono tabular-nums text-sky-600 dark:text-sky-400">
+                    {consMassG.toFixed(1)} g ({consCalc.nMetal.toFixed(3)} mol)
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1.2}
+                  max={24}
+                  step={0.4}
+                  value={consMassG}
+                  onChange={(e) => setConsMassG(Number(e.target.value))}
+                  className="w-full accent-sky-600"
+                />
+              </label>
+
+              <div>
+                <span className="font-bold text-slate-700 dark:text-slate-200 block mb-1">2. Chọn Axit oxi hóa &amp; sản phẩm khử:</span>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {(
+                    [
+                      { id: 'hno3_no', label: 'HNO₃ loãng → NO↑ (nhận 3e)' },
+                      { id: 'hno3_no2', label: 'HNO₃ đặc → NO₂↑ (nhận 1e)' },
+                      { id: 'h2so4_so2', label: 'H₂SO₄ đặc, t° → SO₂↑ (nhận 2e)' }
+                    ] as const
+                  ).map((ax) => (
+                    <button
+                      key={ax.id}
+                      type="button"
+                      onClick={() => setConsAcid(ax.id)}
+                      className={`px-3 py-1.5 rounded-md border text-left font-semibold cursor-pointer ${
+                        consAcid === ax.id
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {ax.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 font-mono tabular-nums border-t border-slate-200 dark:border-slate-700 pt-3">
+              <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5">
+                <div className="font-sans font-bold text-sky-600 dark:text-sky-400">① Bảo toàn Electron (∑nₑ nhường = ∑nₑ nhận)</div>
+                <div className="mt-1">
+                  nₑ = {consCalc.metalSpec.val}×n({consMetal}) = <strong>{consCalc.neGive.toFixed(3)} mol</strong>
+                </div>
+                <div>
+                  ⇒ n({consCalc.acidInfo.gas}) = nₑ / {consCalc.acidInfo.ePerGas} = <strong>{consCalc.nGas.toFixed(3)} mol</strong> ({consCalc.vGasDkc.toFixed(2)} L ĐKC)
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5">
+                <div className="font-sans font-bold text-amber-600 dark:text-amber-400">
+                  ② Bảo toàn Nguyên tố ({consAcid === 'h2so4_so2' ? 'S' : 'N'})
+                </div>
+                <div className="mt-1">
+                  n(Axit pư) = n(gốc trong muối) + n({consCalc.acidInfo.gas}) = <strong>{consCalc.nAcidUsed.toFixed(3)} mol</strong>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/35 border border-emerald-300 dark:border-emerald-700 p-2.5">
+                <div className="font-sans font-bold text-emerald-700 dark:text-emerald-300">③ Bảo toàn Khối lượng (BTKL)</div>
+                <div className="mt-1">
+                  m(muối khan) = m(KL) + m(gốc axit) = <strong>{consCalc.mSalt.toFixed(2)} g</strong>
+                </div>
+                <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                  Kiểm chứng: ∑m(trước) = {consCalc.massReactants.toFixed(2)} g = ∑m(sau) = {consCalc.massProducts.toFixed(2)} g
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

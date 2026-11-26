@@ -76,14 +76,20 @@ const BioCellAtlas3DLab = lazy(() =>
 const BioDnaCrispr3DLab = lazy(() =>
   import('./BioDnaCrispr3DLab').then((m) => ({ default: m.BioDnaCrispr3DLab }))
 );
-const ChemistrySandboxes = lazy(() =>
-  import('../chemistry/ChemistrySandboxes').then((m) => ({ default: m.ChemistrySandboxes }))
-);
 const BiologySandboxes = lazy(() =>
   import('../biology/BiologySandboxes').then((m) => ({ default: m.BiologySandboxes }))
 );
 const MathSandboxSuite = lazy(() =>
   import('./MathSandboxSuite').then((m) => ({ default: m.MathSandboxSuite }))
+);
+const ChemFuturePeriodicSandbox = lazy(() =>
+  import('./ChemFuturePeriodicSandbox').then((m) => ({ default: m.ChemFuturePeriodicSandbox }))
+);
+const ChemFreeResearch3DSandbox = lazy(() =>
+  import('./ChemFreeResearch3DSandbox').then((m) => ({ default: m.ChemFreeResearch3DSandbox }))
+);
+const BioAnatomyExplorer3DSandbox = lazy(() =>
+  import('./BioAnatomyExplorer3DSandbox').then((m) => ({ default: m.BioAnatomyExplorer3DSandbox }))
 );
 
 interface FutureLabWorkspaceProps {
@@ -112,10 +118,6 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
 
   const [isStudioFullscreen, setIsStudioFullscreen] = useState<boolean>(false);
   const [showStudioIntro, setShowStudioIntro] = useState(true);
-  const [activeZoneTab, setActiveZoneTab] = useState<PreSubjectZoneId>(() => {
-    const found = PRE_STUDIOS.find((s) => s.id === activeView);
-    return found?.subjectZone || 'physics';
-  });
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [switcherQuery, setSwitcherQuery] = useState('');
   const [switcherGroup, setSwitcherGroup] = useState<'all' | 'pinned' | PreSidebarGroupId>('all');
@@ -269,32 +271,6 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
   const currentStudioIndex = PRE_STUDIOS.findIndex((s) => s.id === activeView);
   const currentStudio =
     currentStudioIndex >= 0 ? PRE_STUDIOS[currentStudioIndex] : PRE_STUDIOS[0];
-
-  useEffect(() => {
-    if (currentStudio?.subjectZone) {
-      setActiveZoneTab(currentStudio.subjectZone);
-    }
-  }, [currentStudio?.subjectZone]);
-
-  const activeZoneMeta = useMemo(
-    () => PRE_SUBJECT_ZONES.find((z) => z.id === activeZoneTab) || PRE_SUBJECT_ZONES[0],
-    [activeZoneTab]
-  );
-
-  const openSubjectStandardHub = (zoneId: PreSubjectZoneId) => {
-    setIsStudioFullscreen(false);
-    if (zoneId === 'physics') {
-      navigate({ subject: 'physics_sims', physicsView: 'sim3d_hub', tutorOpen: false });
-    } else if (zoneId === 'chemistry') {
-      navigate({ subject: 'chemistry_sims', chemistryView: 'sandbox', tutorOpen: false });
-    } else if (zoneId === 'biology') {
-      navigate({ subject: 'biology_sims', biologyView: 'sandbox', tutorOpen: false });
-    } else if (zoneId === 'math') {
-      navigate({ subject: 'math_sims', mathTab: 'math3d', tutorOpen: false });
-    } else {
-      navigate({ subject: 'cs_sims', csViewMode: 'visualizer', csSimTab: 'viz3d', tutorOpen: false });
-    }
-  };
   const prevStudio =
     currentStudioIndex > 0
       ? PRE_STUDIOS[currentStudioIndex - 1]
@@ -389,6 +365,42 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
           'Switch between Parroto Arcade (random EN–VI, C++, Python, or Report tokens) and Timed Passage Arena (upload or paste any text).',
           'Select Easy, Normal, or Hard difficulty (or dial a custom timer) and test Low / Medium / Pro 3D animated backdrops in the top bar.',
           'Watch the bottom-left live keyboard illuminate every keystroke in real time, chain combos for Freeze/EMP/Shield power-ups, and track WPM.',
+        ],
+      },
+      chem_future_periodic_sandbox: {
+        vi: [
+          'Bật hoặc ẩn Bảng tuần hoàn 118 nguyên tố, lọc theo nhóm chất hoặc đổi chế độ tô màu Độ âm điện / Bán kính nguyên tử / Phân lớp s-p-d-f.',
+          'Chạm vào bất kỳ nguyên tố nào để kích hoạt ngay animation hóa học đặc trưng (Natri bùng lửa trên nước, plasma khí hiếm, tinh thể kim loại, phân rã hạt nhân) cùng vạch phổ phát xạ.',
+          'Đọc khung Giới thiệu lớn nằm ngay bên cạnh để nắm cấu hình electron, tính chất hóa học, phản ứng tiêu biểu và ứng dụng thực tiễn.',
+        ],
+        en: [
+          'Show/hide the full 118-element periodic table, filter by family, or toggle heatmaps for Electronegativity, Radius, and s/p/d/f Orbitals.',
+          'Click any element to trigger its custom hyper-chemical animation (alkali flame ignition, noble gas plasma discharge, crystal lattice, nuclear decay) and emission spectrum.',
+          'Use the large adjacent Element Inspector to explore electron shells, redox reactivity, and real-world applications.',
+        ],
+      },
+      chem_free_research_3d: {
+        vi: [
+          'Chọn 1 trong 5 dụng cụ 3D (Cốc thủy tinh, Bình tam giác, Giá 2 ống nghiệm, Bình điện phân DC, Đèn Bunsen thử màu ngọn lửa).',
+          'Chạm tự do vào 25 hóa chất trong tủ để pha chế hỗn hợp; điều chỉnh Bếp nhiệt 20–100°C, Máy khuấy từ hoặc Nguồn điện 0–12V để quan sát kết tủa, bọt khí và phức màu 3D.',
+          'Theo dõi phương trình phản ứng tự động xuất hiện ở Sổ Tay Nhà Nghiên Cứu và tải xuống báo cáo thí nghiệm dạng .MD hoặc ảnh PNG.',
+        ],
+        en: [
+          'Select any of 5 3D PBR vessels (Beaker, Erlenmeyer, Dual Test Tubes, DC Electrolysis Tank, or Bunsen Flame Burner).',
+          'Mix any combination of 25 reagents and tune Temperature, Magnetic Stirrer, and DC Voltage to watch precipitates, gas bubbles, and color complexes react live.',
+          'Inspect auto-balanced reaction equations in the Researcher Notebook and export lab logs or PNG snapshots.',
+        ],
+      },
+      bio_anatomy_explorer_3d: {
+        vi: [
+          'Chuyển đổi giữa 4 Hệ Cơ Thể Người (Tim–Hệ mạch, Phổi–Hô hấp, Não–Tủy sống, Tiêu hóa–Thận) và 4 Lớp Động Vật (Thú, Chim 9 túi khí, Lưỡng cư tim 3 ngăn, Cá tuần hoàn đơn).',
+          'Chạm trực tiếp vào từng bộ phận trên mô hình 3D (hoặc chọn trong danh sách) để đọc cấu tạo mô học, sinh lí và so sánh tiến hóa.',
+          'Kéo thanh Tách lớp Giải phẫu 0–100%, bật/tắt Vỏ X-Quang, Cô lập bộ phận đang xem hoặc dùng Mặt cắt X/Y/Z trên thanh Pro.',
+        ],
+        en: [
+          'Switch between 4 Human Systems (Heart/Circulatory, Respiratory, Nervous, Digestive/Renal) and 4 Animal Classes (Mammal, Bird 9-Air-Sacs, Amphibian 3-Chamber Heart, Fish Single Circulation).',
+          'Click any organ directly in 3D space to inspect histology, physiology, and comparative evolution notes.',
+          'Scrub Exploded Layers 0–100%, toggle X-Ray outer shell, Isolate the selected organ, or slice with X/Y/Z cutaway planes.',
         ],
       },
     };
@@ -615,165 +627,6 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Per-Subject Partition Bar: Toán · Vật lí · Hóa học · Sinh học · Tin học × Phòng Lab / Mô phỏng / Sandboxes */}
-      {!isStudioFullscreen && (
-        <section className={`rounded-2xl border ${glassSurfaceClass} border-slate-200/90 dark:border-slate-800/90 p-3 sm:p-4 space-y-3`}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {PRE_SUBJECT_ZONES.map((zone) => {
-                const ZoneIcon = zone.icon;
-                const isZoneSelected = activeZoneTab === zone.id;
-                const zoneCount = PRE_STUDIOS.filter((s) => s.subjectZone === zone.id).length;
-                return (
-                  <button
-                    key={zone.id}
-                    type="button"
-                    data-ripple="true"
-                    onClick={() => setActiveZoneTab(zone.id)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer whitespace-nowrap ${
-                      isZoneSelected
-                        ? `${zone.pillClass} shadow-xs`
-                        : 'bg-white/80 dark:bg-slate-900/75 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-sky-400/60'
-                    }`}
-                  >
-                    <ZoneIcon className="w-3.5 h-3.5 shrink-0" />
-                    <span>{isEn ? zone.labelEn : zone.labelVi}</span>
-                    <span className="font-mono text-[10px] opacity-80 tabular-nums">({zoneCount})</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              data-ripple="true"
-              onClick={() => openSubjectStandardHub(activeZoneTab)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-sky-600 hover:opacity-95 text-white text-xs font-bold cursor-pointer whitespace-nowrap"
-            >
-              <Compass className="w-3.5 h-3.5 shrink-0" />
-              <span>
-                {isEn
-                  ? `Open ${activeZoneMeta.labelEn} 2D/3D & Sandbox Hub`
-                  : `Mở Kho 2D/3D & Sandbox ${activeZoneMeta.labelVi}`}
-              </span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-            {PRE_SIDEBAR_GROUPS.map((grp) => {
-              const items = PRE_STUDIOS.filter(
-                (s) => s.subjectZone === activeZoneTab && s.sidebarGroup === grp.id
-              );
-              return (
-                <div
-                  key={grp.id}
-                  className="rounded-xl border border-slate-200/85 dark:border-slate-800/90 bg-slate-50/75 dark:bg-slate-950/60 p-2.5 space-y-2"
-                >
-                  <div className="flex items-center justify-between gap-2 px-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                      {isEn ? grp.labelEn : grp.labelVi}
-                    </span>
-                    <span className="font-mono text-[10px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">
-                      {items.length}
-                    </span>
-                  </div>
-
-                  {items.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {items.map((lab) => {
-                        const LabIcon = lab.icon;
-                        const active = lab.id === activeView;
-                        return (
-                          <button
-                            key={lab.id}
-                            type="button"
-                            onClick={() => openModulePage(lab.id)}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition cursor-pointer ${
-                              active
-                                ? 'bg-sky-600 border-sky-500 text-white shadow-xs'
-                                : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-cyan-400/70'
-                            }`}
-                          >
-                            <LabIcon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-white' : lab.accentTextClass}`} />
-                            <span className="truncate max-w-[165px]">
-                              {isEn ? lab.shortEn : lab.shortVi}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => openSubjectStandardHub(activeZoneTab)}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-300 cursor-pointer"
-                    >
-                      {isEn
-                        ? `Use ${activeZoneMeta.labelEn} 2D/3D Hub →`
-                        : `Dùng trực tiếp tại Kho ${activeZoneMeta.labelVi} 2D/3D →`}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* 2-Part Premium Sandbox Division: Sandbox KHTN (Lí - Hóa - Sinh) & Sandbox KHKT (Toán - Tin) */}
-          <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-            {PRE_SANDBOX_DIVISIONS.map((div) => {
-              const divSandboxes = PRE_STUDIOS.filter(
-                (s) => s.sidebarGroup === 'sandboxes' && s.sandboxDivision === div.id
-              );
-              return (
-                <div
-                  key={div.id}
-                  className={`rounded-xl border p-4 sm:p-5 space-y-3 ${div.surfaceClass}`}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-[11px] font-extrabold tracking-wide ${div.badgeClass}`}
-                      >
-                        <Sparkles className="w-3 h-3 shrink-0" />
-                        {isEn ? div.labelEn : div.labelVi}
-                      </span>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
-                        {isEn ? div.descEn : div.descVi}
-                      </p>
-                    </div>
-                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 tabular-nums">
-                      {divSandboxes.length} {isEn ? 'sandboxes' : 'sandbox'}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {divSandboxes.map((lab) => {
-                      const LabIcon = lab.icon;
-                      const active = lab.id === activeView;
-                      return (
-                        <button
-                          key={lab.id}
-                          type="button"
-                          onClick={() => openModulePage(lab.id)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition cursor-pointer ${
-                            active
-                              ? 'bg-sky-600 border-sky-400 text-white shadow-sm'
-                              : 'bg-white/95 dark:bg-slate-900/95 border-slate-200/90 dark:border-slate-700/80 text-slate-800 dark:text-slate-100 hover:border-cyan-400'
-                          }`}
-                        >
-                          <LabIcon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-white' : lab.accentTextClass}`} />
-                          <span>{isEn ? lab.shortEn : lab.shortVi}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {/* Unified Room Intro, Features & Quick Guide Panel (Top of Every Synapse Pre Room) */}
       {currentStudio && !isStudioFullscreen && (
@@ -1031,17 +884,6 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             <BioDnaCrispr3DLab onEarnXP={onEarnXP} />
           </Suspense>
         )}
-        {activeView === 'chem_sandbox_suite' && (
-          <Suspense
-            fallback={
-              <div className="w-full h-[520px] rounded-2xl border border-emerald-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-emerald-300">
-                {isEn ? 'Initializing Chemistry Sandbox Suite...' : 'Đang khởi tạo Sandbox Hóa Học KHTN...'}
-              </div>
-            }
-          >
-            <ChemistrySandboxes isEn={isEn} />
-          </Suspense>
-        )}
         {activeView === 'bio_sandbox_suite' && (
           <Suspense
             fallback={
@@ -1062,6 +904,39 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
             }
           >
             <MathSandboxSuite isEn={isEn} />
+          </Suspense>
+        )}
+        {activeView === 'chem_future_periodic_sandbox' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-cyan-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-cyan-300">
+                {isEn ? 'Initializing Future Periodic Table 118...' : 'Đang khởi tạo Bảng Tuần Hoàn Hóa Học Tương Lai...'}
+              </div>
+            }
+          >
+            <ChemFuturePeriodicSandbox onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
+        {activeView === 'chem_free_research_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-emerald-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-emerald-300">
+                {isEn ? 'Initializing 3D Free Chemistry Lab...' : 'Đang khởi tạo Phòng Thí Nghiệm Hóa 3D Tự Do...'}
+              </div>
+            }
+          >
+            <ChemFreeResearch3DSandbox onEarnXP={onEarnXP} />
+          </Suspense>
+        )}
+        {activeView === 'bio_anatomy_explorer_3d' && (
+          <Suspense
+            fallback={
+              <div className="w-full h-[520px] rounded-2xl border border-teal-500/35 bg-slate-950/90 flex items-center justify-center text-xs font-mono text-teal-300">
+                {isEn ? 'Initializing 3D Human & Animal Anatomy Lab...' : 'Đang khởi tạo Phòng Giải Phẫu 3D Người & Động Vật...'}
+              </div>
+            }
+          >
+            <BioAnatomyExplorer3DSandbox onEarnXP={onEarnXP} />
           </Suspense>
         )}
       </div>

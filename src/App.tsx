@@ -367,6 +367,9 @@ function MainApp() {
       location.futureTab === 'phone_sensor_lab' ||
       location.futureTab === 'typing_parroto_sandbox' ||
       location.futureTab === 'math_sandbox_suite' ||
+      location.futureTab === 'chem_future_periodic_sandbox' ||
+      location.futureTab === 'chem_free_research_3d' ||
+      location.futureTab === 'bio_anatomy_explorer_3d' ||
       ((!location.futureTab || location.futureTab === 'megastructures') &&
         location.synapseMode === 'stage'));
   const isHeavy3DActive =

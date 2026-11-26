@@ -47,6 +47,7 @@ import { applySphericalOrbitDelta } from '../../lib/remoteControlBus';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 import {
   createCrispLine2,
+  createLeaderArrowLabel,
   createPostProcessingPipeline,
   createTroikaLabel,
   GPUParticlePool,
@@ -446,8 +447,8 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
 
     const w = container.clientWidth || 720;
     const h = container.clientHeight || 430;
-    const camera = new THREE.PerspectiveCamera(44, w / h, 0.1, 100);
-    camera.position.set(5.4, 3.8, 6.5);
+    const camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
+    camera.position.set(4.5, 3.1, 5.4);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({
@@ -456,7 +457,7 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
       powerPreference: 'high-performance'
     });
     renderer.setSize(w, h);
-    const maxDpr = isUltra ? 2.0 : isSmooth ? 1.2 : 1.5;
+    const maxDpr = isUltra ? 2.0 : isSmooth ? 1.35 : 1.85;
     renderer.setPixelRatio(isSoftwareGl ? 1 : Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -540,8 +541,8 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
     let pipeline: PostProcessPipeline | null = null;
     if (!isSmooth && !isSoftwareGl) {
       pipeline = createPostProcessingPipeline(renderer, scene, camera, {
-        bloomIntensity: isUltra ? 0.54 : 0.34,
-        luminanceThreshold: isUltra ? 0.72 : 0.82,
+        bloomIntensity: isUltra ? 0.36 : 0.24,
+        luminanceThreshold: isUltra ? 0.88 : 0.92,
         enableSmaa: true
       });
     }
@@ -595,15 +596,31 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
       }
     };
 
-    const addLabel = (text: string, pos: [number, number, number], color: number = 0xe0f2fe) => {
-      const lbl = createTroikaLabel({
-        text,
-        position: pos,
-        fontSize: 0.22,
-        color,
-        outlineWidth: 0.024
-      });
-      labelGroup.add(lbl);
+    const addLabel = (
+      text: string,
+      pos: [number, number, number],
+      color: number = 0xe0f2fe,
+      anchorPos?: [number, number, number]
+    ) => {
+      if (anchorPos) {
+        const leader = createLeaderArrowLabel({
+          text,
+          labelPos: pos,
+          anchorPos,
+          fontSize: 0.23,
+          color,
+        });
+        labelGroup.add(leader);
+      } else {
+        const lbl = createTroikaLabel({
+          text,
+          position: pos,
+          fontSize: 0.25,
+          color,
+          outlineWidth: 0.018
+        });
+        labelGroup.add(lbl);
+      }
     };
 
     const dynamicSpinners: THREE.Object3D[] = [];
@@ -712,8 +729,8 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
         stirBar.position.set(0, -1.56, 0);
         registerPart(stirBar, 'Con cá khuấy từ PTFE', [0, -0.2, 0]);
 
-        addLabel('Buret NaOH 0,1M', [0.95, 1.75, 0], 0x7dd3fc);
-        addLabel('Bình HCl 25 mL', [1.1, -1.0, 0], 0xf9a8d4);
+        addLabel('Buret NaOH 0,1M', [1.85, 1.75, 0], 0x7dd3fc, [0.14, 1.55, 0]);
+        addLabel('Bình HCl 25 mL', [2.05, -1.05, 0], 0xf9a8d4, [0.65, -1.15, 0]);
 
         const clearCol = new THREE.Color(0xdbeafe);
         const pinkCol = new THREE.Color(0xec4899);
@@ -1389,9 +1406,9 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
         );
         torusOrb.rotation.x = Math.PI / 2;
         registerPart(torusOrb, 'Vòng xuyến phân lớp d_{z²}', [0.8, 0, 0]);
-        addLabel('Hạt nhân (+Z)', [0, 0.42, 0.4], 0xfde047);
-        addLabel('Thùy +ψ', [0.8, 1.7, 0], 0x7dd3fc);
-        addLabel('Thùy −ψ', [0.8, -1.7, 0], 0xfda4af);
+        addLabel('Hạt nhân (+Z)', [-2.15, 0.22, 0.15], 0xfde047, [0, 0, 0]);
+        addLabel('Thùy +ψ', [2.05, 1.45, 0], 0x7dd3fc, [0, 1.05, 0]);
+        addLabel('Thùy −ψ', [2.05, -1.35, 0], 0xfda4af, [0, -1.05, 0]);
         customEmit = (t, _dt, params, flags) => {
           const spd = flags.excited ? 8.2 : 5.0;
           const rad = 0.5 + (params.quantumN ?? 2) * 0.22;
@@ -1528,8 +1545,8 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
         stateSphere.position.copy(pts[0]);
         root.add(stateSphere);
         animatedParticles.push({ mesh: stateSphere, phase: 0, basePos: pts[0].clone() });
-        addLabel('Ea (Không xúc tác)', [0, 1.45, 0], 0xfda4af);
-        addLabel('Ea (Có xúc tác)', [0, 0.45, 0.7], 0x6ee7b7);
+        addLabel('Ea (Không xúc tác)', [-1.95, 1.65, 0], 0xfda4af, [0, 1.15, 0]);
+        addLabel('Ea (Có xúc tác)', [2.05, 0.72, 0.3], 0x6ee7b7, [0.15, 0.35, 0.2]);
         onLiveUpdate = (_, _dt, _p, flags) => {
           catTube.visible = Boolean(flags.catalystOn);
         };

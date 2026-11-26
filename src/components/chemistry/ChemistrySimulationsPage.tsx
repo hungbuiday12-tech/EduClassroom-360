@@ -5,7 +5,10 @@ import {
   BookOpen,
   Box,
   Camera,
+  ChevronDown,
+  ChevronUp,
   FlaskConical,
+  List,
   Pause,
   Play,
   RotateCcw,
@@ -43,6 +46,7 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
   const [zone, setZone] = useState<'sim2d' | 'sim3d' | 'sandbox'>(initialZone);
   const [domainFilter, setDomainFilter] = useState<'all' | ChemistryDomainId>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [catalogExpanded, setCatalogExpanded] = useState(true);
   const [activeSimId, setActiveSimId] = useState<ChemistrySimType>(CHEMISTRY_2D_SIMS[0].id);
   const [active3DId, setActive3DId] = useState<Chemistry3DMode>(CHEMISTRY_3D_SIMS[0].id);
 
@@ -237,7 +241,7 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
               }`}
             >
               <FlaskConical className="w-3.5 h-3.5 icon-anim-flask" />
-              <span>Sandbox Hóa học (5 Phòng)</span>
+              <span>Sandbox Hóa học (6 Phòng)</span>
             </button>
           </div>
 
@@ -288,45 +292,75 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
         )}
       </section>
 
-      {/* ZONE 1: CHEMISTRY 2D SIMULATIONS */}
+      {/* ZONE 1: CHEMISTRY 2D SIMULATIONS (TOP DIRECTORY + EXPANDED FULL-WIDTH VIEWPORT) */}
       {zone === 'sim2d' && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
-          <div className="space-y-2 max-h-[680px] overflow-y-auto pr-1">
-            {filtered2D.map((spec) => (
+        <div className="space-y-4">
+          {/* Top Simulation Directory */}
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 sm:p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <List className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  Mục lục mô phỏng Hóa học 2D ({filtered2D.length}/{CHEMISTRY_2D_SIMS.length})
+                </span>
+                <span className="hidden sm:inline-block text-xs text-slate-400">·</span>
+                <span className="hidden sm:inline-block text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate max-w-xs">
+                  Đang mở: {active2DSpec.title}
+                </span>
+              </div>
               <button
-                key={spec.id}
                 type="button"
-                data-ripple="true"
-                onClick={() => setActiveSimId(spec.id)}
-                className={`chem-card-frame sim-btn-chem w-full text-left p-3.5 rounded-xl border cursor-pointer transition-colors relative ${
-                  spec.id === active2DSpec.id
-                    ? 'bg-emerald-600 text-white border-emerald-600 chem-zone-active'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 hover:border-emerald-500'
-                }`}
+                onClick={() => setCatalogExpanded((v) => !v)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer whitespace-nowrap shrink-0"
               >
-                <div className={`text-[10px] font-mono ${spec.id === active2DSpec.id ? 'text-emerald-100' : 'text-slate-500'}`}>
-                  {spec.grades.join(' · ')}
-                </div>
-                <div className="text-xs font-bold mt-0.5">{spec.title}</div>
-                <div className={`text-[11px] font-mono truncate mt-0.5 ${spec.id === active2DSpec.id ? 'text-emerald-100' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {spec.formula}
-                </div>
+                {catalogExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                <span>{catalogExpanded ? 'Thu gọn mục lục' : 'Mở rộng mục lục'}</span>
               </button>
-            ))}
+            </div>
+
+            {catalogExpanded && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 max-h-[240px] overflow-y-auto pr-1">
+                {filtered2D.map((spec) => {
+                  const isAct = spec.id === active2DSpec.id;
+                  return (
+                    <button
+                      key={spec.id}
+                      type="button"
+                      data-ripple="true"
+                      onClick={() => setActiveSimId(spec.id)}
+                      className={`chem-card-frame sim-btn-chem w-full text-left p-2.5 rounded-xl border cursor-pointer transition-colors relative ${
+                        isAct
+                          ? 'bg-emerald-600 text-white border-emerald-600 chem-zone-active'
+                          : 'bg-slate-50/70 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 hover:border-emerald-500'
+                      }`}
+                    >
+                      <div className={`text-[10px] font-mono ${isAct ? 'text-emerald-100' : 'text-slate-500'}`}>
+                        {spec.grades.join(' · ')}
+                      </div>
+                      <div className="text-xs font-bold mt-0.5 line-clamp-1">{spec.title}</div>
+                      <div className={`text-[10px] font-mono truncate mt-0.5 ${isAct ? 'text-emerald-100' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        {spec.formula}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <div className="lg:col-span-3 space-y-4">
+          {/* Full-width Expanded 2D Simulation Stage */}
+          <div className="space-y-4">
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:px-4 border-b border-slate-200 dark:border-slate-800">
                 <div>
-                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">{active2DSpec.title}</h2>
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">{active2DSpec.title}</h2>
                   <p className="text-xs text-slate-500">{active2DSpec.subtitle}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setIsRunning((r) => !r)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold cursor-pointer whitespace-nowrap"
                   >
                     {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                     <span>{isRunning ? 'Tạm dừng' : 'Chạy'}</span>
@@ -344,7 +378,7 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
                   <button
                     type="button"
                     onClick={() => captureCanvasPng(canvasRef.current, `chem-2d-${active2DSpec.id}`)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold cursor-pointer whitespace-nowrap"
                   >
                     <Camera className="w-3.5 h-3.5" />
                     <span>PNG</span>
@@ -360,7 +394,7 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
                 </div>
               </div>
 
-              <div className="p-2 bg-slate-950">
+              <div className="p-2.5 bg-slate-950">
                 <ChemistryApparatusWorkbench
                   dimension="2d"
                   simId={active2DSpec.id}
@@ -368,7 +402,7 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
                   simParams={params}
                   simTimeRef={simTimeRef}
                 >
-                  <canvas ref={canvasRef} className="w-full h-[380px] block rounded-lg" />
+                  <canvas ref={canvasRef} className="w-full h-[500px] sm:h-[580px] block rounded-lg" />
                 </ChemistryApparatusWorkbench>
               </div>
 
@@ -436,32 +470,60 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
         </div>
       )}
 
-      {/* ZONE 2: CHEMISTRY 3D WEBGL LAB */}
+      {/* ZONE 2: CHEMISTRY 3D WEBGL LAB (TOP DIRECTORY + EXPANDED FULL-WIDTH VIEWPORT) */}
       {zone === 'sim3d' && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
-          <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-            {filtered3D.map((spec) => (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 sm:p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <List className="w-4 h-4 text-amber-500 shrink-0" />
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  Mục lục Phòng Lab 3D Hóa học ({filtered3D.length}/{CHEMISTRY_3D_SIMS.length})
+                </span>
+                <span className="hidden sm:inline-block text-xs text-slate-400">·</span>
+                <span className="hidden sm:inline-block text-xs font-semibold text-amber-600 dark:text-amber-400 truncate max-w-xs">
+                  Đang mở: {active3DSpec.title}
+                </span>
+              </div>
               <button
-                key={spec.id}
                 type="button"
-                onClick={() => setActive3DId(spec.id)}
-                className={`w-full text-left p-3 rounded-xl border cursor-pointer transition-colors ${
-                  spec.id === active3DSpec.id
-                    ? 'bg-amber-500 text-slate-950 border-amber-500'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100'
-                }`}
+                onClick={() => setCatalogExpanded((v) => !v)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer whitespace-nowrap shrink-0"
               >
-                <div className="text-[10px] font-mono opacity-80">{spec.grades.join(' · ')}</div>
-                <div className="text-xs font-bold mt-0.5">{spec.title}</div>
+                {catalogExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                <span>{catalogExpanded ? 'Thu gọn mục lục' : 'Mở rộng mục lục'}</span>
               </button>
-            ))}
+            </div>
+
+            {catalogExpanded && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 max-h-[220px] overflow-y-auto pr-1">
+                {filtered3D.map((spec) => {
+                  const isAct = spec.id === active3DSpec.id;
+                  return (
+                    <button
+                      key={spec.id}
+                      type="button"
+                      onClick={() => setActive3DId(spec.id)}
+                      className={`w-full text-left p-2.5 rounded-xl border cursor-pointer transition-colors ${
+                        isAct
+                          ? 'bg-amber-500 text-slate-950 border-amber-500'
+                          : 'bg-slate-50/70 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 hover:border-amber-400'
+                      }`}
+                    >
+                      <div className="text-[10px] font-mono opacity-80">{spec.grades.join(' · ')}</div>
+                      <div className="text-xs font-bold mt-0.5 line-clamp-1">{spec.title}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <div className="lg:col-span-3 space-y-3">
+          <div className="space-y-3">
             <Chemistry3DView
               mode={active3DSpec.id}
               title={active3DSpec.title}
-              heightClass="h-[480px]"
+              heightClass="h-[560px] sm:h-[650px]"
               isEn={isEn}
             />
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-wrap items-center justify-between gap-2 text-xs">

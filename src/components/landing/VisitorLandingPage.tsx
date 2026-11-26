@@ -2204,9 +2204,9 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                           { title: isEn ? '4D Space & 30 Megastructures' : 'Không Gian 4D & 30 Công Trình', desc: isEn ? 'Tesseract, LHC & Webb 3D' : 'Siêu lập phương, LHC & Webb' },
                         ],
                         cs: [
-                          { title: isEn ? 'What-If Physics 3D' : 'Vũ Trụ "Nếu Định Luật Đổi"', desc: isEn ? 'Break G, c & Planck h live' : 'Thử hấp dẫn 1/r³, đổi c & h' },
-                          { title: isEn ? 'AlgoCity 3D Metropolis' : 'Thành Phố Thuật Toán 3D', desc: isEn ? 'Dijkstra, 2D DP & TLE bottlenecks' : 'Tháp DP, Segment Tree & TLE' },
-                          { title: isEn ? '28K GPU & Text/Paper→Sim' : '28K Hạt GPU & Sinh Mô Phỏng', desc: isEn ? 'Dual-hand GLSL & prompt to 3D' : '2 tay điều khiển hạt & gõ đề→3D' },
+                          { title: isEn ? 'Future Periodic 118 & Free Chem 3D' : 'Bảng Tuần Hoàn 118 & Hóa 3D Tự Do', desc: isEn ? 'Element reactions & 25-reagent 3D bench' : 'Animation từng nguyên tố & pha chế 25 hóa chất 3D' },
+                          { title: isEn ? '3D Human & Animal Anatomy' : 'Giải Phẫu Người & Động Vật 3D', desc: isEn ? '8 PBR systems: Heart, Brain, Bird Air Sacs' : '8 hệ PBR sắc nét: Tim, Não, Chim 9 túi khí, Cá' },
+                          { title: isEn ? 'What-If Physics, AlgoCity & 28K GPU' : 'Vũ Trụ What-If, AlgoCity & 28K GPU', desc: isEn ? 'Dual-hand GLSL, Dijkstra 3D & Math Oxyz' : '2 tay điều khiển hạt, Thành phố thuật toán & Toán' },
                         ],
                         math: [
                           { title: isEn ? '3-Layer Fast AI Pro' : 'Syn AI Pro · Giải 3 Tầng', desc: isEn ? 'Summary, strategy & proof' : 'Tóm tắt, chiến lược & đáp án chuẩn' },
@@ -2692,7 +2692,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                     <div className="relative z-10 flex items-center justify-between text-[11px] font-mono text-indigo-300/95">
                       <span>KNOWLEDGE GRAPH · LIVE</span>
                       <span className="px-2 py-0.5 rounded bg-indigo-500/18 border border-indigo-400/35 text-violet-200">
-                        MATH · PHYS · CS
+                        MATH · PHYS · CHEM · BIO · CS
                       </span>
                     </div>
 
@@ -2787,7 +2787,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                       <span>
                         {isEn
                           ? 'Real-time academic discussions & peer grading'
-                          : 'Thảo luận Toán · Lí · Tin & chia sẻ cách giải hay'}
+                          : 'Thảo luận Toán · Lí · Hóa · Sinh · Tin & chia sẻ cách giải'}
                       </span>
                       <span className="font-mono text-indigo-300 font-semibold">24/7</span>
                     </div>

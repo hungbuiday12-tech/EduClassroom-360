@@ -19,6 +19,7 @@ import { ROADMAP_NODES } from '../../data/roadmapData';
 import { CS_SPECIALIZED_TRACKS, CSTrackId } from '../../data/csTracksData';
 import { CS_LESSONS } from '../../data/csLessonsData';
 import { getPhysicsSimCounts } from '../../data/physicsDomainsData';
+import { PRE_STUDIOS } from '../../data/preLabsData';
 
 const SIM_COUNTS = getPhysicsSimCounts();
 
@@ -152,8 +153,8 @@ const GRAPH_NODES: GraphNodeDef[] = [
     yPct: 82,
     labelVi: 'Phòng Lab 3D & Judge',
     labelEn: '3D Labs & IDE',
-    subVi: 'Synapse Pre · 28 Labs',
-    subEn: 'Synapse Pre · 28 Labs',
+    subVi: `Synapse Pre · ${PRE_STUDIOS.length} Labs`,
+    subEn: `Synapse Pre · ${PRE_STUDIOS.length} Labs`,
     tone: 'indigo'
   },
   {

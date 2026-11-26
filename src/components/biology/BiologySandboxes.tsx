@@ -1,15 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
+  AlertTriangle,
   Calculator,
+  CheckCircle2,
   Dna,
   Download,
   FlaskConical,
+  Microscope,
   Pause,
   Play,
   RotateCcw,
   Sparkles,
-  Sprout
+  Sprout,
+  ThermometerSun,
+  ZoomIn
 } from 'lucide-react';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 
@@ -117,9 +122,115 @@ function triggerDownloadText(filename: string, content: string, mime = 'text/csv
   URL.revokeObjectURL(url);
 }
 
+interface MicroscopeOrganelle {
+  id: string;
+  name: string;
+  sizeUm: string;
+  role: string;
+  color: string;
+}
+
+const MICROSCOPE_ORGANELLES: MicroscopeOrganelle[] = [
+  {
+    id: 'nucleus',
+    name: 'Nhân tế bào (Nucleus)',
+    sizeUm: '5 – 10 μm',
+    role: 'Chứa vật chất di truyền ADN đóng gói thành NST; điều khiển phiên mã mRNA và mọi hoạt động sống của tế bào.',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'mitochondria',
+    name: 'Ty thể (Mitochondria)',
+    sizeUm: '0,5 – 2 μm',
+    role: 'Hô hấp tế bào hiếu khí (Chu trình Krebs & Chuỗi truyền electron) tổng hợp ATP cung cấp năng lượng.',
+    color: '#f97316'
+  },
+  {
+    id: 'chloroplast',
+    name: 'Lục lạp (Chloroplast - Thực vật)',
+    sizeUm: '4 – 6 μm',
+    role: 'Chứa chất diệp lục trên màng Tilacoit xếp chồng Grana; thực hiện quang hợp chuyển quang năng thành hóa năng.',
+    color: '#10b981'
+  },
+  {
+    id: 'ribosome',
+    name: 'Ribosome (80S / 70S)',
+    sizeUm: '20 – 30 nm',
+    role: 'Không có màng bao; nơi đọc bộ ba mã sao mRNA và ghép nối axit amin thành chuỗi polipeptit (dịch mã).',
+    color: '#38bdf8'
+  },
+  {
+    id: 'golgi',
+    name: 'Bộ máy Golgi & Lưới nội chất',
+    sizeUm: '1 – 3 μm',
+    role: 'Hoàn thiện, gắn nhóm chức, đóng gói protein/lipid vào túi tiết để vận chuyển trong và ngoài màng sinh chất.',
+    color: '#ec4899'
+  }
+];
+
+interface BiomeFoodWebConfig {
+  id: 'rainforest' | 'coral_reef' | 'grassland';
+  label: string;
+  species: {
+    id: string;
+    name: string;
+    level: 'producer' | 'primary' | 'secondary' | 'apex' | 'decomposer';
+    basePop: number;
+    climateSens: number;
+    color: string;
+  }[];
+  links: [number, number][];
+}
+
+const BIOME_WEBS: BiomeFoodWebConfig[] = [
+  {
+    id: 'rainforest',
+    label: 'Rừng Nhiệt Đới',
+    species: [
+      { id: 'plants', name: 'Cây gỗ & Dương xỉ (SVSX)', level: 'producer', basePop: 100, climateSens: 0.35, color: '#10b981' },
+      { id: 'insects', name: 'Sâu & Côn trùng ăn lá', level: 'primary', basePop: 75, climateSens: 0.25, color: '#14b8a6' },
+      { id: 'birds', name: 'Chim sâu & Ếch cây', level: 'secondary', basePop: 48, climateSens: 0.45, color: '#0ea5e9' },
+      { id: 'eagle', name: 'Đại bàng & Báo gấm', level: 'apex', basePop: 22, climateSens: 0.4, color: '#f59e0b' },
+      { id: 'fungi', name: 'Nấm & Vi khuẩn đất', level: 'decomposer', basePop: 85, climateSens: 0.15, color: '#a855f7' }
+    ],
+    links: [[0, 1], [1, 2], [2, 3], [0, 4], [3, 4]]
+  },
+  {
+    id: 'coral_reef',
+    label: 'Rạn San Hô Đại Dương',
+    species: [
+      { id: 'algae', name: 'Tảo đơn bào & San hô cộng sinh', level: 'producer', basePop: 100, climateSens: 0.85, color: '#2dd4bf' },
+      { id: 'zoo', name: 'Động vật phù du & Tôm nhỏ', level: 'primary', basePop: 80, climateSens: 0.5, color: '#38bdf8' },
+      { id: 'parrotfish', name: 'Cá mó & Cá bướm rạn', level: 'secondary', basePop: 52, climateSens: 0.55, color: '#818cf8' },
+      { id: 'shark', name: 'Cá mập rạn san hô', level: 'apex', basePop: 18, climateSens: 0.45, color: '#f43f5e' },
+      { id: 'detritus', name: 'Hải sâm & Vi khuẩn biển', level: 'decomposer', basePop: 78, climateSens: 0.3, color: '#c084fc' }
+    ],
+    links: [[0, 1], [1, 2], [2, 3], [0, 4], [3, 4]]
+  },
+  {
+    id: 'grassland',
+    label: 'Thảo Nguyên Đồng Cỏ',
+    species: [
+      { id: 'grass', name: 'Cỏ hòa thảo (SVSX)', level: 'producer', basePop: 100, climateSens: 0.45, color: '#84cc16' },
+      { id: 'zebra', name: 'Ngựa vằn & Châu chấu', level: 'primary', basePop: 72, climateSens: 0.3, color: '#eab308' },
+      { id: 'hyena', name: 'Linh cẩu & Cáo đồng cỏ', level: 'secondary', basePop: 42, climateSens: 0.3, color: '#f97316' },
+      { id: 'lion', name: 'Sư tử đỉnh chuỗi', level: 'apex', basePop: 16, climateSens: 0.35, color: '#ef4444' },
+      { id: 'termite', name: 'Mối & Vi sinh vật đất', level: 'decomposer', basePop: 82, climateSens: 0.2, color: '#a855f7' }
+    ],
+    links: [[0, 1], [1, 2], [2, 3], [0, 4], [3, 4]]
+  }
+];
+
 export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false }) => {
   const { perfMode } = useBackgroundTheme();
-  const [tab, setTab] = useState<'mendel' | 'codon' | 'hardy' | 'enzyme' | 'eco'>('mendel');
+  const [tab, setTab] = useState<'mendel' | 'codon' | 'hardy' | 'enzyme' | 'eco' | 'microscope'>('mendel');
+
+  // 1. Genetics Organism Mode: Pea (Mendel), Drosophila (Morgan linkage), Human Pedigree
+  const [geneticsMode, setGeneticsMode] = useState<'pea' | 'drosophila' | 'pedigree'>('pea');
+  const [linkageFreq, setLinkageFreq] = useState<number>(18); // f% in Drosophila AB/ab x ab/ab
+  const [pedigreeTrait, setPedigreeTrait] = useState<'auto_rec' | 'auto_dom' | 'x_rec'>('auto_rec');
+  const [pedigreeQuizChoice, setPedigreeQuizChoice] = useState<string>('');
+  const [selectedPedNode, setSelectedPedNode] = useState<string>('III₂');
 
   // 1. Mendel Cross & Punnett Sandbox
   const [mendelPreset, setMendelPreset] = useState<MendelPresetId>('di_het');
@@ -862,10 +973,230 @@ export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false })
     return () => cancelAnimationFrame(raf);
   }, [tab, subS, inhibRatio, enzCompRate, perfMode]);
 
-  // 5. Ecosystem Energy Pyramid Sandbox
+  // 5. Ecosystem Energy Pyramid + Food Web & Climate Change Game
   const [ePrimary, setEPrimary] = useState(12000);
   const [ecoEff, setEcoEff] = useState(10);
+  const [biomeId, setBiomeId] = useState<'rainforest' | 'coral_reef' | 'grassland'>('coral_reef');
+  const [climateDeltaC, setClimateDeltaC] = useState<number>(1.2);
+  const [humanHarvestPct, setHumanHarvestPct] = useState<number>(15);
+  const [speciesAdjust, setSpeciesAdjust] = useState<Record<string, number>>({
+    producer: 1.0,
+    primary: 1.0,
+    secondary: 1.0,
+    apex: 1.0,
+    decomposer: 1.0
+  });
   const ecoCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const activeBiome = useMemo(
+    () => BIOME_WEBS.find((b) => b.id === biomeId) || BIOME_WEBS[0],
+    [biomeId]
+  );
+
+  const ecosystemSim = useMemo(() => {
+    const prod = activeBiome.species[0];
+    const prim = activeBiome.species[1];
+    const sec = activeBiome.species[2];
+    const apex = activeBiome.species[3];
+    const dec = activeBiome.species[4];
+
+    const prodPop = Math.max(
+      0,
+      Math.round(prod.basePop * speciesAdjust.producer * Math.max(0.08, 1 - (climateDeltaC / 4) * prod.climateSens) * (1 - humanHarvestPct * 0.003))
+    );
+    const decompFactor = Math.max(0.35, speciesAdjust.decomposer * (1 - (climateDeltaC / 4) * dec.climateSens));
+    const primPop = Math.max(
+      0,
+      Math.round(prim.basePop * speciesAdjust.primary * (prodPop / 100) * Math.max(0.15, 1 - (climateDeltaC / 4) * prim.climateSens) * decompFactor)
+    );
+    const secPop = Math.max(
+      0,
+      Math.round(sec.basePop * speciesAdjust.secondary * (primPop / Math.max(1, prim.basePop)) * (1 - humanHarvestPct * 0.005))
+    );
+    const apexPop = Math.max(
+      0,
+      Math.round(apex.basePop * speciesAdjust.apex * (secPop / Math.max(1, sec.basePop)) * (1 - humanHarvestPct * 0.008))
+    );
+    const decPop = Math.max(0, Math.round(dec.basePop * decompFactor));
+
+    const pops = [prodPop, primPop, secPop, apexPop, decPop];
+    let warning = 'Hệ sinh thái đang cân bằng động — chuỗi thức ăn vận hành ổn định.';
+    let severity: 'ok' | 'warn' | 'critical' = 'ok';
+    if (prodPop < 30 || climateDeltaC >= 2.8) {
+      severity = 'critical';
+      warning =
+        biomeId === 'coral_reef'
+          ? 'CẢNH BÁO TẨY TRẮNG SAN HÔ: Nhiệt độ tăng làm tảo cộng sinh chết hàng loạt → sụp đổ toàn chuỗi cá rạn!'
+          : 'CẢNH BÁO SUY THOÁI SVSX: Sinh vật sản xuất giảm dưới ngưỡng, toàn bộ bậc dinh dưỡng trên suy kiệt!';
+    } else if (apexPop < 5) {
+      severity = 'warn';
+      warning = 'Thiếu vắng Động vật ăn thịt đỉnh chuỗi → SV tiêu thụ bậc 1 có nguy cơ bùng phát mất kiểm soát!';
+    } else if (humanHarvestPct >= 50) {
+      severity = 'warn';
+      warning = 'Khai thác & ô nhiễm vượt ngưỡng tự phục hồi, đa dạng sinh học suy giảm nhanh!';
+    }
+    const stabilityScore = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          (prodPop > 45 ? 30 : prodPop * 0.6) +
+            (primPop > 25 ? 25 : primPop) +
+            (secPop > 15 ? 20 : secPop) +
+            (apexPop >= 6 ? 15 : apexPop * 2) +
+            (decPop > 40 ? 10 : decPop * 0.25)
+        )
+      )
+    );
+    return { pops, warning, severity, stabilityScore };
+  }, [activeBiome, biomeId, climateDeltaC, humanHarvestPct, speciesAdjust]);
+
+  // 6. Virtual Microscope (5 Zoom Levels) & Mitosis / Meiosis Animator
+  const [zoomIdx, setZoomIdx] = useState<number>(3); // 0..4 (1x, 40x, 100x, 400x, 1000x)
+  const [cellSpecimen, setCellSpecimen] = useState<'plant' | 'animal'>('plant');
+  const [selectedOrganelleId, setSelectedOrganelleId] = useState<string>('mitochondria');
+  const [divMode, setDivMode] = useState<'mitosis' | 'meiosis'>('mitosis');
+  const [divPhase, setDivPhase] = useState<number>(2); // 0..4
+  const [divPlaying, setDivPlaying] = useState<boolean>(true);
+  const divCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const selectedOrganelle = useMemo(
+    () => MICROSCOPE_ORGANELLES.find((o) => o.id === selectedOrganelleId) || MICROSCOPE_ORGANELLES[1],
+    [selectedOrganelleId]
+  );
+
+  // Mitosis / Meiosis live Canvas animator
+  useEffect(() => {
+    if (tab !== 'microscope') return;
+    const canvas = divCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let raf = 0;
+    let t = 0;
+    let last = performance.now();
+
+    const render = (now: number) => {
+      const dt = (now - last) * 0.001;
+      last = now;
+      if (divPlaying) t += dt;
+
+      const w = (canvas.width = canvas.clientWidth * 1.6);
+      const h = (canvas.height = canvas.clientHeight * 1.6);
+      const s = w / 520;
+      const cx = w / 2;
+      const cy = h / 2;
+
+      ctx.fillStyle = '#060d19';
+      ctx.fillRect(0, 0, w, h);
+
+      // Draw cell(s) envelope
+      const splitOffset = divPhase === 4 ? 76 * s : divPhase === 3 ? 16 * s : 0;
+      ctx.strokeStyle = '#2dd4bf';
+      ctx.lineWidth = 2.5 * s;
+      if (divPhase === 4) {
+        ctx.beginPath();
+        ctx.ellipse(cx - splitOffset, cy, 88 * s, 78 * s, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(cx + splitOffset, cy, 88 * s, 78 * s, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, (118 + splitOffset) * s, (92 - splitOffset * 0.25) * s, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Spindle poles & fibers (Kì đầu -> Kì sau)
+      if (divPhase >= 1 && divPhase <= 3) {
+        const poleLeft = cx - 96 * s;
+        const poleRight = cx + 96 * s;
+        [poleLeft, poleRight].forEach((px) => {
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.arc(px, cy, 5 * s, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.28)';
+        ctx.lineWidth = 1.2 * s;
+        for (let k = -2; k <= 2; k++) {
+          ctx.beginPath();
+          ctx.moveTo(poleLeft, cy);
+          ctx.quadraticCurveTo(cx, cy + k * 24 * s, poleRight, cy);
+          ctx.stroke();
+        }
+      }
+
+      // Draw 4 chromosomes (2 pairs: cyan & rose) animated by phase
+      const chromPairs = [
+        { color: '#38bdf8', yOff: -44 * s },
+        { color: '#fb7185', yOff: -15 * s },
+        { color: '#34d399', yOff: 15 * s },
+        { color: '#f59e0b', yOff: 44 * s }
+      ];
+
+      chromPairs.forEach((ch, i) => {
+        ctx.strokeStyle = ch.color;
+        ctx.lineWidth = 4 * s;
+        ctx.lineCap = 'round';
+        if (divPhase === 0) {
+          // Interphase chromatin threads inside nucleus
+          ctx.globalAlpha = 0.65;
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(t + i * 1.6) * 22 * s, cy + Math.sin(t * 0.8 + i) * 22 * s, 14 * s, 0, Math.PI * 1.4);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        } else if (divPhase === 1) {
+          // Prophase: X-shaped condensed chromosomes scattered
+          const px = cx + Math.sin(t * 0.9 + i * 2) * 32 * s;
+          const py = cy + ch.yOff * 0.8;
+          ctx.beginPath();
+          ctx.moveTo(px - 8 * s, py - 10 * s);
+          ctx.lineTo(px + 8 * s, py + 10 * s);
+          ctx.moveTo(px + 8 * s, py - 10 * s);
+          ctx.lineTo(px - 8 * s, py + 10 * s);
+          ctx.stroke();
+        } else if (divPhase === 2) {
+          // Metaphase: aligned on equatorial plate (x = cx, or two rows in Meiosis I)
+          const eqShift = divMode === 'meiosis' ? (i % 2 === 0 ? -12 * s : 12 * s) : 0;
+          const wobble = Math.sin(t * 3 + i) * 2 * s;
+          const px = cx + eqShift;
+          const py = cy + ch.yOff + wobble;
+          ctx.beginPath();
+          ctx.moveTo(px - 7 * s, py - 10 * s);
+          ctx.lineTo(px + 7 * s, py + 10 * s);
+          ctx.moveTo(px + 7 * s, py - 10 * s);
+          ctx.lineTo(px - 7 * s, py + 10 * s);
+          ctx.stroke();
+        } else if (divPhase === 3) {
+          // Anaphase: pulled toward poles
+          const pull = 34 * s + Math.sin(t * 2.2) * 8 * s;
+          [cx - pull, cx + pull].forEach((px, side) => {
+            const py = cy + ch.yOff * 0.85;
+            ctx.beginPath();
+            ctx.moveTo(px, py - 9 * s);
+            ctx.lineTo(px + (side === 0 ? 7 * s : -7 * s), py);
+            ctx.lineTo(px, py + 9 * s);
+            ctx.stroke();
+          });
+        } else {
+          // Telophase: inside 2 daughter cells
+          [-splitOffset, splitOffset].forEach((dx) => {
+            const px = cx + dx + (i % 2 === 0 ? -14 * s : 14 * s);
+            const py = cy + (i < 2 ? -14 * s : 14 * s);
+            ctx.beginPath();
+            ctx.moveTo(px - 6 * s, py - 7 * s);
+            ctx.lineTo(px + 6 * s, py + 7 * s);
+            ctx.stroke();
+          });
+        }
+      });
+
+      raf = requestAnimationFrame(render);
+    };
+    raf = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(raf);
+  }, [tab, divMode, divPhase, divPlaying]);
 
   useEffect(() => {
     if (tab !== 'eco') return;
@@ -955,23 +1286,24 @@ export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false })
             <Dna className="w-5 h-5 text-teal-600 icon-anim-dna shrink-0" />
             <span>
               {isEn
-                ? 'Interactive Biology Sandbox Workbench (5 Labs)'
-                : 'Sandbox Sinh Học Tương Tác (5 Phòng Thực Hành)'}
+                ? 'Interactive Biology Sandbox Workbench (6 Labs)'
+                : 'Sandbox Sinh Học Tương Tác (6 Phòng Thực Hành)'}
             </span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Sơ đồ lai Mendel &amp; Punnett Chi-bình phương, Dịch mã Ribosome, Hardy–Weinberg, Động học Enzyme và Tháp Năng lượng.
+            Di truyền Mendel · Ruồi giấm · Phả hệ, Dịch mã, Hardy–Weinberg, Enzyme, Lưới Thức Ăn &amp; Khí hậu, Kính hiển vi ảo (Tế bào &amp; Nguyên/Giảm phân).
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
           {(
             [
-              { id: 'mendel', label: 'Mendel · Sơ đồ lai', icon: Sprout },
+              { id: 'mendel', label: 'Di truyền & Phả hệ', icon: Sprout },
+              { id: 'microscope', label: 'Kính hiển vi & Phân bào', icon: Microscope },
               { id: 'codon', label: 'Dịch mã DNA/mRNA', icon: Dna },
               { id: 'hardy', label: 'Hardy–Weinberg', icon: Calculator },
               { id: 'enzyme', label: 'Động học Enzyme', icon: FlaskConical },
-              { id: 'eco', label: 'Tháp Sinh thái', icon: Activity }
+              { id: 'eco', label: 'Lưới Thức Ăn & Khí hậu', icon: Activity }
             ] as const
           ).map((tItem) => {
             const Icon = tItem.icon;
@@ -997,8 +1329,237 @@ export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false })
 
       {tab === 'mendel' && (
         <div className="space-y-5 text-xs">
-          {/* Cross Presets */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Organism Mode Switcher: Pea vs Drosophila vs Human Pedigree */}
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl">
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  { id: 'pea', label: 'Đậu Hà Lan (Quy luật Mendel)' },
+                  { id: 'drosophila', label: 'Ruồi giấm Drosophila (Hoán vị gen Morgan)' },
+                  { id: 'pedigree', label: 'Phả hệ Người & Xác suất Di truyền' }
+                ] as const
+              ).map((org) => (
+                <button
+                  key={org.id}
+                  type="button"
+                  onClick={() => setGeneticsMode(org.id)}
+                  className={`px-3 py-1.5 rounded-lg font-bold cursor-pointer transition-colors ${
+                    geneticsMode === org.id
+                      ? 'bg-teal-600 text-white'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {org.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {geneticsMode === 'drosophila' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              <div className="lg:col-span-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 space-y-4">
+                <div>
+                  <div className="font-bold text-sm text-slate-900 dark:text-white">
+                    Thí nghiệm Ruồi giấm Morgan (Liên kết &amp; Hoán vị gen)
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1">
+                    P: ♀ Thân xám, cánh dài dị hợp chéo/đều (AB/ab) × ♂ Thân đen, cánh cụt (ab/ab). Ruồi giấm đực không có hoán vị gen!
+                  </div>
+                </div>
+                <label className="block space-y-1.5">
+                  <div className="flex justify-between font-bold">
+                    <span>Tần số hoán vị gen ở ruồi cái (f)</span>
+                    <span className="font-mono tabular-nums text-teal-600 dark:text-teal-400">{linkageFreq}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={50}
+                    step={2}
+                    value={linkageFreq}
+                    onChange={(e) => setLinkageFreq(Number(e.target.value))}
+                    className="w-full accent-teal-600"
+                  />
+                  <div className="text-[11px] text-slate-500">
+                    f = 0%: Liên kết hoàn toàn (1:1) · f = 17%–18%: Kết quả kinh điển của Morgan · f = 50%: Phân li độc lập (1:1:1:1)
+                  </div>
+                </label>
+
+                <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 font-mono space-y-1">
+                  <div className="text-sky-600 dark:text-sky-400 font-bold">Giao tử ♀ AB/ab tạo ra:</div>
+                  <div>• Giao tử liên kết (AB = ab) = (100% − {linkageFreq}%)/2 = <strong>{(50 - linkageFreq / 2).toFixed(1)}%</strong></div>
+                  <div>• Giao tử hoán vị (Ab = aB) = {linkageFreq}%/2 = <strong>{(linkageFreq / 2).toFixed(1)}%</strong></div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-7 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 p-4 space-y-3 text-slate-100">
+                <div className="font-bold text-sm text-teal-400">Phân bố Kiểu hình Đời con F_a (Lai phân tích)</div>
+                <div className="space-y-2.5">
+                  {[
+                    { name: 'Thân xám, cánh dài (AB/ab — Nhóm liên kết)', pct: 50 - linkageFreq / 2, color: '#10b981' },
+                    { name: 'Thân đen, cánh cụt (ab/ab — Nhóm liên kết)', pct: 50 - linkageFreq / 2, color: '#0ea5e9' },
+                    { name: 'Thân xám, cánh cụt (Ab/ab — Biến dị hoán vị)', pct: linkageFreq / 2, color: '#f59e0b' },
+                    { name: 'Thân đen, cánh dài (aB/ab — Biến dị hoán vị)', pct: linkageFreq / 2, color: '#ec4899' }
+                  ].map((row) => (
+                    <div key={row.name} className="space-y-1">
+                      <div className="flex justify-between font-mono text-[11px]">
+                        <span className="font-sans font-semibold">{row.name}</span>
+                        <span className="font-bold tabular-nums">{row.pct.toFixed(1)}%</span>
+                      </div>
+                      <div className="h-3 rounded-full bg-slate-800 overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${row.pct * 2}%`, backgroundColor: row.color }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-lg bg-slate-900 border border-slate-800 p-3 text-[11px] text-slate-300">
+                  Xác suất lấy ngẫu nhiên 1 cá thể thân xám, cánh dài: <strong className="text-emerald-400 font-mono">{(50 - linkageFreq / 2).toFixed(1)}%</strong> · Khoảng cách giữa 2 gen A và B trên NST = <strong className="text-amber-400 font-mono">{linkageFreq} cM (Morgan)</strong>.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {geneticsMode === 'pedigree' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              <div className="lg:col-span-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-bold text-sm text-teal-400">Phả hệ Gia đình 3 Thế hệ (Bấm từng người)</span>
+                  <div className="flex gap-1">
+                    {(
+                      [
+                        { id: 'auto_rec', label: 'Lặn thường' },
+                        { id: 'auto_dom', label: 'Trội thường' },
+                        { id: 'x_rec', label: 'Lặn NST X' }
+                      ] as const
+                    ).map((pt) => (
+                      <button
+                        key={pt.id}
+                        type="button"
+                        onClick={() => {
+                          setPedigreeTrait(pt.id);
+                          setPedigreeQuizChoice('');
+                        }}
+                        className={`px-2 py-1 rounded text-[11px] font-bold cursor-pointer ${
+                          pedigreeTrait === pt.id ? 'bg-teal-600 text-white' : 'bg-slate-800 text-slate-300'
+                        }`}
+                      >
+                        {pt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Interactive SVG 3-generation Pedigree */}
+                <svg viewBox="0 0 420 220" className="w-full h-56 bg-slate-900/80 rounded-lg border border-slate-800">
+                  {/* Generation labels */}
+                  <text x="12" y="42" fill="#94a3b8" fontSize="11" fontWeight="bold">Thế hệ I</text>
+                  <text x="12" y="114" fill="#94a3b8" fontSize="11" fontWeight="bold">Thế hệ II</text>
+                  <text x="12" y="188" fill="#94a3b8" fontSize="11" fontWeight="bold">Thế hệ III</text>
+
+                  {/* Connectors */}
+                  <line x1="150" y1="38" x2="210" y2="38" stroke="#64748b" strokeWidth="2" />
+                  <line x1="180" y1="38" x2="180" y2="74" stroke="#64748b" strokeWidth="2" />
+                  <line x1="120" y1="74" x2="240" y2="74" stroke="#64748b" strokeWidth="2" />
+                  <line x1="120" y1="74" x2="120" y2="96" stroke="#64748b" strokeWidth="2" />
+                  <line x1="180" y1="74" x2="180" y2="96" stroke="#64748b" strokeWidth="2" />
+                  <line x1="240" y1="74" x2="240" y2="96" stroke="#64748b" strokeWidth="2" />
+
+                  {/* II3 x II4 -> III1, III2 */}
+                  <line x1="254" y1="110" x2="316" y2="110" stroke="#64748b" strokeWidth="2" />
+                  <line x1="285" y1="110" x2="285" y2="148" stroke="#64748b" strokeWidth="2" />
+                  <line x1="255" y1="148" x2="315" y2="148" stroke="#64748b" strokeWidth="2" />
+                  <line x1="255" y1="148" x2="255" y2="170" stroke="#64748b" strokeWidth="2" />
+                  <line x1="315" y1="148" x2="315" y2="170" stroke="#64748b" strokeWidth="2" />
+
+                  {[
+                    { id: 'I₁', x: 136, y: 38, sex: 'M', affected: pedigreeTrait === 'auto_dom' },
+                    { id: 'I₂', x: 224, y: 38, sex: 'F', affected: false },
+                    { id: 'II₁', x: 120, y: 110, sex: 'F', affected: pedigreeTrait === 'auto_rec' },
+                    { id: 'II₂', x: 180, y: 110, sex: 'M', affected: pedigreeTrait === 'x_rec' },
+                    { id: 'II₃', x: 240, y: 110, sex: 'F', affected: pedigreeTrait === 'auto_dom' },
+                    { id: 'II₄', x: 330, y: 110, sex: 'M', affected: false },
+                    { id: 'III₁', x: 255, y: 184, sex: 'M', affected: false },
+                    { id: 'III₂', x: 315, y: 184, sex: 'F', affected: false, unknown: true }
+                  ].map((n) => {
+                    const isSel = selectedPedNode === n.id;
+                    const fill = n.unknown ? '#1e293b' : n.affected ? '#ef4444' : '#0f172a';
+                    const stroke = isSel ? '#38bdf8' : n.affected ? '#fca5a5' : '#94a3b8';
+                    return (
+                      <g key={n.id} onClick={() => setSelectedPedNode(n.id)} style={{ cursor: 'pointer' }}>
+                        {n.sex === 'M' ? (
+                          <rect x={n.x - 14} y={n.y - 14} width="28" height="28" rx="3" fill={fill} stroke={stroke} strokeWidth={isSel ? 3 : 2} />
+                        ) : (
+                          <circle cx={n.x} cy={n.y} r="14" fill={fill} stroke={stroke} strokeWidth={isSel ? 3 : 2} />
+                        )}
+                        <text x={n.x} y={n.y + 4} textAnchor="middle" fill="#f8fafc" fontSize="10" fontWeight="bold">
+                          {n.unknown ? '?' : n.id}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+                <div className="text-[11px] text-slate-400">
+                  Quy ước: Hình vuông = Nam · Hình tròn = Nữ · Tô đỏ = Biểu hiện bệnh · Đang xem: <strong className="text-sky-400">{selectedPedNode}</strong>
+                </div>
+              </div>
+
+              <div className="lg:col-span-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 space-y-3">
+                <div className="font-bold text-sm text-slate-900 dark:text-white">
+                  Bài toán Xác suất Phả hệ ({pedigreeTrait === 'auto_rec' ? 'Gen lặn NST thường' : pedigreeTrait === 'auto_dom' ? 'Gen trội NST thường' : 'Gen lặn trên NST X'})
+                </div>
+                <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 space-y-1.5">
+                  <div className="font-semibold text-slate-800 dark:text-slate-100">
+                    {pedigreeTrait === 'auto_rec'
+                      ? 'Biết bố mẹ I₁ × I₂ bình thường sinh con gái II₁ bị bệnh (aa). Người nữ II₃ bình thường lấy chồng II₄ dị hợp (Aa). Xác suất đứa con gái III₂ KHÔNG mang alen bệnh (AA) là bao nhiêu?'
+                      : pedigreeTrait === 'auto_dom'
+                      ? 'Bệnh do gen trội A trên NST thường quy định. I₁ (Aa) × I₂ (aa) sinh II₃ bị bệnh (Aa) lấy chồng bình thường II₄ (aa). Xác suất sinh con III₂ KHÔNG bị bệnh là bao nhiêu?'
+                      : 'Bệnh mù màu do gen lặn a trên NST X. I₁ (XᴬY) × I₂ (XᴬXᵃ) sinh con trai II₂ bị bệnh (XᵃY). Người con gái II₃ bình thường lấy chồng II₄ (XᴬY). Xác suất III₂ mang gen bệnh (XᴬXᵃ) là bao nhiêu?'}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {(pedigreeTrait === 'auto_rec'
+                    ? ['1/6', '1/3', '1/2', '2/3']
+                    : pedigreeTrait === 'auto_dom'
+                    ? ['1/4', '1/2', '3/4', '1/3']
+                    : ['1/8', '1/4', '1/2', '3/4']
+                  ).map((ans) => {
+                    const correct = pedigreeTrait === 'auto_rec' ? '1/3' : pedigreeTrait === 'auto_dom' ? '1/2' : '1/4';
+                    const picked = pedigreeQuizChoice === ans;
+                    return (
+                      <button
+                        key={ans}
+                        type="button"
+                        onClick={() => setPedigreeQuizChoice(ans)}
+                        className={`py-2 rounded-lg border font-mono font-bold cursor-pointer ${
+                          picked
+                            ? ans === correct
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-rose-600 text-white border-rose-600'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        {ans}
+                      </button>
+                    );
+                  })}
+                </div>
+                {pedigreeQuizChoice && (
+                  <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/35 border border-emerald-200 dark:border-emerald-800 p-3 text-emerald-900 dark:text-emerald-200">
+                    {pedigreeTrait === 'auto_rec'
+                      ? 'Lời giải: II₃ bình thường có dạng (1/3 AA : 2/3 Aa) ⇒ giao tử (2/3 A : 1/3 a). II₄ (Aa) cho (1/2 A : 1/2 a). Xác suất con III₂ bình thường = 1 − (1/3 × 1/2) = 5/6; trong đó P(AA) = (2/3 × 1/2) = 1/3.'
+                      : pedigreeTrait === 'auto_dom'
+                      ? 'Lời giải: II₃ bị bệnh có mẹ I₂ bình thường (aa) nên II₃ chắc chắn là Aa. Phép lai Aa × aa cho 1/2 Aa (bệnh) : 1/2 aa (bình thường).'
+                      : 'Lời giải: II₃ có dạng (1/2 XᴬXᴬ : 1/2 XᴬXᵃ) ⇒ cho giao tử (3/4 Xᴬ : 1/4 Xᵃ). Bố II₄ (XᴬY) truyền Xᴬ cho con gái III₂ nên P(XᴬXᵃ) = 1/4 = 25%.'}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {geneticsMode === 'pea' && (
+            <>
+              {/* Cross Presets */}
+              <div className="flex flex-wrap items-center gap-2">
             {(
               [
                 { id: 'mono_het', label: '1 cặp: Aa × Aa (3:1)' },
@@ -1319,6 +1880,8 @@ export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false })
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1607,55 +2170,460 @@ export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false })
       )}
 
       {tab === 'eco' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-center text-xs">
-          <div className="space-y-4">
-            <label className="block space-y-1">
-              <div className="flex justify-between font-semibold"><span>Năng lượng Sinh vật Sản xuất</span><span className="font-mono tabular-nums">{ePrimary} kcal</span></div>
-              <input type="range" min={5000} max={50000} step={1000} value={ePrimary} onChange={(e) => setEPrimary(Number(e.target.value))} className="w-full accent-emerald-600" />
-            </label>
-            <label className="block space-y-1">
-              <div className="flex justify-between font-semibold"><span>Hiệu suất sinh thái truyền bậc</span><span className="font-mono tabular-nums">{ecoEff}%</span></div>
-              <input type="range" min={5} max={20} step={1} value={ecoEff} onChange={(e) => setEcoEff(Number(e.target.value))} className="w-full accent-amber-600" />
-            </label>
-            <button
-              type="button"
-              data-ripple="true"
-              onClick={() =>
-                triggerDownloadText(
-                  'thap_sinh_thai.csv',
-                  'TrophicLevel,Energy_kcal\n' +
-                    [0, 1, 2, 3].map((lv) => `Bac_${lv + 1},${(ePrimary * Math.pow(ecoEff / 100, lv)).toFixed(2)}`).join('\n')
-                )
-              }
-              className="sim-btn-bio inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-teal-600 text-white font-semibold cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Xuất dữ liệu Tháp CSV</span>
-            </button>
-
-            <div className="space-y-2 flex flex-col items-center pt-1">
-              {[
-                { name: 'SV Tiêu thụ bậc 3 (Đại bàng)', lv: 3, w: '56%' },
-                { name: 'SV Tiêu thụ bậc 2 (Rắn)', lv: 2, w: '70%' },
-                { name: 'SV Tiêu thụ bậc 1 (Châu chấu)', lv: 1, w: '85%' },
-                { name: 'SV Sản xuất (Thực vật)', lv: 0, w: '100%' }
-              ].map((b) => {
-                const val = ePrimary * Math.pow(ecoEff / 100, b.lv);
-                return (
-                  <div
-                    key={b.lv}
-                    style={{ width: b.w }}
-                    className="rounded-lg bg-emerald-600/90 text-white px-3 py-2 flex justify-between font-mono text-[11px]"
-                  >
-                    <span className="font-sans font-semibold truncate">{b.name}</span>
-                    <span className="font-bold tabular-nums">{val.toFixed(1)} kcal</span>
-                  </div>
-                );
-              })}
+        <div className="space-y-5 text-xs">
+          {/* Biome Selector + Stability Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-1.5">
+              {BIOME_WEBS.map((bm) => (
+                <button
+                  key={bm.id}
+                  type="button"
+                  onClick={() => {
+                    setBiomeId(bm.id);
+                    setSpeciesAdjust({ producer: 1, primary: 1, secondary: 1, apex: 1, decomposer: 1 });
+                  }}
+                  className={`px-3 py-1.5 rounded-lg border font-bold cursor-pointer ${
+                    biomeId === bm.id
+                      ? 'bg-teal-600 text-white border-teal-600'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  {bm.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 font-mono">
+              <span className="text-slate-500">Chỉ số cân bằng hệ sinh thái:</span>
+              <span
+                className={`px-2.5 py-1 rounded-md font-extrabold ${
+                  ecosystemSim.stabilityScore >= 70
+                    ? 'bg-emerald-600 text-white'
+                    : ecosystemSim.stabilityScore >= 40
+                    ? 'bg-amber-500 text-slate-950'
+                    : 'bg-rose-600 text-white'
+                }`}
+              >
+                {ecosystemSim.stabilityScore}/100
+              </span>
             </div>
           </div>
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 overflow-hidden">
-            <canvas ref={ecoCanvasRef} className="w-full h-56 block" />
+
+          <div
+            className={`rounded-xl border p-3 flex items-center gap-2.5 font-semibold ${
+              ecosystemSim.severity === 'critical'
+                ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-200'
+                : ecosystemSim.severity === 'warn'
+                ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200'
+                : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200'
+            }`}
+          >
+            {ecosystemSim.severity === 'ok' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertTriangle className="w-4 h-4 shrink-0" />}
+            <span>{ecosystemSim.warning}</span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            {/* Left: Species Add/Remove & Climate Sliders */}
+            <div className="lg:col-span-6 space-y-4">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-3.5 space-y-2.5">
+                <div className="font-bold text-slate-800 dark:text-slate-100">Thêm / Bớt quần thể sinh vật trong lưới thức ăn:</div>
+                {activeBiome.species.map((sp, idx) => {
+                  const pop = ecosystemSim.pops[idx];
+                  const mult = speciesAdjust[sp.level];
+                  return (
+                    <div key={sp.id} className="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
+                      <div className="min-w-0">
+                        <div className="font-bold truncate flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: sp.color }} />
+                          <span>{sp.name}</span>
+                        </div>
+                        <div className="font-mono text-[11px] text-slate-500 tabular-nums">
+                          Mật độ hiện tại: <strong className="text-slate-900 dark:text-white">{pop}</strong> cá thể (Hệ số ×{mult.toFixed(1)})
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSpeciesAdjust((p) => ({ ...p, [sp.level]: Math.max(0.2, Math.round((p[sp.level] - 0.2) * 10) / 10) }))
+                          }
+                          className="w-7 h-7 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-bold cursor-pointer"
+                        >
+                          −
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSpeciesAdjust((p) => ({ ...p, [sp.level]: Math.min(2.0, Math.round((p[sp.level] + 0.2) * 10) / 10) }))
+                          }
+                          className="w-7 h-7 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-3.5 space-y-3">
+                <label className="block space-y-1">
+                  <div className="flex justify-between font-bold">
+                    <span className="inline-flex items-center gap-1">
+                      <ThermometerSun className="w-3.5 h-3.5 text-amber-500" />
+                      Biến đổi khí hậu (Tăng nhiệt độ ΔT)
+                    </span>
+                    <span className="font-mono tabular-nums text-rose-600">+{climateDeltaC.toFixed(1)} °C</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={4}
+                    step={0.2}
+                    value={climateDeltaC}
+                    onChange={(e) => setClimateDeltaC(Number(e.target.value))}
+                    className="w-full accent-rose-600"
+                  />
+                </label>
+
+                <label className="block space-y-1">
+                  <div className="flex justify-between font-bold">
+                    <span>Đánh bắt / Ô nhiễm / Phá rừng</span>
+                    <span className="font-mono tabular-nums text-amber-600">{humanHarvestPct}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={80}
+                    step={5}
+                    value={humanHarvestPct}
+                    onChange={(e) => setHumanHarvestPct(Number(e.target.value))}
+                    className="w-full accent-amber-600"
+                  />
+                </label>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <label className="block space-y-1">
+                    <div className="flex justify-between font-semibold"><span>NL Sản xuất</span><span className="font-mono">{ePrimary} kcal</span></div>
+                    <input type="range" min={5000} max={50000} step={1000} value={ePrimary} onChange={(e) => setEPrimary(Number(e.target.value))} className="w-full accent-emerald-600" />
+                  </label>
+                  <label className="block space-y-1">
+                    <div className="flex justify-between font-semibold"><span>Hiệu suất bậc</span><span className="font-mono">{ecoEff}%</span></div>
+                    <input type="range" min={5} max={20} step={1} value={ecoEff} onChange={(e) => setEcoEff(Number(e.target.value))} className="w-full accent-teal-600" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Interactive Food Web SVG + Trophic Energy Pyramid Canvas */}
+            <div className="lg:col-span-6 space-y-3">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 p-3">
+                <div className="text-[11px] font-mono text-teal-400 mb-1">Sơ đồ Lưới Thức Ăn Động ({activeBiome.label})</div>
+                <svg viewBox="0 0 420 200" className="w-full h-48">
+                  {[
+                    { x: 70, y: 155 },
+                    { x: 165, y: 112 },
+                    { x: 255, y: 74 },
+                    { x: 350, y: 38 },
+                    { x: 320, y: 158 }
+                  ].map((pos, idx) => {
+                    const sp = activeBiome.species[idx];
+                    const pop = ecosystemSim.pops[idx];
+                    const nextPos = idx < 3 ? [{ x: 165, y: 112 }, { x: 255, y: 74 }, { x: 350, y: 38 }][idx] : { x: 320, y: 158 };
+                    return (
+                      <React.Fragment key={sp.id}>
+                        {idx < 4 && (
+                          <line
+                            x1={pos.x}
+                            y1={pos.y}
+                            x2={nextPos.x}
+                            y2={nextPos.y}
+                            stroke={pop < 12 ? '#ef4444' : '#34d399'}
+                            strokeWidth="2"
+                            strokeDasharray={pop < 12 ? '4 4' : undefined}
+                          />
+                        )}
+                        <circle cx={pos.x} cy={pos.y} r={Math.max(12, Math.min(26, 10 + pop * 0.16))} fill={`${sp.color}33`} stroke={sp.color} strokeWidth="2.2" />
+                        <text x={pos.x} y={pos.y + 4} textAnchor="middle" fill="#f8fafc" fontSize="11" fontWeight="bold">
+                          {pop}
+                        </text>
+                        <text x={pos.x} y={pos.y + 28} textAnchor="middle" fill="#94a3b8" fontSize="9.5">
+                          {sp.name.split(' (')[0]}
+                        </text>
+                      </React.Fragment>
+                    );
+                  })}
+                </svg>
+              </div>
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 overflow-hidden">
+                <canvas ref={ecoCanvasRef} className="w-full h-48 block" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 6: VIRTUAL MICROSCOPE (5 ZOOM LEVELS) & MITOSIS/MEIOSIS */}
+      {tab === 'microscope' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs">
+          <div className="lg:col-span-6 space-y-4">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <ZoomIn className="w-4 h-4 text-teal-600" />
+                  <span>Kính Hiển Vi Ảo 5 Cấp Độ Tổ Chức Sống</span>
+                </div>
+                <div className="flex gap-1">
+                  {(['plant', 'animal'] as const).map((sp) => (
+                    <button
+                      key={sp}
+                      type="button"
+                      onClick={() => setCellSpecimen(sp)}
+                      className={`px-2.5 py-1 rounded font-bold cursor-pointer ${
+                        cellSpecimen === sp ? 'bg-teal-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {sp === 'plant' ? 'Thực vật' : 'Động vật'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-5 gap-1">
+                {[
+                  { idx: 0, label: '1× Cơ thể' },
+                  { idx: 1, label: '40× Cơ quan' },
+                  { idx: 2, label: '100× Mô' },
+                  { idx: 3, label: '400× Tế bào' },
+                  { idx: 4, label: '1000× Bào quan' }
+                ].map((z) => (
+                  <button
+                    key={z.idx}
+                    type="button"
+                    onClick={() => setZoomIdx(z.idx)}
+                    className={`py-1.5 px-1 rounded-md border font-bold text-[11px] cursor-pointer ${
+                      zoomIdx === z.idx
+                        ? 'bg-teal-600 text-white border-teal-600'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {z.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Microscope Circular Eyepiece View */}
+              <div className="rounded-xl bg-slate-950 border border-slate-800 p-4 flex flex-col items-center">
+                <svg viewBox="0 0 360 220" className="w-full h-52">
+                  <defs>
+                    <clipPath id="lens-clip">
+                      <circle cx="180" cy="110" r="96" />
+                    </clipPath>
+                  </defs>
+                  <circle cx="180" cy="110" r="100" fill="#020617" stroke="#14b8a6" strokeWidth="3" />
+                  <g clipPath="url(#lens-clip)">
+                    {zoomIdx === 0 && (
+                      <g>
+                        <ellipse cx="180" cy="128" rx="46" ry="52" fill={cellSpecimen === 'plant' ? '#15803d' : '#be123c'} opacity="0.7" />
+                        <text x="180" y="114" textAnchor="middle" fill="#f8fafc" fontSize="13" fontWeight="bold">
+                          {cellSpecimen === 'plant' ? 'Cây xanh hoàn chỉnh' : 'Cơ thể Động vật'}
+                        </text>
+                        <text x="180" y="134" textAnchor="middle" fill="#94a3b8" fontSize="10">
+                          Hệ cơ quan phối hợp thống nhất
+                        </text>
+                      </g>
+                    )}
+                    {zoomIdx === 1 && (
+                      <g>
+                        <path d="M120 155 Q180 40 240 155 Q180 180 120 155 Z" fill={cellSpecimen === 'plant' ? '#16a34a' : '#e11d48'} opacity="0.75" />
+                        <line x1="180" y1="70" x2="180" y2="165" stroke="#bbf7d0" strokeWidth="2.5" />
+                        <text x="180" y="192" textAnchor="middle" fill="#e2e8f0" fontSize="10.5" fontWeight="bold">
+                          {cellSpecimen === 'plant' ? 'Cơ quan: Lá (Hệ gân dẫn)' : 'Cơ quan: Tim co bóp 4 ngăn'}
+                        </text>
+                      </g>
+                    )}
+                    {zoomIdx === 2 && (
+                      <g>
+                        {[0, 1, 2, 3, 4, 5].map((k) => (
+                          <rect
+                            key={k}
+                            x={105 + (k % 3) * 52}
+                            y={65 + Math.floor(k / 3) * 44}
+                            width="46"
+                            height="38"
+                            rx={cellSpecimen === 'plant' ? 4 : 16}
+                            fill={cellSpecimen === 'plant' ? '#166534' : '#9f1239'}
+                            stroke="#5eead4"
+                            strokeWidth="1.5"
+                          />
+                        ))}
+                        <text x="180" y="192" textAnchor="middle" fill="#e2e8f0" fontSize="10.5" fontWeight="bold">
+                          {cellSpecimen === 'plant' ? 'Mô giậu lục lạp xếp sát nhau' : 'Mô cơ vân / biểu mô'}
+                        </text>
+                      </g>
+                    )}
+                    {zoomIdx >= 3 && (
+                      <g>
+                        <rect
+                          x="104"
+                          y="46"
+                          width="152"
+                          height="128"
+                          rx={cellSpecimen === 'plant' ? 14 : 62}
+                          fill="#0f172a"
+                          stroke={cellSpecimen === 'plant' ? '#22c55e' : '#38bdf8'}
+                          strokeWidth={cellSpecimen === 'plant' ? 5 : 2.5}
+                        />
+                        {/* Clickable Organelles */}
+                        <circle
+                          cx="166"
+                          cy="102"
+                          r={zoomIdx === 4 ? 28 : 22}
+                          fill="#8b5cf655"
+                          stroke="#8b5cf6"
+                          strokeWidth="2.5"
+                          onClick={() => setSelectedOrganelleId('nucleus')}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <text x="166" y="106" textAnchor="middle" fill="#ede9fe" fontSize="9.5" fontWeight="bold">Nhân</text>
+
+                        <ellipse
+                          cx="222"
+                          cy="92"
+                          rx="16"
+                          ry="9"
+                          fill="#f9731655"
+                          stroke="#f97316"
+                          strokeWidth="2"
+                          onClick={() => setSelectedOrganelleId('mitochondria')}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <text x="222" y="95" textAnchor="middle" fill="#ffedd5" fontSize="8">Ty thể</text>
+
+                        {cellSpecimen === 'plant' && (
+                          <g onClick={() => setSelectedOrganelleId('chloroplast')} style={{ cursor: 'pointer' }}>
+                            <ellipse cx="144" cy="144" rx="18" ry="10" fill="#10b98166" stroke="#10b981" strokeWidth="2" />
+                            <text x="144" y="147" textAnchor="middle" fill="#d1fae5" fontSize="8">Lục lạp</text>
+                          </g>
+                        )}
+
+                        <circle
+                          cx="210"
+                          cy="138"
+                          r="6"
+                          fill="#38bdf8"
+                          onClick={() => setSelectedOrganelleId('ribosome')}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <path
+                          d="M126 76 Q142 66 158 76 Q142 86 126 76"
+                          fill="#ec489966"
+                          stroke="#ec4899"
+                          strokeWidth="2"
+                          onClick={() => setSelectedOrganelleId('golgi')}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </g>
+                    )}
+                  </g>
+                </svg>
+
+                <div className="w-full grid grid-cols-5 gap-1 mt-2">
+                  {MICROSCOPE_ORGANELLES.map((org) => (
+                    <button
+                      key={org.id}
+                      type="button"
+                      onClick={() => {
+                        setZoomIdx(4);
+                        setSelectedOrganelleId(org.id);
+                      }}
+                      className={`py-1 px-1.5 rounded text-[10px] font-bold truncate cursor-pointer ${
+                        selectedOrganelle.id === org.id ? 'bg-teal-600 text-white' : 'bg-slate-900 text-slate-300'
+                      }`}
+                    >
+                      {org.name.split(' (')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 space-y-1">
+                <div className="flex justify-between font-bold text-slate-900 dark:text-white">
+                  <span style={{ color: selectedOrganelle.color }}>{selectedOrganelle.name}</span>
+                  <span className="font-mono text-slate-500">Kích thước: {selectedOrganelle.sizeUm}</span>
+                </div>
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{selectedOrganelle.role}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Mitosis / Meiosis Phase Animator */}
+          <div className="lg:col-span-6 space-y-4">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="font-bold text-sm text-slate-900 dark:text-white">Hoạt ảnh Quá trình Phân bào</div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setDivMode('mitosis')}
+                    className={`px-2.5 py-1 rounded font-bold cursor-pointer ${
+                      divMode === 'mitosis' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    Nguyên phân (2n → 2n)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDivMode('meiosis')}
+                    className={`px-2.5 py-1 rounded font-bold cursor-pointer ${
+                      divMode === 'meiosis' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    Giảm phân (2n → n)
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 relative">
+                <canvas ref={divCanvasRef} className="w-full h-56 block" />
+                <button
+                  type="button"
+                  onClick={() => setDivPlaying((p) => !p)}
+                  className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900/90 border border-slate-700 text-white font-semibold cursor-pointer"
+                >
+                  {divPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                  <span>{divPlaying ? 'Tạm dừng' : 'Chạy'}</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-5 gap-1">
+                {['Kì trung gian', 'Kì đầu', 'Kì giữa', 'Kì sau', 'Kì cuối'].map((ph, idx) => (
+                  <button
+                    key={ph}
+                    type="button"
+                    onClick={() => setDivPhase(idx)}
+                    className={`py-1.5 px-1 rounded-md border font-bold text-[11px] cursor-pointer ${
+                      divPhase === idx ? 'bg-teal-600 text-white border-teal-600' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {ph}
+                  </button>
+                ))}
+              </div>
+
+              <div className="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 space-y-1">
+                <div className="font-bold text-teal-600 dark:text-teal-400">
+                  {divMode === 'mitosis'
+                    ? ['Pha S nhân đôi ADN → 2n NST kép', 'Màng nhân tiêu biến, NST kép co xoắn', 'NST kép xếp 1 hàng trên mặt phẳng xích đạo', 'Mỗi NST kép tách thành 2 NST đơn phân li về 2 cực', 'Tạo 2 tế bào con giống hệt mẹ (2n)'][divPhase]
+                    : ['Kì trung gian: ADN nhân đôi tạo 2n NST kép', 'Kì đầu I: Các NST kép tương đồng tiếp hợp & trao đổi chéo!', 'Kì giữa I: NST kép tương đồng xếp thành 2 hàng ở xích đạo', 'Kì sau I: Mỗi NST kép trong cặp tương đồng tiến về 1 cực (giảm một nửa)', 'Kết thúc Giảm phân I & II tạo 4 giao tử đơn bội (n)'][divPhase]}
+                </div>
+                <div className="font-mono text-[11px] text-slate-500">
+                  Diễn biến bộ NST (với 2n = 4):{' '}
+                  {divMode === 'mitosis'
+                    ? ['4 NST kép (4C)', '4 NST kép', '4 NST kép (xếp 1 hàng)', '8 NST đơn (4 + 4)', '2 tế bào × 4 NST đơn'][divPhase]
+                    : ['4 NST kép (4C)', '2 cặp tương đồng (Trao đổi chéo)', '4 NST kép (xếp 2 hàng)', '2 NST kép mỗi cực', '4 giao tử × 2 NST đơn (n = 2)'][divPhase]}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

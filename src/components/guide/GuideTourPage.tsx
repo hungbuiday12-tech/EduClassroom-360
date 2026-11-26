@@ -22,6 +22,7 @@ import {
 import { SubjectType } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 import { ScrollProgressBar, ScrollReveal } from '../common/ScrollReveal';
+import { PRE_STUDIOS } from '../../data/preLabsData';
 
 interface GuideTourPageProps {
   onBack: () => void;
@@ -368,8 +369,8 @@ const GUIDE_SCENES: GuideSceneDef[] = [
     chapterNumber: '08',
     shortTitleVi: 'Synapse Pre & 3D',
     shortTitleEn: 'Synapse Pre & 3D',
-    titleVi: 'Synapse Pre: 28 Phòng Lab 5 Môn, 30 Đại Công Trình & CAD 3D',
-    titleEn: 'Synapse Pre: 28 Subject Labs, 30 Megastructures & CAD Cutaways',
+    titleVi: `Synapse Pre: ${PRE_STUDIOS.length} Phòng Lab & Sandbox 5 Môn, 30 Đại Công Trình`,
+    titleEn: `Synapse Pre: ${PRE_STUDIOS.length} Subject Labs & Sandboxes, 30 Megastructures`,
     subtitleVi:
       'Kéo thanh "Tách lớp CAD" và bật "Mặt cắt tiết diện" ngay bên cạnh để xem cách hệ thống Synapse Pre mổ xẻ kết cấu 3D thời gian thực.',
     subtitleEn:
@@ -379,12 +380,12 @@ const GUIDE_SCENES: GuideSceneDef[] = [
     actionLabelVi: 'Khám phá Synapse Pre',
     actionLabelEn: 'Explore Synapse Pre',
     stepsVi: [
-      'Khám phá 28 phòng Lab Pre phân khu theo môn: Vật lí, Hóa học (Phản ứng Ea & Orbital), Sinh học (Tế bào & CRISPR), Toán và Tin học.',
+      `Khám phá ${PRE_STUDIOS.length} phòng Lab & Sandbox Pre phân khu theo 5 môn: Vật lí, Hóa học (Bảng Tuần Hoàn Tương Lai 118, Thí Nghiệm Hóa 3D Tự Do, Lò Phản Ứng Ea & VSEPR), Sinh học (Giải Phẫu Cơ Thể Người & Động Vật 3D, Tế Bào & CRISPR), Toán và Tin học.`,
       'Trong 30 Đại Công Trình: dùng Thước đo 3D, Mặt cắt X/Y/Z, Outliner từng khối, Chế độ Nhiệt/Ứng suất/Từ thông, Auto-Tour và xuất Hồ sơ .md.',
       'Quét mã QR để biến điện thoại thành tay cầm xoay 3D hoặc tham gia phòng Syn Meet cùng bạn học.',
     ],
     stepsEn: [
-      'Launch 28 Pre Labs organized by subject zone: Physics, Chemistry (Ea Surface & Orbitals), Biology (Cell & CRISPR), Math, and CS.',
+      `Launch ${PRE_STUDIOS.length} Pre Labs & Sandboxes by subject zone: Physics, Chemistry (Future Periodic 118, Free 3D Chem Lab, Ea Surface & Orbitals), Biology (3D Human & Animal Anatomy, Cell & CRISPR), Math, and CS.`,
       'Inside 30 Megastructures: use 3D Ruler, X/Y/Z Cutaways, Sub-Assembly Outliner, Thermal/Stress/Flux shaders, Camera Tour, and .md Engineering Dossier export.',
       'Scan QR to turn your phone into a 3D controller or collaborate live inside Syn Meet.',
     ],
@@ -1968,10 +1969,10 @@ export const GuideTourPage: React.FC<GuideTourPageProps> = ({
             {
               num: '04',
               icon: Box,
-              titleVi: 'Synapse Pre: 28 Lab & 30 Công Trình',
-              titleEn: 'Synapse Pre: 28 Labs & 30 Builds',
-              descVi: '30 Đại Công Trình 3D kèm thước đo 3D, mặt cắt X/Y/Z, chế độ Nhiệt/Ứng suất và 28 Lab Pre phân khu theo 5 môn.',
-              descEn: '30 WebGL megastructures with 3D ruler, X/Y/Z cutaways, thermal/stress modes, and 28 subject-zoned Pre labs.',
+              titleVi: `Synapse Pre: ${PRE_STUDIOS.length} Lab & 30 Công Trình`,
+              titleEn: `Synapse Pre: ${PRE_STUDIOS.length} Labs & 30 Builds`,
+              descVi: `30 Đại Công Trình 3D kèm thước đo 3D, mặt cắt X/Y/Z, chế độ Nhiệt/Ứng suất và ${PRE_STUDIOS.length} Lab & Sandbox Pre phân khu theo 5 môn.`,
+              descEn: `30 WebGL megastructures with 3D ruler, X/Y/Z cutaways, thermal/stress modes, and ${PRE_STUDIOS.length} subject-zoned Pre labs & sandboxes.`,
               subject: 'synapse_v2' as SubjectType,
             },
           ].map((card, idx) => {

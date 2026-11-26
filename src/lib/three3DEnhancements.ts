@@ -29,7 +29,7 @@ export function createPostProcessingPipeline(
   camera: THREE.Camera,
   options: PostProcessOptions = {}
 ): PostProcessPipeline {
-  const { bloomIntensity = 0.4, luminanceThreshold = 0.78, enableSmaa = true } = options;
+  const { bloomIntensity = 0.34, luminanceThreshold = 0.9, enableSmaa = true } = options;
 
   try {
     const composer = new EffectComposer(renderer, {
@@ -167,9 +167,9 @@ export class BillboardTextLabel extends THREE.Group {
       return;
     }
 
-    const pxFont = 52;
+    const pxFont = 96;
     const fontFamily = `'Inter', 'Segoe UI', 'Noto Sans', 'DejaVu Sans', system-ui, -apple-system, sans-serif`;
-    const fontStr = `700 ${pxFont}px ${fontFamily}`;
+    const fontStr = `600 ${pxFont}px ${fontFamily}`;
 
     const canvas = this.canvas || document.createElement('canvas');
     this.canvas = canvas;
@@ -203,29 +203,31 @@ export class BillboardTextLabel extends THREE.Group {
       if (wrapped.length > 0) lines = wrapped;
     }
 
-    const lineHeight = Math.round(pxFont * 1.32);
+    const lineHeight = Math.round(pxFont * 1.28);
     const maxTextW = Math.max(
-      24,
+      40,
       ...lines.map((l) => Math.ceil(ctx.measureText(l).width))
     );
-    const padX = 28;
-    const padY = 18;
-    const cw = Math.max(64, maxTextW + padX * 2);
-    const ch = Math.max(48, lines.length * lineHeight + padY * 2);
+    const padX = 44;
+    const padY = 26;
+    const cw = Math.max(128, maxTextW + padX * 2);
+    const ch = Math.max(88, lines.length * lineHeight + padY * 2);
 
     canvas.width = cw;
     canvas.height = ch;
     ctx.clearRect(0, 0, cw, ch);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
-    // Subtle dark glass label plate with colored accent border
-    const r = 18;
+    // Crisp high-contrast dark slate plate with clean hairline accent border
+    const r = 24;
     ctx.beginPath();
-    ctx.roundRect(4, 4, cw - 8, ch - 8, r);
-    ctx.fillStyle = 'rgba(7, 13, 25, 0.84)';
+    ctx.roundRect(6, 6, cw - 12, ch - 12, r);
+    ctx.fillStyle = 'rgba(6, 11, 23, 0.93)';
     ctx.fill();
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.strokeStyle = fillCss;
-    ctx.globalAlpha = 0.52;
+    ctx.globalAlpha = 0.65;
     ctx.stroke();
     ctx.globalAlpha = 1;
 
@@ -237,8 +239,8 @@ export class BillboardTextLabel extends THREE.Group {
 
     const outlineCss = toCssColor(this.outlineColor, '#020617');
     for (let i = 0; i < lines.length; i++) {
-      const ly = padY + (i + 0.5) * lineHeight;
-      ctx.lineWidth = Math.max(4, Math.round(pxFont * 0.14));
+      const ly = padY + (i + 0.52) * lineHeight;
+      ctx.lineWidth = Math.max(3, Math.round(pxFont * 0.065));
       ctx.strokeStyle = outlineCss;
       ctx.strokeText(lines[i], cw / 2, ly);
       ctx.fillStyle = fillCss;
@@ -250,15 +252,16 @@ export class BillboardTextLabel extends THREE.Group {
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
     tex.magFilter = THREE.LinearFilter;
-    tex.generateMipmaps = false;
+    tex.generateMipmaps = true;
+    tex.anisotropy = 8;
     tex.needsUpdate = true;
     this.tex = tex;
     this.mat.map = tex;
     this.mat.needsUpdate = true;
 
-    const worldH = (ch / pxFont) * this.fontSize * 0.92;
+    const worldH = (ch / pxFont) * this.fontSize * 1.06;
     const worldW = (cw / ch) * worldH;
     this.plane.scale.set(worldW, worldH, 1);
 
@@ -293,6 +296,128 @@ export function updateBillboardLabels(root: THREE.Object3D, camera: THREE.Camera
       obj.quaternion.copy(camera.quaternion);
     }
   });
+}
+
+export interface LeaderArrowOptions {
+  text: string;
+  labelPos: [number, number, number];
+  anchorPos: [number, number, number];
+  color?: number;
+  fontSize?: number;
+  maxWidth?: number;
+}
+
+export class LeaderArrowLabel extends THREE.Group {
+  public readonly label: BillboardTextLabel;
+  private readonly line: THREE.Line;
+  private readonly dot: THREE.Mesh;
+  private readonly arrow: THREE.Mesh;
+  private readonly linePositions: Float32Array;
+  private readonly tmpDir = new THREE.Vector3();
+  private readonly upVec = new THREE.Vector3(0, 1, 0);
+  private readonly aVec = new THREE.Vector3();
+  private readonly lVec = new THREE.Vector3();
+  private readonly startVec = new THREE.Vector3();
+
+  constructor(options: LeaderArrowOptions) {
+    super();
+    const color = options.color ?? 0x7dd3fc;
+
+    this.label = new BillboardTextLabel({
+      text: options.text,
+      position: options.labelPos,
+      fontSize: options.fontSize ?? 0.21,
+      color,
+      maxWidth: options.maxWidth ?? 2.8,
+    });
+    this.add(this.label);
+
+    this.linePositions = new Float32Array(6);
+    const lineGeo = new THREE.BufferGeometry();
+    const posAttr = new THREE.BufferAttribute(this.linePositions, 3);
+    posAttr.setUsage(THREE.DynamicDrawUsage);
+    lineGeo.setAttribute('position', posAttr);
+    const lineMat = new THREE.LineBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.86,
+      depthTest: false,
+    });
+    this.line = new THREE.Line(lineGeo, lineMat);
+    this.line.renderOrder = 18;
+    this.add(this.line);
+
+    this.dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.048, 12, 10),
+      new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.95 })
+    );
+    this.dot.renderOrder = 20;
+    this.add(this.dot);
+
+    this.arrow = new THREE.Mesh(
+      new THREE.ConeGeometry(0.06, 0.17, 12),
+      new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.96 })
+    );
+    this.arrow.renderOrder = 21;
+    this.add(this.arrow);
+
+    this.setEndpoints(options.labelPos, options.anchorPos);
+  }
+
+  public setEndpoints(
+    labelPos: [number, number, number] | THREE.Vector3,
+    anchorPos: [number, number, number] | THREE.Vector3
+  ): void {
+    if (Array.isArray(labelPos)) this.lVec.set(labelPos[0], labelPos[1], labelPos[2]);
+    else this.lVec.copy(labelPos);
+
+    if (Array.isArray(anchorPos)) this.aVec.set(anchorPos[0], anchorPos[1], anchorPos[2]);
+    else this.aVec.copy(anchorPos);
+
+    this.label.position.copy(this.lVec);
+    this.dot.position.copy(this.aVec);
+
+    this.tmpDir.subVectors(this.aVec, this.lVec);
+    const dist = this.tmpDir.length();
+    if (dist > 0.001) {
+      this.tmpDir.divideScalar(dist);
+      // Offset line start slightly away from text center so line emerges cleanly from badge rim
+      const trimStart = Math.min(0.32, dist * 0.25);
+      this.startVec.copy(this.lVec).addScaledVector(this.tmpDir, trimStart);
+      this.arrow.position.copy(this.aVec).addScaledVector(this.tmpDir, -0.09);
+      this.arrow.quaternion.setFromUnitVectors(this.upVec, this.tmpDir);
+      this.arrow.visible = dist > 0.22;
+    } else {
+      this.startVec.copy(this.lVec);
+      this.arrow.position.copy(this.aVec);
+      this.arrow.visible = false;
+    }
+
+    this.linePositions[0] = this.startVec.x;
+    this.linePositions[1] = this.startVec.y;
+    this.linePositions[2] = this.startVec.z;
+    this.linePositions[3] = this.aVec.x;
+    this.linePositions[4] = this.aVec.y;
+    this.linePositions[5] = this.aVec.z;
+
+    const attr = this.line.geometry.getAttribute('position') as THREE.BufferAttribute;
+    attr.needsUpdate = true;
+    this.line.geometry.computeBoundingSphere();
+  }
+
+  public dispose(): void {
+    this.label.dispose();
+    this.line.geometry.dispose();
+    (this.line.material as THREE.Material).dispose();
+    this.dot.geometry.dispose();
+    (this.dot.material as THREE.Material).dispose();
+    this.arrow.geometry.dispose();
+    (this.arrow.material as THREE.Material).dispose();
+  }
+}
+
+export function createLeaderArrowLabel(options: LeaderArrowOptions): LeaderArrowLabel {
+  return new LeaderArrowLabel(options);
 }
 
 export interface CrispLine2Options {

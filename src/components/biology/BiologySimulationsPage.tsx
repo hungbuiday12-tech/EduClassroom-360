@@ -20,6 +20,7 @@ import { BIOLOGY_2D_SIMS, BIOLOGY_3D_SIMS, BIOLOGY_DOMAINS } from '../../data/bi
 import { renderBiology2DSim, BioSimTelemetry } from './biology2DEngine';
 import { Biology3DView } from './Biology3DView';
 import { BiologySandboxes } from './BiologySandboxes';
+import { BiologyLifeSandboxLab } from './BiologyLifeSandboxLab';
 import { SimAnalysisProBar } from '../common/SimAnalysisProBar';
 import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
 import { FormattedText } from '../common/MathRenderer';
@@ -48,6 +49,7 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
   const [catalogExpanded, setCatalogExpanded] = useState(true);
   const [activeSimId, setActiveSimId] = useState<BiologySimType>(BIOLOGY_2D_SIMS[0].id);
   const [active3DId, setActive3DId] = useState<Biology3DMode>(BIOLOGY_3D_SIMS[0].id);
+  const [sandboxSuiteMode, setSandboxSuiteMode] = useState<'open' | 'classic'>('open');
 
   useEffect(() => {
     if (location.biologyView === 'sandbox') {
@@ -238,7 +240,7 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
               }`}
             >
               <Microscope className="w-3.5 h-3.5 icon-anim-dna" />
-              <span>Sandbox Sinh học (6 Phòng)</span>
+              <span>Sandbox Sinh học (Tự do &amp; 6 Phòng)</span>
             </button>
           </div>
 
@@ -537,7 +539,47 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
         </div>
       )}
 
-      {zone === 'sandbox' && <BiologySandboxes isEn={isEn} />}
+      {zone === 'sandbox' && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSandboxSuiteMode('open')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                  sandboxSuiteMode === 'open'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                }`}
+              >
+                Sandbox Kiến tạo Sự sống (Nhập vai · Hệ sinh thái · Gen · Tế bào · Sinh lý)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSandboxSuiteMode('classic')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                  sandboxSuiteMode === 'classic'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                }`}
+              >
+                6 Phòng Sinh học Chuyên đề
+              </button>
+            </div>
+            <span className="text-xs text-slate-500">
+              {sandboxSuiteMode === 'open'
+                ? 'Kiến tạo sinh vật, diễn thế hàng trăm năm & giải phẫu chức năng'
+                : 'Kính hiển vi ảo, Lai Mendel, Giải phẫu lớp & Lưới thức ăn'}
+            </span>
+          </div>
+
+          {sandboxSuiteMode === 'open' ? (
+            <BiologyLifeSandboxLab isEn={isEn} />
+          ) : (
+            <BiologySandboxes isEn={isEn} />
+          )}
+        </div>
+      )}
     </div>
   );
 };

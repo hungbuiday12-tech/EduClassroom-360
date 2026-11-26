@@ -21,6 +21,7 @@ import { renderChemistry2DSim, ChemSimTelemetry } from './chemistry2DEngine';
 import { Chemistry3DView } from './Chemistry3DView';
 import { ChemistryApparatusWorkbench } from './ChemistryApparatusWorkbench';
 import { ChemistrySandboxes } from './ChemistrySandboxes';
+import { ChemistryOpenSandboxLab } from './ChemistryOpenSandboxLab';
 import { SimAnalysisProBar } from '../common/SimAnalysisProBar';
 import { captureCanvasPng, RecordVideoButton, useCanvasRecorder } from '../common/SimProToolkit';
 import { FormattedText } from '../common/MathRenderer';
@@ -49,6 +50,7 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
   const [catalogExpanded, setCatalogExpanded] = useState(true);
   const [activeSimId, setActiveSimId] = useState<ChemistrySimType>(CHEMISTRY_2D_SIMS[0].id);
   const [active3DId, setActive3DId] = useState<Chemistry3DMode>(CHEMISTRY_3D_SIMS[0].id);
+  const [sandboxSuiteMode, setSandboxSuiteMode] = useState<'open' | 'classic'>('open');
 
   useEffect(() => {
     if (location.chemistryView === 'sandbox') {
@@ -241,7 +243,7 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
               }`}
             >
               <FlaskConical className="w-3.5 h-3.5 icon-anim-flask" />
-              <span>Sandbox Hóa học (6 Phòng)</span>
+              <span>Sandbox Hóa học (Tự do &amp; 6 Phòng)</span>
             </button>
           </div>
 
@@ -551,7 +553,47 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
       )}
 
       {/* ZONE 3: CHEMISTRY SANDBOXES */}
-      {zone === 'sandbox' && <ChemistrySandboxes isEn={isEn} />}
+      {zone === 'sandbox' && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSandboxSuiteMode('open')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                  sandboxSuiteMode === 'open'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                }`}
+              >
+                Sandbox Tự Do (Pha chế · Phân tử 3D · Hạt · Sinh tồn)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSandboxSuiteMode('classic')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer whitespace-nowrap ${
+                  sandboxSuiteMode === 'classic'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                }`}
+              >
+                6 Phòng Hóa học Chuyên đề
+              </button>
+            </div>
+            <span className="text-xs text-slate-500">
+              {sandboxSuiteMode === 'open'
+                ? 'Tự do pha chế, lắp ráp 3D & điều chế không kịch bản'
+                : 'Bảng tuần hoàn, Cân bằng PTHH, Chuẩn độ & Trò chơi'}
+            </span>
+          </div>
+
+          {sandboxSuiteMode === 'open' ? (
+            <ChemistryOpenSandboxLab isEn={isEn} />
+          ) : (
+            <ChemistrySandboxes isEn={isEn} />
+          )}
+        </div>
+      )}
     </div>
   );
 };

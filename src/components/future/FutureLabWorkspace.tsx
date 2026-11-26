@@ -79,6 +79,9 @@ const BioDnaCrispr3DLab = lazy(() =>
 const BiologySandboxes = lazy(() =>
   import('../biology/BiologySandboxes').then((m) => ({ default: m.BiologySandboxes }))
 );
+const BiologyLifeSandboxLab = lazy(() =>
+  import('../biology/BiologyLifeSandboxLab').then((m) => ({ default: m.BiologyLifeSandboxLab }))
+);
 const MathSandboxSuite = lazy(() =>
   import('./MathSandboxSuite').then((m) => ({ default: m.MathSandboxSuite }))
 );
@@ -118,6 +121,7 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
 
   const [isStudioFullscreen, setIsStudioFullscreen] = useState<boolean>(false);
   const [showStudioIntro, setShowStudioIntro] = useState(true);
+  const [bioSuiteView, setBioSuiteView] = useState<'life' | 'classic'>('life');
   const [quickSwitcherOpen, setQuickSwitcherOpen] = useState(false);
   const [switcherQuery, setSwitcherQuery] = useState('');
   const [switcherGroup, setSwitcherGroup] = useState<'all' | 'pinned' | PreSidebarGroupId>('all');
@@ -892,7 +896,33 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
               </div>
             }
           >
-            <BiologySandboxes isEn={isEn} />
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2.5">
+                <button
+                  type="button"
+                  onClick={() => setBioSuiteView('life')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                    bioSuiteView === 'life'
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                  }`}
+                >
+                  Sandbox Kiến tạo Sự sống (5 Phòng Tự Do)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBioSuiteView('classic')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                    bioSuiteView === 'classic'
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                  }`}
+                >
+                  6 Phòng Sinh học Chuyên đề
+                </button>
+              </div>
+              {bioSuiteView === 'life' ? <BiologyLifeSandboxLab isEn={isEn} /> : <BiologySandboxes isEn={isEn} />}
+            </div>
           </Suspense>
         )}
         {activeView === 'math_sandbox_suite' && (

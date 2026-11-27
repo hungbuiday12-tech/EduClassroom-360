@@ -71,6 +71,9 @@ import { LabDataLoggerPanel } from '../common/LabDataLoggerPanel';
 import { LabTimeMachineBar } from './LabTimeMachineBar';
 import { SimToCodeModal } from './SimToCodeModal';
 import { SimAnalysisProBar, SimParamBoundMeta } from '../common/SimAnalysisProBar';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { useCanvasModelDrag } from '../../hooks/useCanvasModelDrag';
+import { getStudioDpr } from '../common/studio2DCanvasKit';
 
 interface OverlayState {
   showRulerGrid: boolean;
@@ -434,7 +437,15 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
   const [revealedEssaySolutions, setRevealedEssaySolutions] = useState<Record<string, boolean>>({});
 
   // Canvas & simulation refs
+  const { perfMode } = useBackgroundTheme();
+  const perfModeRef = useRef(perfMode);
+  perfModeRef.current = perfMode;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { dragRef, isMoved, resetDrag } = useCanvasModelDrag(
+    canvasRef,
+    activeSimType,
+    `${activeView}-${activeTab}-${isSimFullscreen ? 1 : 0}`
+  );
   const simTimeRef = useRef<number>(0);
   const animFrameIdRef = useRef<number | null>(null);
   const isRunningRef = useRef<boolean>(isRunning);
@@ -683,7 +694,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
       const t = simTimeRef.current;
       const curOverlays = overlaysRef.current;
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = getStudioDpr(perfModeRef.current);
       const w = cachedW || canvas.clientWidth;
       const h = cachedH || canvas.clientHeight;
       if (w <= 0 || h <= 0) {
@@ -712,7 +723,9 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
         flags: labFlagsRef.current,
         overlays: curOverlays,
         oscHistory: oscHistoryRef.current,
-        pushTelemetry
+        pushTelemetry,
+        perfMode: perfModeRef.current,
+        dragState: dragRef.current
       });
 
       ctx.restore();
@@ -1978,7 +1991,21 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                           simTimeRef={simTimeRef}
                           stageClassName={`relative w-full bg-slate-950 rounded-md overflow-hidden ${isSimFullscreen ? 'h-[280px] sm:h-[450px] lg:h-[500px]' : 'h-[280px] sm:h-[380px]'}`}
                         >
-                          <canvas ref={canvasRef} className="w-full h-full block" />
+                          <canvas ref={canvasRef} className="w-full h-full block cursor-grab active:cursor-grabbing touch-none" />
+                          {isMoved ? (
+                            <button
+                              type="button"
+                              onClick={resetDrag}
+                              className="absolute bottom-2.5 right-2.5 z-20 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-sky-500/45 text-[10px] font-semibold text-sky-200 shadow-sm cursor-pointer"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Đặt lại vị trí</span>
+                            </button>
+                          ) : (
+                            <div className="pointer-events-none absolute bottom-2 right-2.5 z-10 text-[10px] font-mono text-slate-400/75 select-none">
+                              Kéo thả mô hình trên sàn · Nhấp đúp căn giữa
+                            </div>
+                          )}
                         </PhysicsApparatusWorkbench>
                       </div>
 
@@ -2616,7 +2643,21 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                         simTimeRef={simTimeRef}
                         stageClassName={`relative w-full bg-slate-950 rounded-md overflow-hidden ${isSimFullscreen ? 'h-[280px] sm:h-[450px] lg:h-[500px]' : 'h-[300px] sm:h-[400px]'}`}
                       >
-                        <canvas ref={canvasRef} className="w-full h-full block" />
+                        <canvas ref={canvasRef} className="w-full h-full block cursor-grab active:cursor-grabbing touch-none" />
+                        {isMoved ? (
+                          <button
+                            type="button"
+                            onClick={resetDrag}
+                            className="absolute bottom-2.5 right-2.5 z-20 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-sky-500/45 text-[10px] font-semibold text-sky-200 shadow-sm cursor-pointer"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>Đặt lại vị trí</span>
+                          </button>
+                        ) : (
+                          <div className="pointer-events-none absolute bottom-2 right-2.5 z-10 text-[10px] font-mono text-slate-400/75 select-none">
+                            Kéo thả mô hình trên sàn · Nhấp đúp căn giữa
+                          </div>
+                        )}
                       </PhysicsApparatusWorkbench>
                     </div>
 

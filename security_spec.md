@@ -29,3 +29,13 @@
 - Only signed-in users (`isSignedIn()`) may enter the mandatory Admin group, create new `/forum_groups/{groupId}` rooms (`isMandatoryAdminGroup: false`), or create `/forum_groups/{groupId}/messages/{messageId}` records.
 - Only Admin `Synapse` can send messages into `/forum_groups/official-announcements`; user `TanHung` (`hungbuiday12@gmail.com`) is a standard student user.
 - Group and message documents store zero user PII (no raw user email addresses).
+
+## 4. Forum Social Feed & Updates Invariants
+- `/forum_posts/{postId}` stores zero PII and is publicly readable (`get` and `list` scoped by `postType`).
+- Only signed-in users (`isSignedIn()` with verified email) can create `/forum_posts/{postId}` (`authorId == request.auth.uid`, `commentsCount == 0`, `tryCount == 0`).
+- Only Admin `Synapse` (`isForumAdmin()`) can create official web-update posts (`postType == 'update'`) or set `isPinned: true`.
+- Standard users may edit or delete only their own `/forum_posts/{postId}` (`existing().authorId == request.auth.uid`) and cannot escalate `postType` to `'update'` or change `authorId`.
+- Signed-in users may react (`reactions`), update `commentsCount`, or increment `tryCount` when launching an attached experiment/lecture, without altering the post's author or body.
+- `/forum_posts/{postId}/comments/{commentId}` enforces parent post existence (Master Gate), immutable `authorId`/`postId`, and deletion restricted to comment owner, post owner, or Admin `Synapse`.
+- Dirty payloads blocked: spoofing `authorId` on create, regular user creating `postType: "update"` or `isPinned: true`, injecting ghost fields or oversized attachments, or editing another user's post content.
+

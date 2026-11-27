@@ -36,8 +36,10 @@ import {
   Paperclip,
   Tag,
   BookMarked,
-  Trophy
+  Trophy,
+  Newspaper
 } from 'lucide-react';
+import { ForumSocialFeed } from './ForumSocialFeed';
 import {
   ForumGroup,
   ForumLessonAttachment,
@@ -215,6 +217,7 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
   const isEn = language === 'en';
   const isAdmin = isForumAdminUser(user);
 
+  const [forumSection, setForumSection] = useState<'feed' | 'groups'>('feed');
   const [groups, setGroups] = useState<ForumGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>(MANDATORY_ADMIN_GROUP_ID);
   const [messages, setMessages] = useState<ForumMessage[]>([]);
@@ -1614,36 +1617,94 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
         </div>
       )}
 
-      {/* Mobile View Switcher (< lg) */}
-      <div className="lg:hidden grid grid-cols-2 gap-2 p-1.5 rounded-2xl bg-white/85 dark:bg-slate-900/85 border border-slate-200/80 dark:border-white/10">
-        <button
-          type="button"
-          onClick={() => setMobilePane('groups')}
-          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-            mobilePane === 'groups'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          <span>{isEn ? `Groups (${groups.length})` : `Nhóm học (${groups.length})`}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobilePane('chat')}
-          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-            mobilePane === 'chat'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 dark:text-slate-300'
-          }`}
-        >
-          <MessageSquare className="w-3.5 h-3.5" />
-          <span className="truncate">{selectedGroup?.name || (isEn ? 'Chat Room' : 'Phòng chat')}</span>
-        </button>
+      {/* Top-Level Forum Section Switcher */}
+      <div className="rounded-2xl bg-white/85 dark:bg-slate-900/82 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-xs">
+        <div className="grid grid-cols-2 gap-1.5 flex-1">
+          <button
+            type="button"
+            onClick={() => setForumSection('feed')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+              forumSection === 'feed'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70'
+            }`}
+          >
+            <Newspaper className="w-4 h-4 shrink-0" />
+            <span>{isEn ? 'Community Feed & Experiences' : 'Bảng Tin & Trải Nghiệm'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setForumSection('groups')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+              forumSection === 'groups'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70'
+            }`}
+          >
+            <Users className="w-4 h-4 shrink-0" />
+            <span>{isEn ? `Study Groups & Chat (${groups.length})` : `Nhóm Thảo Luận & Chat (${groups.length})`}</span>
+          </button>
+        </div>
       </div>
 
-      {/* Main 12-Column Forum Split Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+      {forumSection === 'feed' ? (
+        <ForumSocialFeed
+          onOpenOfficialAnnouncements={() => {
+            setForumSection('groups');
+            setSelectedGroupId(MANDATORY_ADMIN_GROUP_ID);
+            setMobilePane('chat');
+            if (!user) {
+              preserveViewportScroll();
+              setStatusMsg(
+                isEn
+                  ? 'Sign in to read and participate in the official Admin Synapse channel.'
+                  : 'Đăng nhập để mở chi tiết kênh thông báo chính thức từ Admin Synapse.'
+              );
+            }
+          }}
+          onNotify={({ type, text }) => {
+            preserveViewportScroll();
+            if (type === 'error') {
+              setStatusMsg(null);
+              setErrorMsg(text);
+            } else {
+              setErrorMsg(null);
+              setStatusMsg(text);
+            }
+          }}
+        />
+      ) : (
+        <>
+          {/* Mobile View Switcher (< lg) */}
+          <div className="lg:hidden grid grid-cols-2 gap-2 p-1.5 rounded-2xl bg-white/85 dark:bg-slate-900/85 border border-slate-200/80 dark:border-white/10">
+            <button
+              type="button"
+              onClick={() => setMobilePane('groups')}
+              className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                mobilePane === 'groups'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>{isEn ? `Groups (${groups.length})` : `Nhóm học (${groups.length})`}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobilePane('chat')}
+              className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                mobilePane === 'chat'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span className="truncate">{selectedGroup?.name || (isEn ? 'Chat Room' : 'Phòng chat')}</span>
+            </button>
+          </div>
+
+          {/* Main 12-Column Forum Split Workspace */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* LEFT COLUMN (4 cols): Groups Directory */}
         <aside
           className={`${mobilePane === 'groups' ? 'flex' : 'hidden lg:flex'} lg:col-span-4 rounded-3xl bg-white/85 dark:bg-slate-900/82 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 p-4 sm:p-5 flex-col gap-4 shadow-sm`}
@@ -2894,6 +2955,8 @@ export const StudyForum: React.FC<StudyForumProps> = ({ onBack }) => {
           )}
         </section>
       </div>
+        </>
+      )}
 
       {/* Create Group Modal */}
       {isCreateOpen && (

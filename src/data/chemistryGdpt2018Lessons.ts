@@ -741,7 +741,7 @@ export const CHEMISTRY_GDPT_2018_LESSONS: ChemistryLesson[] = [
       'C_xH_yO_z: \\frac{x}{\\frac{\\%C}{12}} = \\frac{y}{\\frac{\\%H}{1}} = \\frac{z}{\\frac{\\%O}{16}}',
       'k = \\frac{2C + 2 - H + N}{2}\\text{ (Độ bất bão hòa)}'
     ],
-    sim2d: 'flame_spectroscopy_2d',
+    sim2d: 'ir_ms_spectroscopy_2d',
     sim3d: 'spectroscopy_prism_3d',
     mcq1: {
       source: 'Hóa 11 · GDPT 2018',

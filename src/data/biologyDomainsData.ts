@@ -815,6 +815,26 @@ export const BIOLOGY_2D_SIMS: Biology2DSimSpec[] = [
       { label: '2. Tật Cận thị & Đeo kính phân kì', description: 'Sửa ảnh hội tụ trước võng mạc về đúng điểm vàng', params: { organMode: 2, stimulusLevel: 85, lensCorrection: -2 } },
       { label: '3. Màng nhĩ → Chuỗi xương tai → Ốc tai', description: 'Khuếch đại rung động âm thanh vào dịch ốc tai', params: { organMode: 3, stimulusLevel: 60, lensCorrection: 0 } }
     ]
+  },
+  {
+    id: 'biomolecules_2d',
+    domainId: 'cell_membrane',
+    grades: ['Lớp 10'],
+    title: 'Nước & 4 Đại Phân Tử Sinh Học (Carbohydrate – Lipid – Protein – Nucleic Acid)',
+    subtitle: 'Khảo sát mạng liên kết hiđrô của H₂O, vòng đường Glucose, Phospholipid lưỡng cực, 4 bậc cấu trúc Protein & biến tính nhiệt',
+    formula: '\\text{H}_2\\text{O (Liên kết H)} \\cdot \\text{Protein (Bậc 1} \\to \\text{4)} \\cdot \\text{DNA/RNA}',
+    linkedLessonId: 'bio-10-1',
+    defaultParams: { moleculeTab: 1, tempC: 37, polymerLen: 5 },
+    paramBounds: {
+      moleculeTab: { min: 1, max: 5, step: 1, unit: '', label: 'Phân tử (1:Nước H₂O 2:Glucozơ 3:Phospholipid 4:Protein 4 bậc 5:DNA/RNA)' },
+      tempC: { min: 0, max: 95, step: 5, unit: '°C', label: 'Nhiệt độ môi trường' },
+      polymerLen: { min: 3, max: 8, step: 1, unit: 'đơn phân', label: 'Số đơn phân mạch' }
+    },
+    presets: [
+      { label: '1. Phân tử Nước H₂O & Liên kết Hiđrô', description: 'Đóng băng (0°C) tạo mạng thưa nổi trên nước, đun nóng đứt dần liên kết H', params: { moleculeTab: 1, tempC: 20, polymerLen: 5 } },
+      { label: '3. Phospholipid lưỡng cực tạo lớp kép', description: 'Đầu photphat ưa nước hướng ra ngoài, đuôi axit béo kị nước quay vào trong', params: { moleculeTab: 3, tempC: 37, polymerLen: 5 } },
+      { label: '4. Protein 4 bậc & Biến tính ở 75°C', description: 'Nhiệt cao phá vỡ liên kết yếu bậc 3/4 làm chuỗi duỗi mất chức năng', params: { moleculeTab: 4, tempC: 75, polymerLen: 6 } }
+    ]
   }
 ];
 
@@ -845,5 +865,6 @@ export const BIOLOGY_3D_SIMS: Biology3DSimSpec[] = [
   { id: 'digestive_tract_3d', domainId: 'physiology_organism', grades: ['Lớp 8'], title: 'Ống Tiêu Hóa Người (Thực Quản – Dạ Dày – Ruột Non & Lông Ruột) 3D', subtitle: 'Quan sát thức ăn đi qua dạ dày co bóp tiết HCl/Pepsin xuống tá tràng nhận dịch mật và hấp thụ ở vi nhung mao ruột non', formula: '\\text{Tinh bột} \\to \\text{Glucozơ} \\quad|\\quad \\text{Protein} \\to \\text{Axit amin}', linkedLessonId: 'bio-8-b1' },
   { id: 'invertebrate_biodiversity_3d', domainId: 'evolution_population', grades: ['Lớp 6', 'Lớp 7'], title: 'Đa Dạng 4 Ngành Động Vật Không Xương Sống 3D', subtitle: 'Đặt cạnh nhau Thủy tức (Ruột khoang), Giun đất (Giun đốt), Ốc (Thân mềm) và Châu chấu/Tôm (Chân khớp kitin)', formula: '\\text{Ruột khoang} \\to \\text{Giun} \\to \\text{Thân mềm} \\to \\text{Chân khớp}', linkedLessonId: 'bio-6-b3' },
   { id: 'plant_tropism_germination_3d', domainId: 'physiology_organism', grades: ['Lớp 7'], title: 'Hạt Đậu Nảy Mầm, Hướng Sáng (Auxin) & Hướng Trọng Lực 3D', subtitle: 'Xoay góc chiếu ánh sáng mặt trời và điều chỉnh độ ẩm đất để thấy thân uốn về phía sáng, rễ đâm xuống đất', formula: '\\text{Thân: Hướng sáng (+)} \\quad|\\quad \\text{Rễ: Hướng đất (+)}', linkedLessonId: 'bio-7-b5' },
-  { id: 'skeleton_senses_3d', domainId: 'physiology_organism', grades: ['Lớp 8'], title: 'Đòn Bẩy Xương–Cơ Tay & Điều Tiết Thủy Tinh Thể Mắt 3D', subtitle: 'Mô phỏng đồng thời khớp khuỷu – cơ nhị đầu co rút nâng cẳng tay và mắt người điều chỉnh tiêu điểm về võng mạc', formula: '\\text{Cơ nhị đầu co} \\to \\text{Gấp khuỷu} \\quad|\\quad \\text{Điểm ảnh đúng võng mạc}', linkedLessonId: 'bio-8-b1' }
+  { id: 'skeleton_senses_3d', domainId: 'physiology_organism', grades: ['Lớp 8'], title: 'Đòn Bẩy Xương–Cơ Tay & Điều Tiết Thủy Tinh Thể Mắt 3D', subtitle: 'Mô phỏng đồng thời khớp khuỷu – cơ nhị đầu co rút nâng cẳng tay và mắt người điều chỉnh tiêu điểm về võng mạc', formula: '\\text{Cơ nhị đầu co} \\to \\text{Gấp khuỷu} \\quad|\\quad \\text{Điểm ảnh đúng võng mạc}', linkedLessonId: 'bio-8-b1' },
+  { id: 'biomolecules_3d', domainId: 'cell_membrane', grades: ['Lớp 10'], title: 'Mạng Liên Kết Hiđrô Nước & 4 Đại Phân Tử Sinh Học 3D', subtitle: 'Quan sát cấu trúc không gian tứ diện H₂O, vòng α-Glucozơ, chuỗi Protein bậc 3 biến tính nhiệt & đoạn DNA', formula: '\\text{Bậc 1 (Peptit)} \\to \\text{Bậc 3/4 (Chức năng sinh học)}', linkedLessonId: 'bio-10-1' }
 ];

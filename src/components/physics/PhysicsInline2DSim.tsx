@@ -25,6 +25,9 @@ import {
 import { CustomStepSimId, renderCustomStepPhysicsSim } from './physicsStepCustomRenderers';
 import { resolveStepSimulation } from './physicsStepSimResolver';
 import { FormattedText } from '../common/MathRenderer';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { useCanvasModelDrag } from '../../hooks/useCanvasModelDrag';
+import { getStudioDpr } from '../common/studio2DCanvasKit';
 
 interface PhysicsInline2DSimProps {
   lesson: PhysicsLesson;
@@ -195,7 +198,14 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
     note: resolved.observationGoal
   });
 
+  const { perfMode } = useBackgroundTheme();
+  const perfModeRef = useRef(perfMode);
+  perfModeRef.current = perfMode;
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const { dragRef, isMoved, resetDrag } = useCanvasModelDrag(canvasRef, {
+    resetKey: `${lesson.id}-${stepIndex}-${resolved.simId}`
+  });
   const simTimeRef = useRef<number>(0);
   const animIdRef = useRef<number | null>(null);
   const isRunningRef = useRef<boolean>(isRunning);
@@ -302,7 +312,7 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
         simTimeRef.current += rawDt * simSpeedRef.current;
       }
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = getStudioDpr(perfModeRef.current);
       const w = cachedW || canvas.clientWidth;
       const h = cachedH || canvas.clientHeight;
       if (w < 40 || h < 40) return;
@@ -329,7 +339,10 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
           params: paramsRef.current,
           flags: flagsRef.current,
           overlays: overlaysRef.current,
-          pushTelemetry
+          pushTelemetry,
+          perfMode: perfModeRef.current,
+          dragState: dragRef.current,
+          standalone: true
         });
       } else {
         renderPhysics2DSimulation({
@@ -344,7 +357,9 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
           flags: flagsRef.current,
           overlays: overlaysRef.current,
           oscHistory: oscHistoryRef.current,
-          pushTelemetry
+          pushTelemetry,
+          perfMode: perfModeRef.current,
+          dragState: dragRef.current
         });
       }
 
@@ -594,8 +609,22 @@ export const PhysicsInline2DSim: React.FC<PhysicsInline2DSimProps> = ({
       <div className="relative bg-slate-50 dark:bg-[#0b101d] border-b border-slate-200/80 dark:border-slate-800">
         <canvas
           ref={canvasRef}
-          className="w-full h-[250px] sm:h-[285px] block select-none"
+          className="w-full h-[250px] sm:h-[285px] block select-none cursor-grab active:cursor-grabbing touch-none"
         />
+        {isMoved ? (
+          <button
+            type="button"
+            onClick={resetDrag}
+            className="absolute bottom-2.5 right-2.5 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900/85 hover:bg-slate-800 border border-sky-500/45 text-[10px] font-semibold text-sky-200 shadow-sm cursor-pointer"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>Đặt lại vị trí</span>
+          </button>
+        ) : (
+          <div className="pointer-events-none absolute bottom-2 right-2.5 text-[10px] font-mono text-slate-500/80 dark:text-slate-400/75 select-none">
+            Kéo thả mô hình trên sàn · Nhấp đúp để căn giữa
+          </div>
+        )}
       </div>
 
       {/* Dedicated Transport & Visual Overlay Strip BELOW Canvas */}

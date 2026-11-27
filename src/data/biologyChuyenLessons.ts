@@ -57,7 +57,7 @@ export const BIOLOGY_CHUYEN_LESSONS: BiologyLesson[] = [
     theory2Heading: '2. Xináp Kích thích (EPSP) vs Ức chế (IPSP)',
     theory2: '• Chất trung gian kích thích (Glutamat, ACh) mở kênh $Na^+$ gây khử cực EPSP.\n• Chất trung gian ức chế (GABA, Glycine) mở kênh $Cl^-$ hoặc $K^+$ gây ưu phân cực IPSP.',
     keyFormulas: ['E_{\\text{ion}} = 61{,}5\\,\\log_{10}\\frac{[\\text{Ion}]_{\\text{ngoài}}}{[\\text{Ion}]_{\\text{trong}}}\\text{ (mV)}'],
-    sim2d: 'synapse_transmission_2d',
+    sim2d: 'action_potential_2d',
     sim3d: 'neuron_synapse_3d',
     mcq1: {
       source: 'HSG Sinh Quốc gia',

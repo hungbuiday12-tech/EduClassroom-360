@@ -1,4 +1,19 @@
 import { PhysicsParamBound } from '../../data/physicsDomainsData';
+import { PerformanceMode } from '../../context/BackgroundContext';
+import {
+  Studio2DDragState,
+  ZERO_STUDIO_DRAG,
+  drawStudioBurnerFlame,
+  drawStudioFloorReticle,
+  drawStudioGlassVessel,
+  drawStudioIncomingLight,
+  drawStudioLabBackdrop,
+  drawStudioMetallicBlock,
+  drawStudioSphere,
+  drawStudioSpringCoil,
+  drawStudioThermometerProbe,
+  getStudioBenchY
+} from '../common/studio2DCanvasKit';
 import {
   Physics2DFlags,
   Physics2DOverlayState,
@@ -388,7 +403,10 @@ export function renderCustomStepPhysicsSim({
   params,
   flags,
   overlays,
-  pushTelemetry
+  pushTelemetry,
+  perfMode = 'balanced',
+  dragState = ZERO_STUDIO_DRAG,
+  standalone = true
 }: {
   ctx: CanvasRenderingContext2D;
   w: number;
@@ -400,21 +418,25 @@ export function renderCustomStepPhysicsSim({
   flags: Physics2DFlags;
   overlays: Physics2DOverlayState;
   pushTelemetry: (next: Physics2DTelemetry) => void;
+  perfMode?: PerformanceMode;
+  dragState?: Studio2DDragState;
+  standalone?: boolean;
 }) {
-  ctx.clearRect(0, 0, w, h);
-  const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.45, 24, w * 0.5, h * 0.5, Math.max(w, h) * 0.78);
-  if (isDark) {
-    bgGrad.addColorStop(0, '#10182b');
-    bgGrad.addColorStop(1, '#080d19');
+  const benchY = standalone
+    ? drawStudioLabBackdrop(ctx, w, h, isDark, perfMode, {
+        subject: 'physics',
+        showGrid: overlays.showRulerGrid
+      })
+    : getStudioBenchY(h, h < 310);
+
+  if (standalone) {
+    ctx.save();
+    ctx.translate(dragState.offsetX, dragState.offsetY);
   } else {
-    bgGrad.addColorStop(0, '#ffffff');
-    bgGrad.addColorStop(1, '#f1f5f9');
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (!overlays.showRulerGrid && false) drawGrid(ctx, w, h, isDark);
   }
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, w, h);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  if (overlays.showRulerGrid) drawGrid(ctx, w, h, isDark);
 
   const fg = isDark ? '#e2e8f0' : '#0f172a';
   const muted = isDark ? '#94a3b8' : '#475569';
@@ -686,19 +708,19 @@ export function renderCustomStepPhysicsSim({
       }
 
       const bx = xStart + (sCur / sTrack) * (xEnd - xStart);
-      const bw = 54;
+      const bw = 56;
       const bh = 38;
       const by = floorY - bh;
 
-      ctx.fillStyle = '#0284c7';
-      ctx.fillRect(bx - bw / 2, by, bw, bh);
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(bx - bw / 2, by, bw, bh);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${m}kg`, bx, by + 23);
+      drawStudioMetallicBlock(ctx, bx - bw / 2, by, bw, bh, {
+        topColor: '#38bdf8',
+        midColor: '#0284c7',
+        bottomColor: '#0369a1',
+        borderColor: 'rgba(186, 230, 253, 0.75)',
+        radius: 6,
+        label: `${m}kg`,
+        labelColor: '#ffffff'
+      });
 
       // Force vectors
       if (overlays.showVectors) {
@@ -996,18 +1018,28 @@ export function renderCustomStepPhysicsSim({
         );
       }
 
-      // Water Calorimeter Beaker
-      const heatAlpha = isOpen || I <= 0.005 ? 0.05 : Math.min(0.65, 0.12 + P / 250);
-      ctx.fillStyle = `rgba(249, 115, 22, ${heatAlpha * 0.45})`;
-      ctx.fillRect(beakerX + 4, beakerY + 28, beakerW - 8, beakerH - 32);
-      ctx.fillStyle = isDark ? 'rgba(56,189,248,0.2)' : 'rgba(56,189,248,0.28)';
-      ctx.fillRect(beakerX + 4, beakerY + 28, beakerW - 8, beakerH - 32);
-      ctx.strokeStyle = muted;
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(beakerX, beakerY, beakerW, beakerH);
+      // Water Calorimeter Beaker (Photorealistic Pyrex Glassware + Thermal Tint)
+      const heatFrac = isOpen || I <= 0.005 ? 0 : Math.min(1, P / 200);
+      const liqColor = heatFrac > 0.35
+        ? `rgba(${Math.round(56 + 190 * heatFrac)}, ${Math.round(189 - 85 * heatFrac)}, ${Math.round(248 - 190 * heatFrac)}, 0.45)`
+        : 'rgba(56, 189, 248, 0.42)';
+      drawStudioGlassVessel(ctx, beakerX, beakerY, beakerW, beakerH, {
+        fillFraction: 0.78,
+        liquidColor: liqColor,
+        liquidTopColor: 'rgba(186, 230, 253, 0.65)',
+        maxMl: 500,
+        perfMode,
+        dark: isDark,
+        rimGlowColor: heatFrac > 0.45 ? '#fb923c' : '#38bdf8'
+      });
 
       // Glowing Heating Coil inside water
       const glow = isOpen || I <= 0.005 ? 0 : Math.min(1, P / 150);
+      ctx.save();
+      if (perfMode !== 'smooth' && glow > 0.1) {
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = 10 + glow * 8;
+      }
       ctx.strokeStyle = isOpen || I <= 0.005 ? '#64748b' : glow > 0.4 ? '#f97316' : '#fb923c';
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -1019,11 +1051,12 @@ export function renderCustomStepPhysicsSim({
       }
       ctx.lineTo(coilRightX, coilY);
       ctx.stroke();
+      ctx.restore();
 
       // Rising convection bubbles proportional to power
       if (!isOpen && P > 0.2) {
         const bubbleCount = Math.min(14, Math.max(2, Math.round(P / 12)));
-        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        ctx.fillStyle = 'rgba(255,255,255,0.68)';
         for (let b = 0; b < bubbleCount; b++) {
           const byProg = (t * 0.6 + b * 0.23) % 1;
           const bx = beakerX + 24 + ((b * 19) % Math.max(20, beakerW - 48));
@@ -1034,24 +1067,18 @@ export function renderCustomStepPhysicsSim({
         }
       }
 
-      // Thermometer on right side
+      // Precision Thermometer Probe on right side
       const thermX = beakerX + beakerW + 26;
-      const thermY = beakerY + 8;
-      const thermH = beakerH - 16;
-      ctx.strokeStyle = fg;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(thermX, thermY, 16, thermH);
-      const fillRatio = Math.min(1, (tempCur - 20) / 80);
-      const mercH = fillRatio * (thermH - 6);
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(thermX + 3, thermY + thermH - 3 - mercH, 10, mercH);
+      const thermY = beakerY + 6;
+      const thermH = beakerH - 8;
+      drawStudioThermometerProbe(ctx, thermX + 6, thermY, thermH, tempCur, isDark, 0, 100);
       ctx.fillStyle = fg;
       ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(`${tempCur.toFixed(1)}°C`, thermX + 22, thermY + thermH - mercH + 4);
+      ctx.fillText(`${tempCur.toFixed(1)}°C`, thermX + 28, thermY + thermH * 0.42);
       ctx.font = '11px sans-serif';
       ctx.fillStyle = muted;
-      ctx.fillText(`Q = ${Q.toFixed(0)} J`, thermX + 22, beakerY + 20);
+      ctx.fillText(`Q = ${Q.toFixed(0)} J`, thermX + 28, beakerY + 20);
 
       // Legend at bottom
       ctx.font = 'bold 10.5px sans-serif';
@@ -1279,32 +1306,28 @@ export function renderCustomStepPhysicsSim({
       const anchorX = w * 0.28;
       const anchorY = 26;
       const scalePxPerCm = 2.8;
-      const springLenPx = Math.min(h - 90, lCur * scalePxPerCm);
-      const coils = 10;
+      const springLenPx = Math.min(h - 96, lCur * scalePxPerCm);
 
-      ctx.fillStyle = muted;
-      ctx.fillRect(anchorX - 36, anchorY - 6, 72, 8);
+      drawStudioMetallicBlock(ctx, anchorX - 38, anchorY - 8, 76, 10, {
+        topColor: '#94a3b8',
+        midColor: '#475569',
+        bottomColor: '#1e293b',
+        radius: 3
+      });
 
-      // Coiled spring
-      ctx.strokeStyle = dlCm > 50 ? '#ef4444' : '#0284c7';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(anchorX, anchorY);
-      for (let i = 1; i <= coils; i++) {
-        const yy = anchorY + (i / coils) * springLenPx;
-        const xx = anchorX + (i % 2 === 0 ? -12 : 12);
-        ctx.lineTo(xx, yy);
-      }
-      ctx.lineTo(anchorX, anchorY + springLenPx);
-      ctx.stroke();
+      // Photorealistic Metallic Helical Spring
+      drawStudioSpringCoil(ctx, anchorX, anchorY + 2, anchorY + springLenPx, 11, 13, isDark);
 
-      // Mass block
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(anchorX - 18, anchorY + springLenPx, 36, 28);
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${m}kg`, anchorX, anchorY + springLenPx + 18);
+      // Machined Brass/Amber Mass Block
+      drawStudioMetallicBlock(ctx, anchorX - 19, anchorY + springLenPx, 38, 28, {
+        topColor: '#fbbf24',
+        midColor: '#d97706',
+        bottomColor: '#92400e',
+        borderColor: 'rgba(254, 243, 199, 0.7)',
+        radius: 5,
+        label: `${m}kg`,
+        labelColor: '#ffffff'
+      });
 
       // l0 reference line
       const y0 = anchorY + l0 * scalePxPerCm;
@@ -1406,19 +1429,22 @@ export function renderCustomStepPhysicsSim({
         note: phaseLabel
       });
 
-      // Left beaker illustration
+      // Left Pyrex Beaker + Bunsen Burner & Thermometer Probe
       const bx = 36;
-      const bw = 115;
-      const by = 48;
-      const bh = h - 96;
-      ctx.fillStyle = tempCur <= 0 ? 'rgba(125,211,252,0.4)' : 'rgba(14,165,233,0.3)';
-      ctx.fillRect(bx + 4, by + 30, bw - 8, bh - 34);
-      ctx.strokeStyle = muted;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(bx, by, bw, bh);
-      // Burner glow below
-      ctx.fillStyle = '#f97316';
-      ctx.fillRect(bx + 18, by + bh + 6, bw - 36, 8);
+      const bw = 112;
+      const by = 40;
+      const bh = Math.max(84, benchY - by - 58);
+      drawStudioGlassVessel(ctx, bx, by, bw, bh, {
+        fillFraction: 0.7,
+        liquidColor: tempCur <= 0 ? 'rgba(125,211,252,0.5)' : 'rgba(14,165,233,0.42)',
+        liquidTopColor: tempCur <= 0 ? 'rgba(224,242,254,0.78)' : 'rgba(125,211,252,0.72)',
+        maxMl: 500,
+        perfMode,
+        dark: isDark,
+        rimGlowColor: tempCur >= 95 ? '#f97316' : '#38bdf8'
+      });
+      drawStudioBurnerFlame(ctx, bx + bw / 2, benchY, Math.min(1.1, P / 1400), t, perfMode, '#38bdf8');
+      drawStudioThermometerProbe(ctx, bx + bw + 18, by + 6, bh - 6, tempCur, isDark, -40, 110);
 
       // Right T(Q) heating curve
       const gx0 = 195;
@@ -1570,19 +1596,23 @@ export function renderCustomStepPhysicsSim({
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.stroke();
       }
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 7, 0, Math.PI * 2);
-      ctx.fill();
+      drawStudioSphere(ctx, cx, cy, 8, {
+        baseColor: '#f59e0b',
+        highlightColor: '#fef3c7',
+        shadowColor: '#92400e',
+        perfMode
+      });
 
       const phase = t % 3;
       const curN = phase < 1.5 ? nHi : nLo;
       const eRad = 16 + Math.min(5, curN) * 16;
       const ang = t * 2.4;
-      ctx.fillStyle = '#22d3ee';
-      ctx.beginPath();
-      ctx.arc(cx + Math.cos(ang) * eRad, cy + Math.sin(ang) * eRad, 5, 0, Math.PI * 2);
-      ctx.fill();
+      drawStudioSphere(ctx, cx + Math.cos(ang) * eRad, cy + Math.sin(ang) * eRad, 5.5, {
+        baseColor: '#22d3ee',
+        highlightColor: '#ecfeff',
+        shadowColor: '#0e7490',
+        perfMode
+      });
 
       // Emitted photon wave packet moving right after transition
       if (phase >= 1.5) {
@@ -1695,5 +1725,14 @@ export function renderCustomStepPhysicsSim({
       ctx.fillText('B (Từ trường ↗↙)', x0 + 140, 28);
       break;
     }
+  }
+
+  if (standalone) {
+    ctx.restore();
+    drawStudioFloorReticle(ctx, w, h, dragState, isDark, 'physics');
+    drawStudioIncomingLight(ctx, w, h, undefined, isDark, perfMode, {
+      subject: 'physics',
+      benchY
+    });
   }
 }

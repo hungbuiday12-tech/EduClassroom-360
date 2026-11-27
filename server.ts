@@ -741,9 +741,59 @@ interface ForumMessageRecord {
   createdAt: string;
 }
 
+export type ForumPostTypeServer = 'experiment' | 'lecture' | 'discussion' | 'update';
+
+export interface ForumExperienceAttachmentServer {
+  kind: 'lecture' | 'sim2d' | 'sim3d' | 'sandbox' | 'pre_lab';
+  subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' | 'pre';
+  targetId: string;
+  domainId?: string;
+  title: string;
+  subtitle?: string;
+  formula?: string;
+  gradeLabel?: string;
+  openSim?: boolean;
+}
+
+export interface ForumPostCommentServer {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorUsername?: string;
+  authorAvatar?: string;
+  authorRole: 'student' | 'teacher' | 'admin';
+  content: string;
+  createdAt: string;
+}
+
+export interface ForumFeedPostServer {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorUsername?: string;
+  authorAvatar?: string;
+  authorRole: 'student' | 'teacher' | 'admin';
+  postType: ForumPostTypeServer;
+  subject: ForumSubjectServer;
+  title?: string;
+  content: string;
+  attachment?: ForumExperienceAttachmentServer;
+  tags?: string[];
+  gradeTag?: string;
+  reactions: Record<string, string[]>;
+  commentsCount: number;
+  comments: ForumPostCommentServer[];
+  tryCount: number;
+  isPinned?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 interface ForumDatabase {
   groups: ForumGroupRecord[];
   messages: ForumMessageRecord[];
+  posts: ForumFeedPostServer[];
 }
 
 const FORUM_DB_PATH = path.resolve(process.cwd(), '.forum_db.json');
@@ -964,6 +1014,169 @@ function buildDefaultForumSeed(): ForumDatabase {
           'Xin chào cả lớp! Mọi người có thể chia sẻ mẹo học tập, lịch ôn thi hoặc đặt câu hỏi chung ngoài khuôn khổ từng môn ở đây nhé.',
         createdAt: t5
       }
+    ],
+    posts: [
+      {
+        id: 'post_seed_synapse_update_1',
+        authorId: 'admin_synapse',
+        authorName: 'Synapse',
+        authorUsername: 'Synapse',
+        authorAvatar: FORUM_ADMIN_AVATAR,
+        authorRole: 'admin',
+        postType: 'update',
+        subject: 'announcements',
+        title: 'Cập nhật Bảng Tin Cộng Đồng & Nâng cấp Mô phỏng 2D/3D Lí – Hóa – Sinh',
+        content:
+          'Chào mừng các bạn đến với không gian **Bảng Tin & Trải Nghiệm** mới trên Diễn đàn Synapse 360°!\n\nTừ hôm nay các bạn có thể:\n• Đăng bài chia sẻ góc nhìn học tập, chèn công thức KaTeX ($E = mc^2$), code C++/Python và gắn trực tiếp **Thí nghiệm 2D/3D, Sandbox KHTN/KHKT hoặc Bài giảng** để bạn bè bấm vào trải nghiệm ngay.\n• Toàn bộ mô phỏng 2D/3D Vật lí, Hóa học, Sinh học đã nâng cấp ánh sáng sắc nét và hỗ trợ kéo thả trực tiếp bằng chuột.\n• Theo dõi mục **Thông báo Cập nhật Web** bên phải để nắm các bản vá và tính năng mới nhất từ Admin Synapse.',
+        attachment: {
+          kind: 'pre_lab',
+          subject: 'pre',
+          targetId: 'what_if_physics_3d',
+          title: 'Vũ Trụ "Nếu Định Luật Vật Lí Thay Đổi" 3D (Synapse Pre)',
+          subtitle: 'Bẻ cong hằng số G, tốc độ ánh sáng c & Planck h trong không gian 3D',
+          formula: 'F = G\\frac{m_1 m_2}{r^n},\\quad c = 3\\times 10^8\\text{ m/s}',
+          gradeLabel: 'Synapse Pre · Sandbox KHTN',
+          openSim: true
+        },
+        tags: ['Cập nhật Web', 'Synapse Pre', 'Mô phỏng 3D'],
+        gradeTag: 'Toàn hệ thống',
+        reactions: { '👍': ['demo_user_2', 'demo_user_3'], '🔥': ['demo_user_1', 'demo_user_5'] },
+        commentsCount: 1,
+        comments: [
+          {
+            id: 'cmt_seed_1',
+            postId: 'post_seed_synapse_update_1',
+            authorId: 'demo_user_3',
+            authorName: 'Trần Minh Khoa',
+            authorUsername: 'chuyenli2026',
+            authorRole: 'student',
+            content: 'Tuyệt quá Admin ơi! Bấm nút "Trải nghiệm ngay" là bay thẳng vào mô phỏng luôn rất tiện ạ.',
+            createdAt: t5
+          }
+        ],
+        tryCount: 42,
+        isPinned: true,
+        createdAt: t5
+      },
+      {
+        id: 'post_seed_chem_titration',
+        authorId: 'demo_user_5',
+        authorName: 'Phạm Hoàng Minh',
+        authorUsername: 'chuyenhoa2026',
+        authorRole: 'student',
+        postType: 'experiment',
+        subject: 'chemistry',
+        title: 'Thí nghiệm Chuẩn độ Buret NaOH – Bình Tam Giác 3D & Điểm tương đương pH',
+        content:
+          'Mình vừa thử bàn chuẩn độ 3D ở Hóa học lớp 11, lúc nhỏ từng giọt kiềm xuống thấy dung dịch đổi màu hồng cánh sen bền vững cực trực quan! Mọi người nhớ công thức điểm tương đương $C_a V_a = C_b V_b$ và thử chỉnh tốc độ nhỏ giọt nhé.',
+        attachment: {
+          kind: 'sim3d',
+          subject: 'chemistry',
+          domainId: 'equilibrium_acidbase',
+          targetId: 'titration_bench_3d',
+          title: 'Bàn Thí Nghiệm Chuẩn Độ Buret – Bình Tam Giác 3D',
+          subtitle: 'Hóa học 3D · Cân bằng & Dung dịch Acid–Base',
+          formula: 'C_a V_a = C_b V_b \\quad|\\quad \\text{pH} = -\\log[\\text{H}^+]',
+          gradeLabel: 'Lớp 9 · Lớp 11',
+          openSim: true
+        },
+        tags: ['Hóa 3D', 'Chuẩn độ pH'],
+        gradeTag: 'Lớp 11',
+        reactions: { '👍': ['demo_user_6'], '💡': ['demo_user_2'] },
+        commentsCount: 0,
+        comments: [],
+        tryCount: 18,
+        createdAt: t4
+      },
+      {
+        id: 'post_seed_bio_mendel',
+        authorId: 'demo_user_6',
+        authorName: 'Nguyễn Ngọc Linh',
+        authorUsername: 'chuyensinh2026',
+        authorRole: 'student',
+        postType: 'experiment',
+        subject: 'biology',
+        title: 'Thí nghiệm Đậu Hà Lan Mendel 3D — Tại sao F₂ luôn ra tỉ lệ 9:3:3:1?',
+        content:
+          'Các bạn ôn thi Sinh 9 & Sinh 12 thử bấm vào mô phỏng Đậu Hà Lan Mendel 3D này xem! Tách hạt Vàng-Trơn / Xanh-Nhăn trực quan kèm bảng tổ hợp giao tử giúp nhớ ngay quy luật phân li độc lập $F_1 (AaBb \\times AaBb)$.',
+        attachment: {
+          kind: 'sim3d',
+          subject: 'biology',
+          domainId: 'genetics_molecular',
+          targetId: 'mendel_peas_3d',
+          title: 'Thí Nghiệm Đậu Hà Lan Mendel & Bảng Phân Li F₂ 3D',
+          subtitle: 'Sinh học 3D · Di truyền Phân tử & Biến dị',
+          formula: 'F_1(AaBb \\times AaBb) \\implies 9\\text{A\\_B\\_} : 3\\text{A\\_bb} : 3\\text{aaB\\_} : 1\\text{aabb}',
+          gradeLabel: 'Lớp 9 · Lớp 12',
+          openSim: true
+        },
+        tags: ['Sinh 3D', 'Mendel'],
+        gradeTag: 'Lớp 12',
+        reactions: { '❤️': ['demo_user_4', 'demo_user_5'], '🔥': ['demo_user_1'] },
+        commentsCount: 0,
+        comments: [],
+        tryCount: 24,
+        createdAt: t3
+      },
+      {
+        id: 'post_seed_physics_proj',
+        authorId: 'demo_user_3',
+        authorName: 'Trần Minh Khoa',
+        authorUsername: 'chuyenli2026',
+        authorRole: 'student',
+        postType: 'experiment',
+        subject: 'physics',
+        title: 'Kiểm chứng hai góc ném bù nhau (20° và 70°) cho cùng tầm xa L trên sàn 2D',
+        content:
+          'Vì $\\sin(2\\alpha) = \\sin(180^\\circ - 2\\alpha)$ nên khi giữ nguyên vận tốc đầu $v_0 = 28\\text{ m/s}$, góc bắn $20^\\circ$ và $70^\\circ$ chạm đất tại cùng một tầm xa $L = \\frac{v_0^2 \\sin 2\\alpha}{g}$! Bấm trải nghiệm rồi kéo thả thanh đo để tự kiểm chứng nha.',
+        attachment: {
+          kind: 'sim2d',
+          subject: 'physics',
+          domainId: 'mechanics',
+          targetId: 'projectile_motion',
+          title: 'Quỹ đạo Ném Xiên Parabol 2D',
+          subtitle: 'Vật lí 2D · Cơ học & Chuyển động',
+          formula: 'L = \\frac{v_0^2 \\sin 2\\alpha}{g},\\quad H = \\frac{(v_0 \\sin\\alpha)^2}{2g}',
+          gradeLabel: 'Lớp 10',
+          openSim: true
+        },
+        tags: ['Vật lí 2D', 'Ném xiên'],
+        gradeTag: 'Lớp 10',
+        reactions: { '👍': ['demo_user_1'], '💡': ['demo_user_2', 'demo_user_4'] },
+        commentsCount: 0,
+        comments: [],
+        tryCount: 15,
+        createdAt: t2
+      },
+      {
+        id: 'post_seed_cs_hull',
+        authorId: 'demo_user_1',
+        authorName: 'Học sinh Chuyên',
+        authorUsername: 'hocsinh',
+        authorRole: 'student',
+        postType: 'lecture',
+        subject: 'cs',
+        title: 'Mẹo cài đặt Bao Lồi Convex Hull (Monotone Chain) O(N log N) không bị lỗi thẳng hàng',
+        content:
+          'Khi làm các bài Hình học tính toán VNOI, chỉ cần chú ý điều kiện `cross(L[k-2], L[k-1], p) <= 0` để loại bỏ điểm rẽ phải hoặc thẳng hàng.\n```cpp\nlong long cross(Point O, Point A, Point B) {\n    return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);\n}\n```\nCác bạn có thể bấm vào trình trực quan hóa 2D bên dưới để xem từng bước dựng bao dưới và bao trên!',
+        attachment: {
+          kind: 'sim2d',
+          subject: 'cs',
+          targetId: 'coord_hull',
+          title: 'Tọa độ Oxy: Bao lồi (Convex Hull) 2D',
+          subtitle: 'Tin học 2D · Thuật toán Monotone Chain O(N log N)',
+          formula: '\\vec{OA} \\times \\vec{OB} = x_A y_B - y_A x_B',
+          gradeLabel: 'Chuyên Tin · VNOI',
+          openSim: true
+        },
+        tags: ['C++', 'Hình học Oxy', 'VNOI'],
+        gradeTag: 'Chuyên / HSG',
+        reactions: { '🔥': ['demo_user_2', 'demo_user_3'] },
+        commentsCount: 0,
+        comments: [],
+        tryCount: 19,
+        createdAt: t1
+      }
     ]
   };
 }
@@ -1035,6 +1248,18 @@ function ensureMandatoryAdminGroup(data: ForumDatabase): ForumDatabase {
     }
     return m;
   });
+
+  if (!Array.isArray(data.posts) || data.posts.length === 0) {
+    data.posts = seed.posts;
+  } else {
+    data.posts = data.posts.map((p) => ({
+      ...p,
+      reactions: p.reactions && typeof p.reactions === 'object' ? p.reactions : {},
+      comments: Array.isArray(p.comments) ? p.comments : [],
+      commentsCount: Array.isArray(p.comments) ? p.comments.length : Number(p.commentsCount || 0),
+      tryCount: Number(p.tryCount || 0)
+    }));
+  }
 
   return data;
 }
@@ -1713,6 +1938,386 @@ app.delete('/api/forum/groups/:groupId/messages/:messageId', (req: Request, res:
 
   broadcastForumEvent({ type: 'forum:message_deleted', groupId, messageId, group });
   return res.json({ success: true, messageId, group });
+});
+
+// =====================================================================
+// FORUM SOCIAL FEED POSTS (Facebook-style stream + Web Updates)
+// =====================================================================
+function sortFeedPostsForClient(posts: ForumFeedPostServer[]): ForumFeedPostServer[] {
+  return [...posts].sort((a, b) => {
+    if (Boolean(a.isPinned) !== Boolean(b.isPinned)) {
+      return a.isPinned ? -1 : 1;
+    }
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
+function sanitizeFeedAttachment(raw: any): ForumExperienceAttachmentServer | undefined {
+  if (!raw || typeof raw !== 'object' || !raw.targetId || !raw.title) return undefined;
+  const allowedKinds = ['lecture', 'sim2d', 'sim3d', 'sandbox', 'pre_lab'] as const;
+  const allowedSubjects = ['math', 'physics', 'chemistry', 'biology', 'cs', 'pre'] as const;
+  const kind = allowedKinds.includes(raw.kind) ? raw.kind : 'lecture';
+  const subject = allowedSubjects.includes(raw.subject) ? raw.subject : 'math';
+  return {
+    kind,
+    subject,
+    targetId: String(raw.targetId).trim().slice(0, 128),
+    ...(raw.domainId ? { domainId: String(raw.domainId).trim().slice(0, 80) } : {}),
+    title: String(raw.title).trim().slice(0, 180),
+    ...(raw.subtitle ? { subtitle: String(raw.subtitle).trim().slice(0, 240) } : {}),
+    ...(raw.formula ? { formula: String(raw.formula).trim().slice(0, 240) } : {}),
+    ...(raw.gradeLabel ? { gradeLabel: String(raw.gradeLabel).trim().slice(0, 40) } : {}),
+    openSim: Boolean(raw.openSim)
+  };
+}
+
+app.get('/api/forum/posts', (req: Request, res: Response) => {
+  const posts = sortFeedPostsForClient(Array.isArray(forumDb.posts) ? forumDb.posts : []);
+  const officialNotices = forumDb.messages
+    .filter((m) => m.groupId === MANDATORY_ADMIN_GROUP_ID)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 10);
+  return res.json({ posts, officialNotices });
+});
+
+app.post('/api/forum/posts', (req: Request, res: Response) => {
+  const {
+    id,
+    authorId,
+    authorName,
+    authorUsername,
+    authorEmail,
+    authorAvatar,
+    authorRole,
+    postType,
+    subject,
+    title,
+    content,
+    attachment,
+    tags,
+    gradeTag,
+    isPinned
+  } = req.body || {};
+
+  if (!authorId || !authorName) {
+    return res.status(401).json({ error: 'Vui lòng đăng nhập để đăng bài lên diễn đàn.' });
+  }
+
+  const isAdminSender = isForumAdminIdentity(authorEmail, authorUsername);
+  const allowedPostTypes: ForumPostTypeServer[] = ['experiment', 'lecture', 'discussion', 'update'];
+  const cleanPostType: ForumPostTypeServer = allowedPostTypes.includes(postType) ? postType : 'discussion';
+
+  if (cleanPostType === 'update' && !isAdminSender) {
+    return res.status(403).json({ error: 'Chỉ tài khoản Admin Synapse mới có thể đăng Thông báo cập nhật web.' });
+  }
+
+  const allowedSubjects: ForumSubjectServer[] = [
+    'announcements',
+    'general',
+    'math',
+    'physics',
+    'chemistry',
+    'biology',
+    'cs',
+    'exams'
+  ];
+  const cleanSubject: ForumSubjectServer = allowedSubjects.includes(subject)
+    ? subject === 'announcements' && !isAdminSender
+      ? 'general'
+      : subject
+    : 'general';
+
+  const cleanContent = String(content || '').trim();
+  const sanitizedAttachment = sanitizeFeedAttachment(attachment);
+  const finalContent =
+    cleanContent ||
+    (sanitizedAttachment ? `Chia sẻ trải nghiệm: **${sanitizedAttachment.title}**` : '');
+
+  if (finalContent.length < 1 || finalContent.length > 4000) {
+    return res.status(400).json({ error: 'Nội dung bài viết cần từ 1 đến 4000 ký tự.' });
+  }
+
+  const cleanTitle = title ? String(title).trim().slice(0, 160) : undefined;
+  const cleanTags = Array.isArray(tags)
+    ? tags.map((t: unknown) => String(t || '').trim().slice(0, 32)).filter(Boolean).slice(0, 5)
+    : undefined;
+  const cleanGradeTag = gradeTag ? String(gradeTag).trim().slice(0, 32) : undefined;
+
+  const postId = id
+    ? String(id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 128)
+    : `post_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+  const nowIso = new Date().toISOString();
+  const record: ForumFeedPostServer = {
+    id: postId,
+    authorId: String(authorId).slice(0, 128),
+    authorName: isAdminSender ? 'Synapse' : String(authorName).slice(0, 100),
+    authorUsername: isAdminSender
+      ? 'Synapse'
+      : authorUsername
+      ? String(authorUsername).slice(0, 40)
+      : undefined,
+    authorAvatar: isAdminSender
+      ? FORUM_ADMIN_AVATAR
+      : authorAvatar
+      ? String(authorAvatar).slice(0, 512)
+      : undefined,
+    authorRole: isAdminSender ? 'admin' : authorRole === 'teacher' ? 'teacher' : 'student',
+    postType: cleanPostType,
+    subject: cleanSubject,
+    ...(cleanTitle ? { title: cleanTitle } : {}),
+    content: finalContent,
+    ...(sanitizedAttachment ? { attachment: sanitizedAttachment } : {}),
+    ...(cleanTags && cleanTags.length > 0 ? { tags: cleanTags } : {}),
+    ...(cleanGradeTag ? { gradeTag: cleanGradeTag } : {}),
+    reactions: {},
+    commentsCount: 0,
+    comments: [],
+    tryCount: 0,
+    isPinned: isAdminSender && Boolean(isPinned),
+    createdAt: nowIso
+  };
+
+  if (!Array.isArray(forumDb.posts)) forumDb.posts = [];
+  forumDb.posts.unshift(record);
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:post_created', post: record });
+
+  return res.status(201).json({ success: true, post: record });
+});
+
+app.patch('/api/forum/posts/:postId', (req: Request, res: Response) => {
+  const postId = String(req.params.postId || '').trim();
+  const { userId, userEmail, title, content, postType, subject, attachment, tags, gradeTag } = req.body || {};
+  const cleanUserId = String(userId || '').trim();
+  if (!cleanUserId) {
+    return res.status(401).json({ error: 'Vui lòng đăng nhập để chỉnh sửa bài viết.' });
+  }
+
+  const target = (forumDb.posts || []).find((p) => p.id === postId);
+  if (!target) {
+    return res.status(404).json({ error: 'Không tìm thấy bài viết.' });
+  }
+
+  const isAdmin = isForumAdminIdentity(userEmail);
+  if (target.authorId !== cleanUserId && !isAdmin) {
+    return res.status(403).json({ error: 'Bạn chỉ có thể chỉnh sửa bài viết của chính mình.' });
+  }
+
+  if (typeof content === 'string') {
+    const cleanContent = content.trim();
+    if (cleanContent.length < 1 || cleanContent.length > 4000) {
+      return res.status(400).json({ error: 'Nội dung bài viết cần từ 1 đến 4000 ký tự.' });
+    }
+    target.content = cleanContent;
+  }
+
+  if (typeof title === 'string') {
+    const cleanTitle = title.trim().slice(0, 160);
+    target.title = cleanTitle || undefined;
+  }
+
+  if (postType && ['experiment', 'lecture', 'discussion', 'update'].includes(postType)) {
+    if (postType !== 'update' || isAdmin) {
+      target.postType = postType;
+    }
+  }
+
+  if (subject && ['announcements', 'general', 'math', 'physics', 'chemistry', 'biology', 'cs', 'exams'].includes(subject)) {
+    if (subject !== 'announcements' || isAdmin) {
+      target.subject = subject;
+    }
+  }
+
+  if (attachment !== undefined) {
+    target.attachment = attachment === null ? undefined : sanitizeFeedAttachment(attachment);
+  }
+
+  if (Array.isArray(tags)) {
+    target.tags = tags.map((t: unknown) => String(t || '').trim().slice(0, 32)).filter(Boolean).slice(0, 5);
+  }
+
+  if (typeof gradeTag === 'string') {
+    target.gradeTag = gradeTag.trim().slice(0, 32) || undefined;
+  }
+
+  target.updatedAt = new Date().toISOString();
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:post_updated', post: target });
+  return res.json({ success: true, post: target });
+});
+
+app.delete('/api/forum/posts/:postId', (req: Request, res: Response) => {
+  const postId = String(req.params.postId || '').trim();
+  const userId = String(req.query.userId || req.body?.userId || '').trim();
+  const userEmail = String(req.query.userEmail || req.body?.userEmail || '').trim();
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Vui lòng đăng nhập để xóa bài viết.' });
+  }
+
+  const idx = (forumDb.posts || []).findIndex((p) => p.id === postId);
+  if (idx < 0) {
+    return res.status(404).json({ error: 'Không tìm thấy bài viết.' });
+  }
+
+  const isAdmin = isForumAdminIdentity(userEmail);
+  if (forumDb.posts[idx].authorId !== userId && !isAdmin) {
+    return res.status(403).json({ error: 'Bạn chỉ có thể xóa bài viết của chính mình.' });
+  }
+
+  forumDb.posts.splice(idx, 1);
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:post_deleted', postId });
+  return res.json({ success: true, postId });
+});
+
+app.post('/api/forum/posts/:postId/react', (req: Request, res: Response) => {
+  const postId = String(req.params.postId || '').trim();
+  const { userId, emoji } = req.body || {};
+  const cleanUserId = String(userId || '').trim().slice(0, 128);
+  const cleanEmoji = String(emoji || '').trim();
+
+  if (!cleanUserId) {
+    return res.status(401).json({ error: 'Vui lòng đăng nhập để thả cảm xúc.' });
+  }
+  if (!['👍', '❤️', '🔥', '💡'].includes(cleanEmoji)) {
+    return res.status(400).json({ error: 'Biểu tượng cảm xúc không hợp lệ.' });
+  }
+
+  const target = (forumDb.posts || []).find((p) => p.id === postId);
+  if (!target) {
+    return res.status(404).json({ error: 'Không tìm thấy bài viết.' });
+  }
+
+  const nextReactions: Record<string, string[]> = { ...(target.reactions || {}) };
+  const current = Array.isArray(nextReactions[cleanEmoji]) ? [...nextReactions[cleanEmoji]] : [];
+  const idx = current.indexOf(cleanUserId);
+  if (idx >= 0) current.splice(idx, 1);
+  else current.push(cleanUserId);
+
+  if (current.length === 0) delete nextReactions[cleanEmoji];
+  else nextReactions[cleanEmoji] = current;
+
+  target.reactions = nextReactions;
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:post_updated', post: target });
+  return res.json({ success: true, post: target });
+});
+
+app.post('/api/forum/posts/:postId/pin', (req: Request, res: Response) => {
+  const postId = String(req.params.postId || '').trim();
+  const { userId, userEmail } = req.body || {};
+  if (!userId || !isForumAdminIdentity(userEmail)) {
+    return res.status(403).json({ error: 'Chỉ Admin Synapse mới có quyền ghim bài trên Bảng tin.' });
+  }
+
+  const target = (forumDb.posts || []).find((p) => p.id === postId);
+  if (!target) {
+    return res.status(404).json({ error: 'Không tìm thấy bài viết.' });
+  }
+
+  target.isPinned = !target.isPinned;
+  target.updatedAt = new Date().toISOString();
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:post_updated', post: target });
+  return res.json({ success: true, post: target });
+});
+
+app.post('/api/forum/posts/:postId/try', (req: Request, res: Response) => {
+  const postId = String(req.params.postId || '').trim();
+  const target = (forumDb.posts || []).find((p) => p.id === postId);
+  if (!target) {
+    return res.status(404).json({ error: 'Không tìm thấy bài viết.' });
+  }
+  target.tryCount = Number(target.tryCount || 0) + 1;
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:post_updated', post: target });
+  return res.json({ success: true, post: target });
+});
+
+app.post('/api/forum/posts/:postId/comments', (req: Request, res: Response) => {
+  const postId = String(req.params.postId || '').trim();
+  const { id, authorId, authorName, authorUsername, authorEmail, authorAvatar, authorRole, content } = req.body || {};
+
+  if (!authorId || !authorName) {
+    return res.status(401).json({ error: 'Vui lòng đăng nhập để bình luận.' });
+  }
+
+  const target = (forumDb.posts || []).find((p) => p.id === postId);
+  if (!target) {
+    return res.status(404).json({ error: 'Không tìm thấy bài viết.' });
+  }
+
+  const cleanContent = String(content || '').trim();
+  if (cleanContent.length < 1 || cleanContent.length > 2000) {
+    return res.status(400).json({ error: 'Nội dung bình luận cần từ 1 đến 2000 ký tự.' });
+  }
+
+  const isAdmin = isForumAdminIdentity(authorEmail, authorUsername);
+  const commentId = id
+    ? String(id).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 128)
+    : `cmt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+  const comment: ForumPostCommentServer = {
+    id: commentId,
+    postId,
+    authorId: String(authorId).slice(0, 128),
+    authorName: isAdmin ? 'Synapse' : String(authorName).slice(0, 100),
+    authorUsername: isAdmin
+      ? 'Synapse'
+      : authorUsername
+      ? String(authorUsername).slice(0, 40)
+      : undefined,
+    authorAvatar: isAdmin
+      ? FORUM_ADMIN_AVATAR
+      : authorAvatar
+      ? String(authorAvatar).slice(0, 512)
+      : undefined,
+    authorRole: isAdmin ? 'admin' : authorRole === 'teacher' ? 'teacher' : 'student',
+    content: cleanContent,
+    createdAt: new Date().toISOString()
+  };
+
+  if (!Array.isArray(target.comments)) target.comments = [];
+  target.comments.push(comment);
+  target.commentsCount = target.comments.length;
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:post_updated', post: target });
+  return res.status(201).json({ success: true, comment, post: target });
+});
+
+app.delete('/api/forum/posts/:postId/comments/:commentId', (req: Request, res: Response) => {
+  const postId = String(req.params.postId || '').trim();
+  const commentId = String(req.params.commentId || '').trim();
+  const userId = String(req.query.userId || req.body?.userId || '').trim();
+  const userEmail = String(req.query.userEmail || req.body?.userEmail || '').trim();
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Vui lòng đăng nhập để xóa bình luận.' });
+  }
+
+  const target = (forumDb.posts || []).find((p) => p.id === postId);
+  if (!target) {
+    return res.status(404).json({ error: 'Không tìm thấy bài viết.' });
+  }
+
+  const cIdx = (target.comments || []).findIndex((c) => c.id === commentId);
+  if (cIdx < 0) {
+    return res.status(404).json({ error: 'Không tìm thấy bình luận.' });
+  }
+
+  const isAdmin = isForumAdminIdentity(userEmail);
+  const comment = target.comments[cIdx];
+  if (comment.authorId !== userId && target.authorId !== userId && !isAdmin) {
+    return res.status(403).json({ error: 'Bạn chỉ có thể xóa bình luận của chính mình hoặc trên bài viết của bạn.' });
+  }
+
+  target.comments.splice(cIdx, 1);
+  target.commentsCount = target.comments.length;
+  saveForumDb(forumDb);
+  broadcastForumEvent({ type: 'forum:post_updated', post: target });
+  return res.json({ success: true, commentId, post: target });
 });
 
 app.get('/api/arena/stream', (req: Request, res: Response) => {

@@ -380,7 +380,7 @@ export const ChemistryInlineStepSim: React.FC<ChemistryInlineStepSimProps> = ({
               mode={resolved.sim3dMode}
               title={`${resolved.spec3D.title} · Phần ${stepIndex + 1}/${totalSteps}`}
               heightClass="h-[340px]"
-              showApparatusBench={false}
+              showApparatusBench={true}
             />
           )}
         </section>

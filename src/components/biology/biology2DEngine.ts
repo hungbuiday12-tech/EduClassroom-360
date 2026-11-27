@@ -13,6 +13,8 @@ import {
   drawStudioGlassVessel,
   drawStudioIncomingLight,
   drawStudioLabBackdrop,
+  drawStudioSphere,
+  drawStudioThermometerProbe,
   Studio2DDragState,
   ZERO_STUDIO_DRAG
 } from '../common/studio2DCanvasKit';
@@ -121,11 +123,14 @@ function renderBiology2DCore(
       ctx.stroke();
 
       // Nucleus + Mito + Chloroplast/Vacuole + Vesicles
-      drawBioGlow(ctx, cx - 38, cy - 12, 48, 'rgba(99,102,241,0.3)', 'rgba(99,102,241,0.06)', perfMode);
-      ctx.fillStyle = '#6366f1';
-      ctx.beginPath();
-      ctx.arc(cx - 38, cy - 12, 28, 0, Math.PI * 2);
-      ctx.fill();
+      drawBioGlow(ctx, cx - 38, cy - 12, 48, 'rgba(99,102,241,0.32)', 'rgba(99,102,241,0.06)', perfMode);
+      drawStudioSphere(ctx, cx - 38, cy - 12, 28, {
+        baseColor: '#6366f1',
+        highlightColor: '#c7d2fe',
+        shadowColor: '#312e81',
+        perfMode,
+        shadowOffset: 8
+      });
 
       drawBioGlow(ctx, cx + 55, cy - 32, 34, 'rgba(249,115,22,0.34)', 'rgba(249,115,22,0.06)', perfMode);
       ctx.fillStyle = '#f97316';
@@ -150,10 +155,12 @@ function renderBiology2DCore(
         const vx = cx - 20 + u * 135;
         const vy = cy + Math.sin(u * Math.PI * 2 + i) * 14;
         drawBioGlow(ctx, vx, vy, 12, 'rgba(251,191,36,0.4)', 'rgba(251,191,36,0)', perfMode);
-        ctx.fillStyle = '#fbbf24';
-        ctx.beginPath();
-        ctx.arc(vx, vy, 4.5, 0, Math.PI * 2);
-        ctx.fill();
+        drawStudioSphere(ctx, vx, vy, 5, {
+          baseColor: '#fbbf24',
+          highlightColor: '#fef3c7',
+          shadowColor: '#92400e',
+          perfMode
+        });
       }
 
       const atpGen = round((atpDemand * (isPlant ? 1.15 : 1.0)) * 0.36, 1);
@@ -220,10 +227,12 @@ function renderBiology2DCore(
         const mx = cx + Math.cos(ang) * rDist;
         const my = cellY + Math.sin(ang) * (rDist * 0.7);
         drawBioGlow(ctx, mx, my, 9, 'rgba(56,189,248,0.45)', 'rgba(56,189,248,0)', perfMode);
-        ctx.fillStyle = '#38bdf8';
-        ctx.beginPath();
-        ctx.arc(mx, my, 3.5, 0, Math.PI * 2);
-        ctx.fill();
+        drawStudioSphere(ctx, mx, my, 4, {
+          baseColor: '#38bdf8',
+          highlightColor: '#e0f2fe',
+          shadowColor: '#0369a1',
+          perfMode
+        });
       }
 
       ctx.fillStyle = fg;
@@ -1851,6 +1860,221 @@ function renderBiology2DCore(
           { label: 'Xác suất sinh con lành', value: round(100 - probDisease, 1), unit: '%' }
         ],
         statusNote: 'Bố mẹ bình thường sinh con gái bị bệnh khẳng định chắc chắn bệnh do gen lặn nằm trên NST thường.'
+      };
+    }
+
+    case 'biomolecules_2d': {
+      const tab = Math.max(1, Math.min(5, Math.round(params.moleculeTab ?? 1)));
+      const tempC = params.tempC ?? 37;
+      const polyLen = Math.max(3, Math.min(8, Math.round(params.polymerLen ?? 5)));
+      const tabTitles = [
+        '1. Nước (H₂O) & Mạng Liên kết Hiđrô',
+        '2. Carbohydrate (Vòng α-Glucozơ → Tinh bột)',
+        '3. Lipid (Phospholipid Lưỡng cực Lớp kép)',
+        '4. Protein (4 Bậc Cấu trúc & Biến tính Nhiệt)',
+        '5. Nucleic Acid (Đơn phân Nucleotide → Chuỗi DNA/RNA)'
+      ];
+
+      drawStudioThermometerProbe(ctx, w - 48, Math.max(54, benchY - 140), 116, tempC, dark, 0, 100);
+
+      if (tab === 1) {
+        // Water tetrahedral H-bond lattice
+        const spacing = tempC <= 4 ? 76 : 64;
+        const jitter = tempC <= 4 ? 1.5 : (tempC / 95) * 9;
+        const nodes = [
+          { x: cx - spacing, y: cy - 32 },
+          { x: cx, y: cy - 48 },
+          { x: cx + spacing, y: cy - 30 },
+          { x: cx - spacing * 0.52, y: cy + 38 },
+          { x: cx + spacing * 0.56, y: cy + 40 }
+        ];
+        const hBondIntact = tempC < 78;
+        ctx.save();
+        if (hBondIntact) {
+          ctx.setLineDash([5, 5]);
+          ctx.strokeStyle = tempC <= 4 ? '#7dd3fc' : 'rgba(56, 189, 248, 0.72)';
+          ctx.lineWidth = 2;
+          const pairs = [[0, 1], [1, 2], [0, 3], [1, 3], [1, 4], [2, 4]];
+          pairs.forEach(([a, b]) => {
+            ctx.beginPath();
+            ctx.moveTo(nodes[a].x, nodes[a].y);
+            ctx.lineTo(nodes[b].x, nodes[b].y);
+            ctx.stroke();
+          });
+          ctx.setLineDash([]);
+        }
+        nodes.forEach((n, idx) => {
+          const jx = Math.sin(t * (2 + tempC * 0.08) + idx * 1.9) * jitter;
+          const jy = Math.cos(t * (2.3 + tempC * 0.07) + idx * 1.3) * jitter;
+          const ox = n.x + jx;
+          const oy = n.y + jy;
+          // 2 H atoms at 104.5°
+          const h1x = ox - 17;
+          const h1y = oy + 14;
+          const h2x = ox + 17;
+          const h2y = oy + 14;
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(h1x, h1y);
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(h2x, h2y);
+          ctx.stroke();
+          drawStudioSphere(ctx, ox, oy, 13, { baseColor: '#ef4444', highlightColor: '#fecaca', shadowColor: '#991b1b', perfMode });
+          drawStudioSphere(ctx, h1x, h1y, 7.5, { baseColor: '#e2e8f0', highlightColor: '#ffffff', shadowColor: '#64748b', perfMode });
+          drawStudioSphere(ctx, h2x, h2y, 7.5, { baseColor: '#e2e8f0', highlightColor: '#ffffff', shadowColor: '#64748b', perfMode });
+        });
+        ctx.restore();
+      } else if (tab === 2) {
+        // Carbohydrate α-Glucose monomer chain
+        const span = Math.min(w - 150, polyLen * 72);
+        const startX = cx - span / 2 + 34;
+        for (let i = 0; i < polyLen; i++) {
+          const hx = startX + i * (span / Math.max(1, polyLen));
+          const hy = cy + Math.sin(t * 1.5 + i * 0.7) * 5;
+          const r = 24;
+          if (i > 0) {
+            const px = startX + (i - 1) * (span / Math.max(1, polyLen));
+            const py = cy + Math.sin(t * 1.5 + (i - 1) * 0.7) * 5;
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2.6;
+            ctx.beginPath();
+            ctx.moveTo(px + r * 0.85, py);
+            ctx.lineTo(hx - r * 0.85, hy);
+            ctx.stroke();
+            drawStudioSphere(ctx, (px + hx) / 2, (py + hy) / 2, 6, { baseColor: '#f59e0b', highlightColor: '#fef3c7', shadowColor: '#b45309', perfMode });
+          }
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          for (let k = 0; k < 6; k++) {
+            const ang = (k / 6) * Math.PI * 2;
+            const vx = hx + Math.cos(ang) * r;
+            const vy = hy + Math.sin(ang) * r;
+            if (k === 0) ctx.moveTo(vx, vy);
+            else ctx.lineTo(vx, vy);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = fg;
+          ctx.font = 'bold 9.5px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('C₆H₁₂O₆', hx, hy + 3);
+        }
+        ctx.textAlign = 'left';
+      } else if (tab === 3) {
+        // Phospholipid bilayer amphipathic tails
+        const count = Math.min(8, polyLen + 2);
+        const stepX = 36;
+        const x0 = cx - ((count - 1) * stepX) / 2;
+        for (let i = 0; i < count; i++) {
+          const px = x0 + i * stepX;
+          const sway = Math.sin(t * 2.4 + i) * 3.5;
+          // Top leaflet
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          ctx.moveTo(px - 4, cy - 42);
+          ctx.quadraticCurveTo(px - 7 + sway, cy - 24, px - 3, cy - 6);
+          ctx.moveTo(px + 4, cy - 42);
+          ctx.quadraticCurveTo(px + 7 + sway, cy - 24, px + 4, cy - 6);
+          ctx.stroke();
+          drawStudioSphere(ctx, px, cy - 48, 10, { baseColor: '#0ea5e9', highlightColor: '#bae6fd', shadowColor: '#0369a1', perfMode });
+
+          // Bottom leaflet
+          ctx.beginPath();
+          ctx.moveTo(px - 4, cy + 42);
+          ctx.quadraticCurveTo(px - 7 - sway, cy + 24, px - 3, cy + 6);
+          ctx.moveTo(px + 4, cy + 42);
+          ctx.quadraticCurveTo(px + 7 - sway, cy + 24, px + 4, cy + 6);
+          ctx.stroke();
+          drawStudioSphere(ctx, px, cy + 48, 10, { baseColor: '#0ea5e9', highlightColor: '#bae6fd', shadowColor: '#0369a1', perfMode });
+        }
+        ctx.fillStyle = muted;
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Đầu Photphat ưa nước (ngoài) · Đuôi Axit béo kị nước (trong)', cx, cy + 78);
+        ctx.textAlign = 'left';
+      } else if (tab === 4) {
+        // Protein 4 structure levels & thermal denaturation
+        const denatured = tempC > 58;
+        const foldRatio = denatured ? 0.14 : 1;
+        const aaCount = polyLen * 2 + 2;
+        const cols = ['#10b981', '#38bdf8', '#f59e0b', '#a855f7', '#ec4899'];
+        ctx.save();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        const pts: { x: number; y: number }[] = [];
+        for (let i = 0; i < aaCount; i++) {
+          const u = i / Math.max(1, aaCount - 1);
+          const xUnfolded = cx - 140 + u * 260;
+          const yUnfolded = cy + Math.sin(u * Math.PI * 3 + t * 2.5) * 14;
+          const theta = u * Math.PI * 3.4 + t * 0.9;
+          const xFolded = cx + Math.cos(theta) * (42 + Math.sin(u * Math.PI) * 26);
+          const yFolded = cy + Math.sin(theta * 1.4) * 44;
+          const px = xUnfolded * (1 - foldRatio) + xFolded * foldRatio;
+          const py = yUnfolded * (1 - foldRatio) + yFolded * foldRatio;
+          pts.push({ x: px, y: py });
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        pts.forEach((p, i) => {
+          drawStudioSphere(ctx, p.x, p.y, 8.5, {
+            baseColor: cols[i % cols.length],
+            highlightColor: '#ffffff',
+            shadowColor: '#0f172a',
+            perfMode
+          });
+        });
+        ctx.restore();
+      } else {
+        // Nucleic acid nucleotides pairing
+        const pairs = polyLen;
+        const spacing = Math.min(46, (w - 180) / pairs);
+        const x0 = cx - ((pairs - 1) * spacing) / 2;
+        const bases = ['A', 'T', 'G', 'C'];
+        const comp = ['T', 'A', 'C', 'G'];
+        for (let i = 0; i < pairs; i++) {
+          const px = x0 + i * spacing;
+          const bTop = bases[i % 4];
+          const bBot = comp[i % 4];
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(px, cy - 24);
+          ctx.lineTo(px, cy + 24);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          drawStudioSphere(ctx, px, cy - 42, 11, { baseColor: '#6366f1', highlightColor: '#e0e7ff', shadowColor: '#312e81', perfMode });
+          drawStudioSphere(ctx, px, cy + 42, 11, { baseColor: '#14b8a6', highlightColor: '#ccfbf1', shadowColor: '#115e59', perfMode });
+          ctx.fillStyle = fg;
+          ctx.font = 'bold 10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(bTop, px, cy - 12);
+          ctx.fillText(bBot, px, cy + 18);
+        }
+        ctx.textAlign = 'left';
+      }
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 12.5px sans-serif';
+      ctx.fillText(`${tabTitles[tab - 1]} · T = ${tempC}°C`, 20, 24);
+      const proteinState = tab === 4 && tempC > 58 ? 'Biến tính mất cấu trúc 3D' : tempC <= 4 && tab === 1 ? 'Nước đá (Mạng thưa)' : 'Ổn định sinh học';
+      return {
+        metrics: [
+          { label: 'Chế độ phân tử', value: tabTitles[tab - 1].split('.')[1]?.trim() || 'H₂O' },
+          { label: 'Nhiệt độ / Đơn phân', value: `${tempC}°C · ${polyLen} mắt xích` },
+          { label: 'Trạng thái', value: proteinState }
+        ],
+        statusNote: tab === 4 && tempC > 58
+          ? 'Nhiệt độ cao phá vỡ liên kết yếu bậc 3/4 làm protein duỗi thẳng và mất hoạt tính sinh học!'
+          : 'Mối quan hệ chặt chẽ giữa cấu tạo hóa học phân tử và chức năng sống trong tế bào.'
       };
     }
 

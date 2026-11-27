@@ -925,6 +925,26 @@ export const CHEMISTRY_2D_SIMS: Chemistry2DSimSpec[] = [
       { label: 'Chưa bão hòa (30g / 100g H₂O · 40°C)', description: 'Tan hoàn toàn trong nước tạo dung dịch trong suốt', params: { soluteMassG: 30, waterMassG: 100, solutionTempC: 40 } },
       { label: 'Bão hòa dư tinh thể (75g · 25°C)', description: 'Vượt độ tan S = 36,3g nên phần dư lắng đáy', params: { soluteMassG: 75, waterMassG: 100, solutionTempC: 25 } }
     ]
+  },
+  {
+    id: 'ir_ms_spectroscopy_2d',
+    domainId: 'organic_polymer',
+    grades: ['Lớp 11', 'Lớp 12'],
+    title: 'Phổ Hồng Ngoại IR (–OH, C=O) & Phổ Khối Lượng MS (Đỉnh M⁺)',
+    subtitle: 'Đọc số sóng hấp thụ IR đặc trưng (3350 cm⁻¹ –OH, 1715 cm⁻¹ C=O) và mảnh ion phân tử m/z trên phổ MS',
+    formula: '\\tilde{\\nu}_{\\text{C=O}} \\approx 1700{-}1750\\text{ cm}^{-1} \\quad|\\quad (m/z)_{\\max} = M',
+    linkedLessonId: 'chem-11-5',
+    defaultParams: { sampleId: 2, irZoomShift: 0, msGain: 1.0 },
+    paramBounds: {
+      sampleId: { min: 1, max: 3, step: 1, unit: '', label: 'Mẫu (1:Etanol C₂H₅OH 2:Etyl axetat 3:Axeton)' },
+      irZoomShift: { min: 0, max: 1, step: 1, unit: '', label: 'Làm nổi vùng nhóm chức (0/1)' },
+      msGain: { min: 0.6, max: 1.4, step: 0.1, unit: 'x', label: 'Độ khuếch đại detector MS' }
+    },
+    presets: [
+      { label: 'Etanol C₂H₅OH (M = 46 · Mũi tù O–H 3350)', description: 'Phổ IR có dải rộng liên kết hydro O–H ở ~3350 cm⁻¹, MS có M⁺ = 46', params: { sampleId: 1, irZoomShift: 1, msGain: 1.0 } },
+      { label: 'Etyl axetat CH₃COOC₂H₅ (M = 88 · Mũi nhọn C=O 1740)', description: 'Mũi C=O sắc nét ở 1740 cm⁻¹ và mảnh gốc acyl m/z = 43, M⁺ = 88', params: { sampleId: 2, irZoomShift: 1, msGain: 1.0 } },
+      { label: 'Axeton CH₃COCH₃ (M = 58 · Mũi nhọn C=O 1715)', description: 'Mũi C=O đặc trưng 1715 cm⁻¹, mất nhóm metyl tạo m/z = 43', params: { sampleId: 3, irZoomShift: 1, msGain: 1.0 } }
+    ]
   }
 ];
 

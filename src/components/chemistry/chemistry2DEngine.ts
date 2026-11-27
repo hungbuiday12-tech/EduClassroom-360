@@ -2,11 +2,13 @@ import { ChemistrySimType } from '../../types';
 import { PerformanceMode } from '../../context/BackgroundContext';
 import { renderMiddleSchool2DChemSim } from './chemistry2DMiddleSchoolRenderer';
 import {
+  drawStudioBurnerFlame,
   drawStudioFloorReticle,
   drawStudioGlassVessel,
   drawStudioIncomingLight,
   drawStudioLabBackdrop,
   drawStudioSensorProbe,
+  drawStudioSphere,
   drawStudioStandAndClamp,
   drawStudioThermometerProbe,
   getStudioBenchY,
@@ -106,13 +108,13 @@ function drawAtomNode(
   textColor = '#ffffff'
 ) {
   ctx.save();
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  drawStudioSphere(ctx, x, y, r, {
+    baseColor: color,
+    highlightColor: '#ffffff',
+    shadowColor: '#0f172a',
+    rimColor: 'rgba(255,255,255,0.45)',
+    perfMode: 'balanced'
+  });
   if (label) {
     ctx.fillStyle = textColor;
     ctx.font = `bold ${Math.max(10, Math.round(r * 0.72))}px sans-serif`;
@@ -194,10 +196,12 @@ function renderChemistry2DCore(
         ctx.arc(px, py, 2.2, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-      ctx.fill();
+      drawStudioSphere(ctx, cx, cy, 8.5, {
+        baseColor: '#f59e0b',
+        highlightColor: '#fef3c7',
+        shadowColor: '#92400e',
+        perfMode
+      });
       ctx.fillStyle = fg;
       ctx.font = 'bold 13px sans-serif';
       ctx.fillText(`AO ${n}${['s', 'p', 'd', 'f'][l]} · Z = ${zEff}`, 18, 28);
@@ -293,33 +297,10 @@ function renderChemistry2DCore(
       const ion = ions[ionCode - 1];
       const intensity = Math.min(1, Math.max(0.25, (tempK - 700) / 1800));
 
-      // Burner + animated flame on left
+      // Burner + animated flame on left using studio Bunsen burner
       const bx = w * 0.22;
-      const by = h * 0.72;
-      ctx.fillStyle = '#475569';
-      ctx.fillRect(bx - 16, by, 32, 60);
-      ctx.fillStyle = '#334155';
-      ctx.fillRect(bx - 36, by + 56, 72, 14);
-
-      const flicker = Math.sin(t * 9) * 5;
-      drawBloomOrb(ctx, bx, by - 54, 96, `${ion.color}44`, `${ion.color}18`, perfMode);
-      const grad = ctx.createRadialGradient(bx, by - 36, 4, bx, by - 45, 58);
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.35, ion.color);
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.save();
-      if (perfMode === 'ultra') {
-        ctx.shadowColor = ion.color;
-        ctx.shadowBlur = 22;
-      }
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(bx - 22, by);
-      ctx.quadraticCurveTo(bx - 28, by - 65, bx + flicker, by - (88 + intensity * 38));
-      ctx.quadraticCurveTo(bx + 28, by - 65, bx + 22, by);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+      const by = Math.min(h * 0.78, benchY);
+      drawStudioBurnerFlame(ctx, bx, by, intensity, t, perfMode, ion.color);
 
       // Right: Visible Spectrum Bar (380nm - 780nm) + sharp emission lines
       const sx = w * 0.44;
@@ -2278,6 +2259,198 @@ function renderChemistry2DCore(
           { label: 'Sản phẩm nóng chảy', value: 'Fe lỏng + xỉ Al₂O₃' }
         ],
         statusNote: 'Nhôm khử mạnh oxit sắt giải phóng nhiệt lượng cực lớn làm sắt nóng chảy dùng hàn đường ray.'
+      };
+    }
+
+    case 'ir_ms_spectroscopy_2d': {
+      const sampleId = Math.max(1, Math.min(3, Math.round(params.sampleId ?? 2)));
+      const highlightZone = Math.round(params.irZoomShift ?? 0) === 1;
+      const msGain = params.msGain ?? 1.0;
+
+      const samples = [
+        {
+          name: 'Etanol (C₂H₅OH)',
+          formula: 'CH₃–CH₂–OH',
+          molarMass: 46,
+          basePeak: 31,
+          irDesc: 'Dải rộng liên kết H: O–H (~3350 cm⁻¹), không có C=O',
+          peaksIR: [
+            { cm: 3350, depth: 0.78, width: 220, label: 'O–H (rộng)' },
+            { cm: 2970, depth: 0.56, width: 70, label: 'C–H' },
+            { cm: 1050, depth: 0.65, width: 65, label: 'C–O' }
+          ],
+          peaksMS: [
+            { mz: 15, rel: 0.18 },
+            { mz: 27, rel: 0.25 },
+            { mz: 29, rel: 0.34 },
+            { mz: 31, rel: 1.0 },
+            { mz: 45, rel: 0.48 },
+            { mz: 46, rel: 0.24 }
+          ]
+        },
+        {
+          name: 'Etyl axetat (CH₃COOC₂H₅)',
+          formula: 'CH₃–COO–CH₂CH₃',
+          molarMass: 88,
+          basePeak: 43,
+          irDesc: 'Mũi nhọn mạnh C=O (~1740 cm⁻¹) & C–O (~1240 cm⁻¹)',
+          peaksIR: [
+            { cm: 2985, depth: 0.45, width: 75, label: 'C–H' },
+            { cm: 1740, depth: 0.88, width: 42, label: 'C=O (nhọn)' },
+            { cm: 1240, depth: 0.72, width: 55, label: 'C–O este' }
+          ],
+          peaksMS: [
+            { mz: 15, rel: 0.2 },
+            { mz: 29, rel: 0.38 },
+            { mz: 43, rel: 1.0 },
+            { mz: 45, rel: 0.22 },
+            { mz: 61, rel: 0.26 },
+            { mz: 70, rel: 0.16 },
+            { mz: 88, rel: 0.28 }
+          ]
+        },
+        {
+          name: 'Axeton (CH₃COCH₃)',
+          formula: 'CH₃–CO–CH₃',
+          molarMass: 58,
+          basePeak: 43,
+          irDesc: 'Mũi nhọn C=O xeton (~1715 cm⁻¹), không có O–H',
+          peaksIR: [
+            { cm: 3005, depth: 0.36, width: 65, label: 'C–H' },
+            { cm: 1715, depth: 0.9, width: 40, label: 'C=O (1715)' },
+            { cm: 1365, depth: 0.54, width: 45, label: 'CH₃–CO' }
+          ],
+          peaksMS: [
+            { mz: 15, rel: 0.38 },
+            { mz: 27, rel: 0.15 },
+            { mz: 43, rel: 1.0 },
+            { mz: 58, rel: 0.34 }
+          ]
+        }
+      ];
+
+      const sp = samples[sampleId - 1];
+      const padL = 56;
+      const plotW = w - 92;
+
+      // Top panel: IR Spectrum (Transmittance %T vs Wavenumber 4000 -> 500 cm^-1)
+      const irTop = 44;
+      const irH = Math.max(78, Math.round((benchY - 84) * 0.46));
+      const irBot = irTop + irH;
+
+      ctx.fillStyle = dark ? 'rgba(15, 23, 42, 0.86)' : 'rgba(248, 250, 252, 0.92)';
+      ctx.strokeStyle = dark ? 'rgba(56, 189, 248, 0.32)' : 'rgba(148, 163, 184, 0.45)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(padL, irTop, plotW, irH, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      if (highlightZone) {
+        // Highlight OH region (3600-3200) and C=O region (1760-1680)
+        const xOh1 = padL + ((4000 - 3600) / 3500) * plotW;
+        const xOh2 = padL + ((4000 - 3200) / 3500) * plotW;
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.13)';
+        ctx.fillRect(xOh1, irTop + 2, xOh2 - xOh1, irH - 4);
+        const xCo1 = padL + ((4000 - 1780) / 3500) * plotW;
+        const xCo2 = padL + ((4000 - 1660) / 3500) * plotW;
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.16)';
+        ctx.fillRect(xCo1, irTop + 2, xCo2 - xCo1, irH - 4);
+      }
+
+      // Draw IR curve
+      ctx.save();
+      if (perfMode !== 'smooth') {
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = perfMode === 'ultra' ? 10 : 4;
+      }
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.1;
+      ctx.beginPath();
+      const samplesN = 180;
+      for (let i = 0; i <= samplesN; i++) {
+        const cm = 4000 - (i / samplesN) * 3500;
+        let trans = 0.92 - 0.015 * Math.sin(cm * 0.03 + t * 1.2);
+        for (const pk of sp.peaksIR) {
+          const d = (cm - pk.cm) / pk.width;
+          trans -= pk.depth * Math.exp(-d * d);
+        }
+        trans = Math.max(0.05, Math.min(0.96, trans));
+        const px = padL + (i / samplesN) * plotW;
+        const py = irBot - trans * (irH - 14) - 6;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // Label IR troughs + wavenumber ticks
+      ctx.font = 'bold 10px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      for (const pk of sp.peaksIR) {
+        const px = padL + ((4000 - pk.cm) / 3500) * plotW;
+        const py = irBot - Math.max(0.08, 0.92 - pk.depth) * (irH - 14) - 2;
+        ctx.fillStyle = pk.cm > 3000 ? '#34d399' : pk.cm > 1650 && pk.cm < 1800 ? '#fbbf24' : '#38bdf8';
+        ctx.fillText(`${pk.label}`, px, Math.min(irBot - 6, py + 11));
+      }
+      ctx.fillStyle = muted;
+      ctx.font = '10px ui-monospace, monospace';
+      [4000, 3350, 2500, 1715, 1000, 500].forEach((wn) => {
+        const px = padL + ((4000 - wn) / 3500) * plotW;
+        ctx.fillText(`${wn}`, px, irBot + 12);
+      });
+      ctx.textAlign = 'left';
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 11.5px sans-serif';
+      ctx.fillText(`Phổ Hồng Ngoại IR (%T) · ${sp.name}`, padL + 8, irTop + 15);
+
+      // Bottom panel: Mass Spectrum MS (m/z peaks up to M+)
+      const msTop = irBot + 24;
+      const msH = Math.max(76, benchY - msTop - 22);
+      const msBot = msTop + msH;
+      ctx.fillStyle = dark ? 'rgba(15, 23, 42, 0.86)' : 'rgba(248, 250, 252, 0.92)';
+      ctx.strokeStyle = dark ? 'rgba(16, 185, 129, 0.32)' : 'rgba(148, 163, 184, 0.45)';
+      ctx.beginPath();
+      ctx.roundRect(padL, msTop, plotW, msH, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      const maxMz = 100;
+      const scanPos = ((t * 18) % maxMz);
+      sp.peaksMS.forEach((pk) => {
+        const px = padL + 16 + (pk.mz / maxMz) * (plotW - 32);
+        const hBar = Math.min(1, pk.rel * msGain) * (msH - 28);
+        const isMolIon = pk.mz === sp.molarMass;
+        const barCol = isMolIon ? '#f43f5e' : pk.rel === 1.0 ? '#10b981' : '#38bdf8';
+        const pulse = Math.abs(scanPos - pk.mz) < 6 ? 1.08 : 1.0;
+
+        ctx.fillStyle = barCol;
+        ctx.fillRect(px - 4, msBot - 12 - hBar * pulse, 8, hBar * pulse);
+        if (isMolIon || pk.rel >= 0.34) {
+          ctx.fillStyle = isMolIon ? '#fda4af' : fg;
+          ctx.font = 'bold 10px ui-monospace, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(isMolIon ? `M⁺=${pk.mz}` : `${pk.mz}`, px, msBot - 16 - hBar * pulse);
+        }
+      });
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 11.5px sans-serif';
+      ctx.fillText(`Phổ Khối Lượng MS (m/z) · Đỉnh ion phân tử M⁺ = ${sp.molarMass} · Base peak = ${sp.basePeak}`, padL + 8, msTop + 15);
+      drawStudioSphere(ctx, w - 34, irTop + 18, 10, { baseColor: '#10b981', highlightColor: '#d1fae5', shadowColor: '#065f46', perfMode });
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 12.5px sans-serif';
+      ctx.fillText(`Phân tích Phổ IR & MS: ${sp.formula} (M = ${sp.molarMass} g/mol)`, 18, 26);
+
+      return {
+        metrics: [
+          { label: 'Phân tử khối MS (M⁺)', value: sp.molarMass, unit: 'm/z' },
+          { label: 'Pic cơ bản (Base)', value: sp.basePeak, unit: 'm/z' },
+          { label: 'Dấu hiệu IR chính', value: sampleId === 1 ? '3350 cm⁻¹ (–OH)' : sampleId === 2 ? '1740 cm⁻¹ (C=O)' : '1715 cm⁻¹ (C=O)' }
+        ],
+        statusNote: sp.irDesc
       };
     }
 

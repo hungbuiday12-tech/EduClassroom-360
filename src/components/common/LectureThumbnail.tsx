@@ -570,6 +570,7 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
       case 'atom_orbital_2d':
       case 'periodic_trends_2d':
       case 'flame_spectroscopy_2d':
+      case 'ir_ms_spectroscopy_2d':
         return (
           <svg viewBox="0 0 56 56" className="w-full h-full">
             <g className="holo-orbit-cw">
@@ -673,6 +674,7 @@ export const LectureThumbnail: React.FC<LectureThumbnailProps> = ({
           </svg>
         );
       case 'enzyme_kinetics_2d':
+      case 'biomolecules_2d':
       case 'photosynthesis_calvin_2d':
       case 'cellular_respiration_2d':
       case 'plant_transpiration_2d':

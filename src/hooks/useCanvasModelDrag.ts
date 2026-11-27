@@ -12,13 +12,24 @@ export interface UseCanvasModelDragResult {
  * Enables direct mouse/touch drag-and-drop of simulation models across the 2D canvas floor.
  * Double-clicking the canvas or calling `resetDrag()` smoothly returns the model to center.
  */
+export type CanvasModelDragResetKey =
+  | string
+  | number
+  | { resetKey?: string | number; rebindKey?: string | number };
+
 export function useCanvasModelDrag(
   canvasRef: RefObject<HTMLCanvasElement | null>,
-  resetKey?: string | number
+  resetKey?: CanvasModelDragResetKey,
+  rebindKey?: string | number
 ): UseCanvasModelDragResult {
   const dragRef = useRef<Studio2DDragState>({ ...ZERO_STUDIO_DRAG });
   const [isMoved, setIsMoved] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+
+  const resolvedResetKey =
+    typeof resetKey === 'object' && resetKey !== null ? resetKey.resetKey : resetKey;
+  const resolvedRebindKey =
+    rebindKey ?? (typeof resetKey === 'object' && resetKey !== null ? resetKey.rebindKey : undefined);
 
   const resetDrag = useCallback(() => {
     dragRef.current = { ...ZERO_STUDIO_DRAG };
@@ -28,7 +39,7 @@ export function useCanvasModelDrag(
 
   useEffect(() => {
     resetDrag();
-  }, [resetKey, resetDrag]);
+  }, [resolvedResetKey, resetDrag]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -130,7 +141,7 @@ export function useCanvasModelDrag(
       canvas.style.cursor = '';
       canvas.style.touchAction = '';
     };
-  }, [canvasRef, resetDrag, resetKey]);
+  }, [canvasRef, resetDrag, resolvedResetKey, resolvedRebindKey]);
 
   return { dragRef, isMoved, isDragging, resetDrag };
 }

@@ -243,7 +243,7 @@
         "description": { "type": "string", "minLength": 3, "maxLength": 300 },
         "subject": {
           "type": "string",
-          "enum": ["announcements", "general", "math", "physics", "cs", "exams"]
+          "enum": ["announcements", "general", "math", "physics", "chemistry", "biology", "cs", "exams"]
         },
         "isMandatoryAdminGroup": { "type": "boolean" },
         "creatorId": { "type": "string", "maxLength": 128 },
@@ -272,6 +272,71 @@
         "createdAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["groupId", "isAdminGroup", "senderId", "senderName", "senderRole", "content", "createdAt"]
+    },
+    "ForumPost": {
+      "title": "ForumPost",
+      "description": "Facebook-style community feed post sharing experiments, simulations, lectures, discussions, or Admin Synapse web updates",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "authorUsername": { "type": "string", "maxLength": 40 },
+        "authorAvatar": { "type": "string", "maxLength": 512 },
+        "authorRole": { "type": "string", "enum": ["student", "teacher", "admin"] },
+        "postType": { "type": "string", "enum": ["experiment", "lecture", "discussion", "update"] },
+        "subject": {
+          "type": "string",
+          "enum": ["announcements", "general", "math", "physics", "chemistry", "biology", "cs", "exams"]
+        },
+        "title": { "type": "string", "maxLength": 160 },
+        "content": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "attachment": {
+          "type": "object",
+          "properties": {
+            "kind": { "type": "string", "enum": ["lecture", "sim2d", "sim3d", "sandbox", "pre_lab"] },
+            "subject": { "type": "string", "enum": ["math", "physics", "chemistry", "biology", "cs", "pre"] },
+            "targetId": { "type": "string", "maxLength": 128 },
+            "domainId": { "type": "string", "maxLength": 80 },
+            "title": { "type": "string", "maxLength": 180 },
+            "subtitle": { "type": "string", "maxLength": 240 },
+            "formula": { "type": "string", "maxLength": 240 },
+            "gradeLabel": { "type": "string", "maxLength": 40 },
+            "openSim": { "type": "boolean" }
+          },
+          "required": ["kind", "subject", "targetId", "title"]
+        },
+        "tags": {
+          "type": "array",
+          "description": "Topic tags (max 5)"
+        },
+        "gradeTag": { "type": "string", "maxLength": 32 },
+        "reactions": {
+          "type": "object",
+          "description": "Emoji reaction userId arrays keyed by 👍, ❤️, 🔥, 💡"
+        },
+        "commentsCount": { "type": "number" },
+        "tryCount": { "type": "number" },
+        "isPinned": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["authorId", "authorName", "authorRole", "postType", "subject", "content", "reactions", "commentsCount", "createdAt"]
+    },
+    "ForumPostComment": {
+      "title": "ForumPostComment",
+      "description": "Comment nested under a community feed post",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string", "maxLength": 128 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "authorUsername": { "type": "string", "maxLength": 40 },
+        "authorAvatar": { "type": "string", "maxLength": 512 },
+        "authorRole": { "type": "string", "enum": ["student", "teacher", "admin"] },
+        "content": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["postId", "authorId", "authorName", "authorRole", "content", "createdAt"]
     }
   },
   "firestore": {
@@ -310,6 +375,14 @@
     "/forum_groups/{groupId}/messages/{messageId}": {
       "schema": "ForumMessage",
       "description": "Chat and announcement messages nested under each forum group"
+    },
+    "/forum_posts/{postId}": {
+      "schema": "ForumPost",
+      "description": "Facebook-style community feed posts sharing experiments, lectures, discussions, and Admin Synapse web updates"
+    },
+    "/forum_posts/{postId}/comments/{commentId}": {
+      "schema": "ForumPostComment",
+      "description": "Comments nested under each community feed post"
     }
   }
 }

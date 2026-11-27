@@ -299,7 +299,7 @@ service cloud.firestore {
              ]) &&
              data.name is string && data.name.size() >= 3 && data.name.size() <= 80 &&
              data.description is string && data.description.size() >= 3 && data.description.size() <= 300 &&
-             data.subject in ['announcements', 'general', 'math', 'physics', 'cs', 'exams'] &&
+             data.subject in ['announcements', 'general', 'math', 'physics', 'chemistry', 'biology', 'cs', 'exams'] &&
              data.isMandatoryAdminGroup is bool &&
              data.creatorId is string && data.creatorId.size() > 0 && data.creatorId.size() <= 128 &&
              data.creatorName is string && data.creatorName.size() >= 1 && data.creatorName.size() <= 100 &&
@@ -380,6 +380,131 @@ service cloud.firestore {
                          isValidId(messageId) &&
                          (
                            (!existing().isAdminGroup && groupId != 'official-announcements' && existing().senderId == request.auth.uid) ||
+                           isForumAdmin()
+                         );
+      }
+    }
+
+    function isValidReactionList(reactions, key) {
+      return !(key in reactions) || (reactions[key] is list && reactions[key].size() <= 1000);
+    }
+
+    function isValidPostReactions(reactions) {
+      return reactions is map &&
+             reactions.keys().hasOnly(['👍', '❤️', '🔥', '💡']) &&
+             isValidReactionList(reactions, '👍') &&
+             isValidReactionList(reactions, '❤️') &&
+             isValidReactionList(reactions, '🔥') &&
+             isValidReactionList(reactions, '💡');
+    }
+
+    function isValidPostAttachment(att) {
+      return att is map &&
+             att.keys().hasAll(['kind', 'subject', 'targetId', 'title']) &&
+             att.keys().hasOnly(['kind', 'subject', 'targetId', 'domainId', 'title', 'subtitle', 'formula', 'gradeLabel', 'openSim']) &&
+             att.kind in ['lecture', 'sim2d', 'sim3d', 'sandbox', 'pre_lab'] &&
+             att.subject in ['math', 'physics', 'chemistry', 'biology', 'cs', 'pre'] &&
+             att.targetId is string && att.targetId.size() >= 1 && att.targetId.size() <= 128 &&
+             att.title is string && att.title.size() >= 1 && att.title.size() <= 180 &&
+             (!('domainId' in att) || (att.domainId is string && att.domainId.size() <= 80)) &&
+             (!('subtitle' in att) || (att.subtitle is string && att.subtitle.size() <= 240)) &&
+             (!('formula' in att) || (att.formula is string && att.formula.size() <= 240)) &&
+             (!('gradeLabel' in att) || (att.gradeLabel is string && att.gradeLabel.size() <= 40)) &&
+             (!('openSim' in att) || att.openSim is bool);
+    }
+
+    function isValidForumPost(data) {
+      return data.keys().hasAll(['authorId', 'authorName', 'authorRole', 'postType', 'subject', 'content', 'reactions', 'commentsCount', 'createdAt']) &&
+             data.keys().hasOnly([
+               'authorId', 'authorName', 'authorUsername', 'authorAvatar', 'authorRole',
+               'postType', 'subject', 'title', 'content', 'attachment',
+               'tags', 'gradeTag', 'reactions', 'commentsCount', 'tryCount',
+               'isPinned', 'createdAt', 'updatedAt'
+             ]) &&
+             data.authorId is string && data.authorId.size() > 0 && data.authorId.size() <= 128 &&
+             data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 100 &&
+             data.authorRole in ['student', 'teacher', 'admin'] &&
+             data.postType in ['experiment', 'lecture', 'discussion', 'update'] &&
+             data.subject in ['announcements', 'general', 'math', 'physics', 'chemistry', 'biology', 'cs', 'exams'] &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 4000 &&
+             isValidPostReactions(data.reactions) &&
+             data.commentsCount is number && data.commentsCount >= 0 && data.commentsCount <= 50000 &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('authorUsername' in data) || (data.authorUsername is string && data.authorUsername.size() <= 40)) &&
+             (!('authorAvatar' in data) || (data.authorAvatar is string && data.authorAvatar.size() <= 512)) &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 160)) &&
+             (!('attachment' in data) || isValidPostAttachment(data.attachment)) &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 5 && (data.tags.size() == 0 || (data.tags[0] is string && data.tags[0].size() <= 32)))) &&
+             (!('gradeTag' in data) || (data.gradeTag is string && data.gradeTag.size() <= 32)) &&
+             (!('tryCount' in data) || (data.tryCount is number && data.tryCount >= 0 && data.tryCount <= 1000000)) &&
+             (!('isPinned' in data) || data.isPinned is bool) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    function isValidForumPostComment(data, postId) {
+      return data.keys().hasAll(['postId', 'authorId', 'authorName', 'authorRole', 'content', 'createdAt']) &&
+             data.keys().hasOnly([
+               'postId', 'authorId', 'authorName', 'authorUsername',
+               'authorAvatar', 'authorRole', 'content', 'createdAt'
+             ]) &&
+             data.postId == postId &&
+             data.authorId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 100 &&
+             data.authorRole in ['student', 'teacher', 'admin'] &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 2000 &&
+             data.createdAt is string && data.createdAt.size() <= 64 &&
+             (!('authorUsername' in data) || (data.authorUsername is string && data.authorUsername.size() <= 40)) &&
+             (!('authorAvatar' in data) || (data.authorAvatar is string && data.authorAvatar.size() <= 512));
+    }
+
+    // Forum Social Feed Posts (public non-PII read, verified signed-in create/react/try, owner edit/delete, Admin Synapse update/pin)
+    match /forum_posts/{postId} {
+      allow get: if true;
+      allow list: if resource.data.postType in ['experiment', 'lecture', 'discussion', 'update'];
+      allow create: if isSignedIn() &&
+                       request.auth.token.email_verified == true &&
+                       isValidId(postId) &&
+                       isValidForumPost(incoming()) &&
+                       incoming().authorId == request.auth.uid &&
+                       incoming().commentsCount == 0 &&
+                       (!('tryCount' in incoming()) || incoming().tryCount == 0) &&
+                       (incoming().postType != 'update' || isForumAdmin()) &&
+                       (!('isPinned' in incoming()) || incoming().isPinned == false || isForumAdmin()) &&
+                       (incoming().authorRole != 'admin' || isForumAdmin());
+      allow update: if isSignedIn() &&
+                       isValidId(postId) &&
+                       isValidForumPost(incoming()) &&
+                       incoming().authorId == existing().authorId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         ((existing().authorId == request.auth.uid || isForumAdmin()) &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'postType', 'subject', 'attachment', 'tags', 'gradeTag', 'updatedAt']) &&
+                          (incoming().postType != 'update' || isForumAdmin())) ||
+                         (isForumAdmin() &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['isPinned', 'updatedAt'])) ||
+                         (incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'commentsCount', 'tryCount', 'updatedAt']))
+                       );
+      allow delete: if isSignedIn() &&
+                       isValidId(postId) &&
+                       (existing().authorId == request.auth.uid || isForumAdmin());
+
+      match /comments/{commentId} {
+        allow get: if true;
+        allow list: if resource.data.postId == postId;
+        allow create: if isSignedIn() &&
+                         request.auth.token.email_verified == true &&
+                         isValidId(postId) &&
+                         isValidId(commentId) &&
+                         isValidForumPostComment(incoming(), postId) &&
+                         exists(/databases/$(database)/documents/forum_posts/$(postId)) &&
+                         (incoming().authorRole != 'admin' || isForumAdmin());
+        allow update: if false;
+        allow delete: if isSignedIn() &&
+                         isValidId(postId) &&
+                         isValidId(commentId) &&
+                         (
+                           existing().authorId == request.auth.uid ||
+                           get(/databases/$(database)/documents/forum_posts/$(postId)).data.authorId == request.auth.uid ||
                            isForumAdmin()
                          );
       }

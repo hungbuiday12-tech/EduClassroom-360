@@ -60,6 +60,8 @@ import {
   syncLine2Resolution,
   updateBillboardLabels,
 } from '../../lib/three3DEnhancements';
+import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { attachThreeFloorDrag, ThreeFloorDragHandle } from '../../lib/threeFloorDragController';
 
 const CUTAWAY_PHYSICS_MODES = new Set<string>([
   'thermal_gas_3d',
@@ -195,15 +197,24 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   onOpenFull3D,
 }) => {
   const { t } = useLanguage();
+  const { perfMode } = useBackgroundTheme();
+  const perfModeRef = useRef(perfMode);
+  perfModeRef.current = perfMode;
   const mountRef = useRef<HTMLDivElement>(null);
 
   // States
   const [mode, setMode] = useState<Physics3DMode>(initialMode);
+  const [floorModelMoved, setFloorModelMoved] = useState(false);
+  const floorDragRef = useRef<ThreeFloorDragHandle | null>(null);
   useEffect(() => {
     if (initialMode) {
       setMode(initialMode);
     }
   }, [initialMode]);
+  useEffect(() => {
+    floorDragRef.current?.resetPosition();
+    setFloorModelMoved(false);
+  }, [mode]);
   const [isRunning, setIsRunning] = useState(true);
   const [simSpeed, setSimSpeed] = useState<number>(1.0);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -325,6 +336,10 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   const pipelineRef = useRef<PostProcessPipeline | null>(null);
   const particlePoolRef = useRef<GPUParticlePool | null>(null);
   const trailRef = useRef<OptimizedTrail | null>(null);
+  const keyLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const fillLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const rimLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const stageRingRef = useRef<THREE.Mesh | null>(null);
   const cutawayPlaneRef = useRef<THREE.Plane>(new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.15));
   const modeRef = useRef<Physics3DMode>(mode);
   modeRef.current = mode;
@@ -351,15 +366,20 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
   }, [showGrid3D]);
   useEffect(() => {
     if (rendererRef.current && !isSoftwareGlRef.current) {
-      const cap = quality3D === 'high' ? 1.5 : 1.05;
+      const cap = quality3D === 'high' ? (perfMode === 'ultra' ? 2.0 : 1.5) : 1.05;
       rendererRef.current.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
-      const enableShadows = quality3D === 'high';
+      rendererRef.current.toneMappingExposure = perfMode === 'ultra' ? 1.28 : perfMode === 'balanced' ? 1.2 : 1.12;
+      const enableShadows = quality3D === 'high' && perfMode !== 'smooth';
       if (rendererRef.current.shadowMap.enabled !== enableShadows) {
         rendererRef.current.shadowMap.enabled = enableShadows;
         rendererRef.current.shadowMap.needsUpdate = true;
       }
+      if (sceneRef.current && 'environmentIntensity' in sceneRef.current) {
+        (sceneRef.current as unknown as { environmentIntensity: number }).environmentIntensity =
+          perfMode === 'ultra' ? 1.15 : perfMode === 'balanced' ? 0.95 : 0.72;
+      }
     }
-  }, [quality3D]);
+  }, [quality3D, perfMode]);
   const simStateRef = useRef({
     time: 0,
     projT: 0,
@@ -499,6 +519,13 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     fillLight.position.set(-6, 4, -6);
     scene.add(fillLight);
 
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.72);
+    rimLight.position.set(0, 6.5, -9.5);
+    scene.add(rimLight);
+    keyLightRef.current = keyLight;
+    fillLightRef.current = fillLight;
+    rimLightRef.current = rimLight;
+
     // Studio Workbench Plinth + Glowing Ring + Grid Floor
     const stageDisc = new THREE.Mesh(
       new THREE.CylinderGeometry(10.2, 10.6, 0.08, 64),
@@ -514,6 +541,7 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     );
     stageRing.rotation.x = Math.PI / 2;
     stageRing.position.y = -0.01;
+    stageRingRef.current = stageRing;
     scene.add(stageRing);
 
     const grid = new THREE.GridHelper(20, 20, 0x3b82f6, 0x1e293b);
@@ -531,6 +559,27 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
     apparatusGroup.name = 'lab_apparatus_3d_group';
     scene.add(apparatusGroup);
     apparatusGroupRef.current = apparatusGroup;
+
+    const floorDragHandle = attachThreeFloorDrag({
+      domElement: renderer.domElement,
+      camera,
+      controls,
+      scene,
+      modelGroup: dynamicGroup,
+      apparatusGroup,
+      floorY: 0,
+      maxRadius: 9.2,
+      accentColor: 0xf59e0b,
+      onApparatusMoved: (uid, lx, lz) => {
+        const nextXPct = Math.max(4, Math.min(96, (lx / 14.2) * 100 + 50));
+        const nextYPct = Math.max(4, Math.min(96, (lz / 9.6) * 100 + 50));
+        setPlaced3DTools((prev) =>
+          prev.map((item) => (item.uid === uid ? { ...item, xPct: nextXPct, yPct: nextYPct } : item))
+        );
+      },
+      onDragStatusChange: ({ moved }) => setFloorModelMoved(moved)
+    });
+    floorDragRef.current = floorDragHandle;
 
     const particlePool = new GPUParticlePool(96, 0.06, 0x38bdf8, 0x0ea5e9);
     scene.add(particlePool.mesh);
@@ -601,6 +650,33 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       const now = performance.now();
       const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
+
+      // Graphics-tier-aware cast lighting animation (zero per-frame allocations)
+      const lightPhase = now * 0.001;
+      const tier = perfModeRef.current;
+      const ringMat = stageRing.material as THREE.MeshStandardMaterial;
+      if (tier === 'smooth') {
+        keyLight.position.set(6, 11, 8);
+        keyLight.intensity = 1.7;
+        fillLight.intensity = 0.95;
+        rimLight.position.set(0, 6.5, -9.5);
+        rimLight.intensity = 0.6;
+        ringMat.emissiveIntensity = 0.42;
+      } else if (tier === 'balanced') {
+        keyLight.position.set(6 + Math.sin(lightPhase * 0.45) * 1.4, 11, 8);
+        keyLight.intensity = 1.75 + Math.sin(lightPhase * 0.9) * 0.1;
+        fillLight.intensity = 1.0;
+        rimLight.position.set(Math.sin(lightPhase * 0.55) * 4.5, 6.8, -9.5);
+        rimLight.intensity = 0.78 + Math.sin(lightPhase * 1.1) * 0.14;
+        ringMat.emissiveIntensity = 0.48 + Math.sin(lightPhase * 1.3) * 0.12;
+      } else {
+        keyLight.position.set(6 + Math.sin(lightPhase * 0.65) * 2.6, 11 + Math.cos(lightPhase * 0.4) * 0.8, 8 + Math.cos(lightPhase * 0.55) * 1.6);
+        keyLight.intensity = 1.88 + Math.sin(lightPhase * 1.2) * 0.18;
+        fillLight.intensity = 1.08 + Math.cos(lightPhase * 0.85) * 0.12;
+        rimLight.position.set(Math.sin(lightPhase * 0.75) * 7.5, 7.2, -9.5 + Math.cos(lightPhase * 0.6) * 2.2);
+        rimLight.intensity = 0.95 + Math.sin(lightPhase * 1.5) * 0.22;
+        ringMat.emissiveIntensity = 0.58 + Math.sin(lightPhase * 2.0) * 0.24;
+      }
 
       const stepped = lastTickStep !== stepTriggerRef.current;
       if (isRunningRef.current || stepped) {
@@ -755,6 +831,12 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
       canvasEl.removeEventListener('webglcontextlost', onContextLost);
       canvasEl.removeEventListener('webglcontextrestored', onContextRestored);
       resizeObserver?.disconnect();
+      floorDragHandle.dispose();
+      floorDragRef.current = null;
+      keyLightRef.current = null;
+      fillLightRef.current = null;
+      rimLightRef.current = null;
+      stageRingRef.current = null;
       controls.removeEventListener('start', cancelCamLerp);
       controls.dispose();
       controlsRef.current = null;
@@ -824,6 +906,8 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
         const spec = APPARATUS_BY_ID[tool.toolId];
         if (!spec) continue;
         instance = create3DApparatusModel(tool.toolId, spec);
+        instance.group.userData.apparatusUid = tool.uid;
+        instance.group.userData.partLabel = spec.viName || 'Dụng cụ 3D';
         map.set(tool.uid, instance);
         appGroup.add(instance.group);
       }
@@ -3155,6 +3239,20 @@ export const Physics3DView: React.FC<Physics3DViewProps> = ({
             ref={mountRef}
             className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
           />
+          {floorModelMoved ? (
+            <button
+              type="button"
+              onClick={() => floorDragRef.current?.resetPosition()}
+              className="absolute top-3 right-3 z-20 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-amber-500/50 text-[10px] font-semibold text-amber-200 shadow-lg cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Đặt lại vị trí</span>
+            </button>
+          ) : (
+            <div className="pointer-events-none absolute top-2.5 right-3 z-10 text-[10px] font-mono text-slate-400/80 select-none">
+              Kéo thả mô hình trên sàn · Nhấp đúp căn giữa
+            </div>
+          )}
           {contextLost && (
             <div className="absolute inset-0 flex items-center justify-center bg-slate-950/90 text-slate-200 text-xs p-4 text-center">
               Ngữ cảnh WebGL tạm ngưng. Vui lòng chuyển tab hoặc tải lại để khôi phục mô phỏng 3D.

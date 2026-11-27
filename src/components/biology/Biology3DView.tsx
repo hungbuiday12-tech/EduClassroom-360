@@ -1670,6 +1670,137 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
         break;
       }
 
+      case 'biomolecules_3d': {
+        const waterGrp = new THREE.Group();
+        const glucoseGrp = new THREE.Group();
+        const proteinGrp = new THREE.Group();
+        const lipidGrp = new THREE.Group();
+        root.add(waterGrp, glucoseGrp, proteinGrp, lipidGrp);
+
+        const hBondLines: THREE.Mesh[] = [];
+        const oMat = new THREE.MeshPhysicalMaterial({ color: 0xef4444, roughness: 0.25, clearcoat: 0.7 });
+        const hMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.35 });
+        const hbMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.72 });
+
+        // 1. Water H-bond cluster (5 tetrahedral molecules)
+        const wCoords: [number, number, number][] = [
+          [0, 0, 0],
+          [1.25, 0.85, 0.45],
+          [-1.25, 0.85, -0.45],
+          [0.45, -1.05, 1.05],
+          [-0.45, -1.05, -1.05]
+        ];
+        wCoords.forEach(([wx, wy, wz], idx) => {
+          const mol = new THREE.Group();
+          mol.position.set(wx, wy, wz);
+          const ox = new THREE.Mesh(new THREE.SphereGeometry(0.28, 20, 20), oMat);
+          const h1 = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 14), hMat);
+          h1.position.set(0.32, 0.24, 0);
+          const h2 = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 14), hMat);
+          h2.position.set(-0.32, 0.24, 0);
+          mol.add(ox, h1, h2);
+          register(mol, `Phân tử Nước H₂O #${idx + 1} (O δ⁻ – H δ⁺)`, [wx, wy, wz]);
+          waterGrp.add(mol);
+          if (idx > 0) {
+            const pA = new THREE.Vector3(0, 0, 0);
+            const pB = new THREE.Vector3(wx, wy, wz);
+            const dist = pA.distanceTo(pB);
+            const link = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, dist, 8), hbMat);
+            link.position.copy(pA).add(pB).multiplyScalar(0.5);
+            link.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pB.clone().sub(pA).normalize());
+            waterGrp.add(link);
+            hBondLines.push(link);
+          }
+        });
+
+        // 2. α-Glucose hexagonal ring
+        const cMat = new THREE.MeshPhysicalMaterial({ color: 0x10b981, roughness: 0.3, clearcoat: 0.5 });
+        const oRingMat = new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, roughness: 0.3, clearcoat: 0.6 });
+        for (let k = 0; k < 6; k++) {
+          const ang = (k / 6) * Math.PI * 2;
+          const r = 1.15;
+          const atom = new THREE.Mesh(
+            new THREE.SphereGeometry(0.22, 18, 18),
+            k === 0 ? oRingMat : cMat
+          );
+          atom.position.set(Math.cos(ang) * r, (k % 2 === 0 ? 0.14 : -0.14), Math.sin(ang) * r);
+          register(atom, k === 0 ? 'Nguyên tử Oxi trong vòng Pyranozơ' : `Cacbon vòng Glucozơ C${k}`, [atom.position.x, atom.position.y, atom.position.z]);
+          glucoseGrp.add(atom);
+        }
+
+        // 3. Protein 3D helical strand (responds to denaturation tempC > 58)
+        const aaSpheres: THREE.Mesh[] = [];
+        const aaCols = [0x10b981, 0x38bdf8, 0xf59e0b, 0xa855f7, 0xf43f5e];
+        for (let i = 0; i < 14; i++) {
+          const sp = new THREE.Mesh(
+            new THREE.SphereGeometry(0.22, 18, 18),
+            new THREE.MeshPhysicalMaterial({ color: aaCols[i % aaCols.length], roughness: 0.28, clearcoat: 0.7 })
+          );
+          register(sp, `Axit amin #${i + 1} (Chuỗi Polypeptide)`, [0, 0, 0]);
+          proteinGrp.add(sp);
+          aaSpheres.push(sp);
+        }
+
+        // 4. Phospholipid bilayer miniature patch
+        const headMat = new THREE.MeshPhysicalMaterial({ color: 0x0ea5e9, roughness: 0.25, clearcoat: 0.8 });
+        const tailMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+        for (let ix = -1; ix <= 1; ix++) {
+          for (let iz = -1; iz <= 1; iz++) {
+            const hx = ix * 0.72;
+            const hz = iz * 0.72;
+            const hTop = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), headMat);
+            hTop.position.set(hx, 0.95, hz);
+            const hBot = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), headMat);
+            hBot.position.set(hx, -0.95, hz);
+            const t1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 1.5, 8), tailMat);
+            t1.position.set(hx - 0.07, 0, hz);
+            const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 1.5, 8), tailMat);
+            t2.position.set(hx + 0.07, 0, hz);
+            lipidGrp.add(hTop, hBot, t1, t2);
+          }
+        }
+        register(lipidGrp, 'Lớp kép Phospholipid (Đầu ưa nước – Đuôi kị nước)', [0, 0, 0]);
+
+        addLabel('Nước & 4 Đại Phân Tử Sinh Học 3D', [0, 2.0, 0], 0x6ee7b7);
+
+        let unfoldProg = 0;
+        onLiveUpdate = (t, dt, params, flags) => {
+          const grp = Math.round(params.molGroup ?? 3);
+          const temp = params.tempC ?? 37;
+          waterGrp.visible = grp === 1;
+          glucoseGrp.visible = grp === 2;
+          proteinGrp.visible = grp === 3;
+          lipidGrp.visible = grp === 4;
+
+          hBondLines.forEach((l) => {
+            l.visible = Boolean(flags.showHBonds !== false) && temp < 80;
+          });
+
+          const targetUnfold = grp === 3 && temp > 58 ? 1 : 0;
+          unfoldProg = THREE.MathUtils.damp(unfoldProg, targetUnfold, 4, dt);
+          aaSpheres.forEach((sp, i) => {
+            const u = i / 13;
+            const ang = u * Math.PI * 4.5 + t * 0.8;
+            const fx = Math.cos(ang) * 0.9;
+            const fy = (u - 0.5) * 2.2;
+            const fz = Math.sin(ang) * 0.9;
+            const ux = (u - 0.5) * 3.6;
+            const uy = Math.sin(u * Math.PI * 2 + t * 3) * 0.25;
+            const uz = 0;
+            const part = parts.find((pt) => pt.mesh === sp);
+            if (part) {
+              part.home.set(
+                THREE.MathUtils.lerp(fx, ux, unfoldProg),
+                THREE.MathUtils.lerp(fy, uy, unfoldProg),
+                THREE.MathUtils.lerp(fz, uz, unfoldProg)
+              );
+            }
+          });
+          glucoseGrp.rotation.y = t * 0.55;
+        };
+        break;
+      }
+
       default: {
         // eukaryotic_cell_3d
         const outerShell = new THREE.Mesh(

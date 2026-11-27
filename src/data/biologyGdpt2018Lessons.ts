@@ -192,8 +192,8 @@ export const BIOLOGY_GDPT_2018_LESSONS: BiologyLesson[] = [
     theory2Heading: '2. Bốn đại phân tử sinh học',
     theory2: '• **Carbohydrate**: đơn phân đường đơn (glucose, fructose) cung cấp năng lượng nhanh.\n• **Lipid**: không theo nguyên tắc đa phân, kị nước (mỡ, phospholipid, steroid).\n• **Protein**: đa phân axit amin nối bằng liên kết peptit, 4 bậc cấu trúc.',
     keyFormulas: ['\\text{Liên kết peptit: } -\\text{CO}-\\text{NH}-', '\\text{Cấu trúc bậc 3/4 quyết định chức năng}'],
-    sim2d: 'enzyme_kinetics_2d',
-    sim3d: 'enzyme_substrate_3d',
+    sim2d: 'biomolecules_2d',
+    sim3d: 'biomolecules_3d',
     mcq1: {
       source: 'Sinh 10 · GDPT 2018',
       question: 'Đại phân tử sinh học nào KHÔNG cấu tạo theo nguyên tắc đa phân?',

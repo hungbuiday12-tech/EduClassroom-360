@@ -71,6 +71,59 @@ export interface ForumMessage {
   createdAt: string;
 }
 
+export type ForumPostType = 'experiment' | 'lecture' | 'discussion' | 'update';
+
+export type ForumExperienceSubject = 'math' | 'physics' | 'chemistry' | 'biology' | 'cs' | 'pre';
+
+export type ForumExperienceKind = 'lecture' | 'sim2d' | 'sim3d' | 'sandbox' | 'pre_lab';
+
+export interface ForumExperienceAttachment {
+  kind: ForumExperienceKind;
+  subject: ForumExperienceSubject;
+  targetId: string;
+  domainId?: string;
+  title: string;
+  subtitle?: string;
+  formula?: string;
+  gradeLabel?: string;
+  openSim?: boolean;
+}
+
+export interface ForumPostComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorUsername?: string;
+  authorAvatar?: string;
+  authorRole: 'student' | 'teacher' | 'admin';
+  content: string;
+  createdAt: string;
+}
+
+export interface ForumFeedPost {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorUsername?: string;
+  authorAvatar?: string;
+  authorRole: 'student' | 'teacher' | 'admin';
+  postType: ForumPostType;
+  subject: ForumSubject;
+  title?: string;
+  content: string;
+  attachment?: ForumExperienceAttachment;
+  tags?: string[];
+  gradeTag?: string;
+  reactions: Record<string, string[]>;
+  commentsCount: number;
+  comments?: ForumPostComment[];
+  tryCount?: number;
+  isPinned?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export type ExamSubject = 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
 export type ExamTrack = 'chuyen' | 'khong_chuyen';
 
@@ -697,7 +750,8 @@ export type ChemistrySimType =
   | 'acid_base_oxide_2d'
   | 'oxygen_combustion_2d'
   | 'mass_conservation_2d'
-  | 'solution_solubility_2d';
+  | 'solution_solubility_2d'
+  | 'ir_ms_spectroscopy_2d';
 
 export type Chemistry3DMode =
   | 'atomic_orbitals_3d'
@@ -813,7 +867,8 @@ export type BiologySimType =
   | 'vertebrate_taxonomy_2d'
   | 'digestion_enzymes_2d'
   | 'kingdoms_invertebrates_2d'
-  | 'human_skeleton_senses_2d';
+  | 'human_skeleton_senses_2d'
+  | 'biomolecules_2d';
 
 export type Biology3DMode =
   | 'eukaryotic_cell_3d'
@@ -843,7 +898,8 @@ export type Biology3DMode =
   | 'digestive_tract_3d'
   | 'invertebrate_biodiversity_3d'
   | 'plant_tropism_germination_3d'
-  | 'skeleton_senses_3d';
+  | 'skeleton_senses_3d'
+  | 'biomolecules_3d';
 
 export type BiologyDomainId =
   | 'cell_membrane'

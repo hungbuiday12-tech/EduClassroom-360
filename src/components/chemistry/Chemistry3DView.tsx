@@ -2103,12 +2103,12 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
         if (!spec) return;
         instance = createChem3DApparatusModel(tool.toolId, spec);
         instance.group.userData.apparatusUid = tool.uid;
-        instance.group.userData.partLabel = spec.name;
+        instance.group.userData.partLabel = spec.viName;
         map.set(tool.uid, instance);
         appGroup.add(instance.group);
       } else {
         instance.group.userData.apparatusUid = tool.uid;
-        if (spec) instance.group.userData.partLabel = spec.name;
+        if (spec) instance.group.userData.partLabel = spec.viName;
       }
       const wx = ((tool.xPct - 50) / 100) * 8.4;
       const wz = ((tool.yPct - 50) / 100) * 6.8 + (Math.abs(wx) < 2.2 ? (idx % 2 === 0 ? 2.5 : -2.5) : 0);

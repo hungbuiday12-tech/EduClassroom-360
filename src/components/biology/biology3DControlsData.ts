@@ -900,5 +900,37 @@ export const BIOLOGY_3D_CONFIGS: Record<Biology3DMode, Bio3DModeConfig> = {
         metricsSummary: `Flex=${flex}%, Lens=${f.myopiaLens ? 'Concave' : 'None'}`
       };
     }
+  ),
+
+  biomolecules_3d: makeBioCfg(
+    'biomolecules_3d',
+    'Mạng Liên Kết Hiđrô Nước & 4 Đại Phân Tử Sinh Học 3D',
+    'Chọn đại phân tử (Nước H₂O, Vòng Glucose, Xoắn Protein bậc 3, Phospholipid hoặc DNA) và thử tăng nhiệt độ để xem Protein bị biến tính.',
+    '\\text{H}_2\\text{O (Liên kết H)} \\quad|\\quad \\text{Protein: Bậc 1} \\to \\text{Bậc 3/4 (Chức năng)}',
+    [
+      { key: 'molGroup', label: 'Loại (1:Nước H₂O 2:Glucozơ 3:Protein xoắn α 4:Phospholipid)', unit: '', min: 1, max: 4, step: 1, defaultVal: 3, accentClass: 'accent-emerald-500' },
+      { key: 'tempC', label: 'Nhiệt độ môi trường', unit: '°C', min: 0, max: 95, step: 5, defaultVal: 37, accentClass: 'accent-rose-500' }
+    ],
+    [
+      { label: 'Mạng tứ diện H₂O & Liên kết Hiđrô', description: 'Nước phân cực O(δ-) – H(δ+) hút tĩnh điện tạo mạng liên kết H', params: { molGroup: 1, tempC: 20 }, flags: { showHBonds: true } },
+      { label: 'Protein cuộn xoắn tự nhiên (37°C)', description: 'Cấu trúc không gian bậc 3 ổn định thực hiện chức năng sinh học', params: { molGroup: 3, tempC: 37 }, flags: { showHBonds: true } },
+      { label: 'Biến tính Protein ở nhiệt độ cao (80°C)', description: 'Liên kết hiđrô đứt gãy làm chuỗi polipeptit duỗi thẳng mất hoạt tính', params: { molGroup: 3, tempC: 80 }, flags: { showHBonds: false } }
+    ],
+    [
+      { id: 'hbonds', label: 'Hiển thị mạng Liên kết Hiđrô', kind: 'toggle', flagKey: 'showHBonds', accent: 'sky' },
+      { id: 'reset_bio', label: 'Đặt lại 37°C chuẩn sinh lí', kind: 'reset', accent: 'emerald' }
+    ],
+    { showHBonds: true },
+    (p, f) => {
+      const grp = Math.round(p.molGroup ?? 3);
+      const t = p.tempC ?? 37;
+      const names = ['Mạng Nước H₂O', 'Đơn phân α-Glucozơ', 'Chuỗi Protein bậc 3', 'Phospholipid lưỡng cực'];
+      const denatured = grp === 3 && t > 58;
+      return {
+        equationText: `${names[grp - 1] || names[2]} · T = ${t}°C · ${denatured ? 'BIẾN TÍNH (Đứt liên kết H bậc 3)' : f.showHBonds ? 'Liên kết Hiđrô ổn định' : 'Ẩn liên kết H'}`,
+        statusNote: grp === 3 ? 'Nhiệt độ > 58°C phá vỡ các liên kết yếu bậc 3/4 nhưng giữ nguyên liên kết peptit bậc 1.' : 'Cấu trúc không gian quyết định trực tiếp tính chất lý–hóa và chức năng sinh học.',
+        metricsSummary: `Mol=${names[grp - 1] || 'Protein'}, T=${t}°C`
+      };
+    }
   )
 };

@@ -1,4 +1,15 @@
 import { PhysicsSimType } from '../../types';
+import { PerformanceMode } from '../../context/BackgroundContext';
+import {
+  Studio2DDragState,
+  ZERO_STUDIO_DRAG,
+  drawStudioFloorReticle,
+  drawStudioIncomingLight,
+  drawStudioLabBackdrop,
+  drawStudioMetallicBlock,
+  drawStudioOpticalBeam,
+  drawStudioSphere
+} from '../common/studio2DCanvasKit';
 import { renderExtra2DPhysicsSim } from './physics2DExtraRenderer';
 import { renderCustomStepPhysicsSim } from './physicsStepCustomRenderers';
 
@@ -73,6 +84,8 @@ export interface Physics2DRenderOptions {
   overlays: Physics2DOverlayState;
   oscHistory: number[];
   pushTelemetry: (next: Physics2DTelemetry) => void;
+  perfMode?: PerformanceMode;
+  dragState?: Studio2DDragState;
 }
 
 type DrawCtx = Physics2DRenderOptions;
@@ -915,13 +928,12 @@ function drawProjectile({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, 
   const ballPx = originX + curState.x * scaleX;
   const ballPy = groundY - curState.y * scaleY;
 
-  ctx.fillStyle = '#ef4444';
-  ctx.beginPath();
-  ctx.arc(ballPx, ballPy, 7.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#fee2e2';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  drawStudioSphere(ctx, ballPx, ballPy, 8.5, {
+    baseColor: '#ef4444',
+    highlightColor: '#fecaca',
+    shadowColor: '#7f1d1d',
+    shadowOffset: Math.max(0, groundY - ballPy) > 2 ? 0 : 4
+  });
 
   if (ov.showVectors && inFlight) {
     const vecScale = 1.25;
@@ -1021,13 +1033,12 @@ function drawFreeFall({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, pu
     }
   }
 
-  ctx.fillStyle = '#3b82f6';
-  ctx.beginPath();
-  ctx.arc(ballX, ballY, 13, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#93c5fd';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  drawStudioSphere(ctx, ballX, ballY, 13.5, {
+    baseColor: '#3b82f6',
+    highlightColor: '#dbeafe',
+    shadowColor: '#1e3a8a',
+    shadowOffset: Math.max(0, groundY - ballY) < 16 ? 8 : 0
+  });
 
   if (ov.showVectors) {
     const vLen = Math.min(70, curV * 2.5);
@@ -1156,31 +1167,25 @@ function drawRefraction({ ctx, w, h, isDark, params: p, flags, overlays: ov, pus
 
   const incStartX = midX - beamLen * Math.sin(iRad);
   const incStartY = midY - beamLen * Math.cos(iRad);
-  ctx.strokeStyle = '#ef4444';
-  ctx.lineWidth = 3.5;
-  ctx.beginPath();
-  ctx.moveTo(incStartX, incStartY);
-  ctx.lineTo(midX, midY);
-  ctx.stroke();
+  drawStudioOpticalBeam(ctx, incStartX, incStartY, midX, midY, '#ef4444', 'balanced', 3.2);
 
   const refEndX = midX + beamLen * Math.sin(iRad);
   const refEndY = midY - beamLen * Math.cos(iRad);
-  ctx.strokeStyle = isTIR ? '#ef4444' : 'rgba(239, 68, 68, 0.45)';
-  ctx.lineWidth = isTIR ? 3.5 : 2;
-  ctx.beginPath();
-  ctx.moveTo(midX, midY);
-  ctx.lineTo(refEndX, refEndY);
-  ctx.stroke();
+  drawStudioOpticalBeam(
+    ctx,
+    midX,
+    midY,
+    refEndX,
+    refEndY,
+    isTIR ? '#ef4444' : 'rgba(239, 68, 68, 0.5)',
+    isTIR ? 'ultra' : 'smooth',
+    isTIR ? 3.2 : 1.8
+  );
 
   if (!isTIR) {
     const refrEndX = midX + beamLen * Math.sin(rRad);
     const refrEndY = midY + beamLen * Math.cos(rRad);
-    ctx.strokeStyle = '#10b981';
-    ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    ctx.moveTo(midX, midY);
-    ctx.lineTo(refrEndX, refrEndY);
-    ctx.stroke();
+    drawStudioOpticalBeam(ctx, midX, midY, refrEndX, refrEndY, '#10b981', 'balanced', 3.2);
 
     if (ov.showVectors) {
       ctx.fillStyle = '#10b981';
@@ -1392,11 +1397,14 @@ function drawSpring({ ctx, w, h, t, isDark, isRunning, params: p, flags, overlay
     ctx.fillText('VTCB O', eqX, midY - 74);
   }
 
-  ctx.fillStyle = isDark ? '#334155' : '#94a3b8';
-  ctx.fillRect(anchorX - 14, midY - 56 * s, 14, 112 * s);
+  drawStudioMetallicBlock(ctx, anchorX - 14, midY - 56 * s, 14, 112 * s, {
+    topColor: '#94a3b8',
+    midColor: '#475569',
+    bottomColor: '#1e293b',
+    radius: 3
+  });
 
-  ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
-  ctx.lineWidth = 3;
+  ctx.save();
   ctx.beginPath();
   ctx.moveTo(anchorX, midY);
   const coils = 16;
@@ -1407,18 +1415,23 @@ function drawSpring({ ctx, w, h, t, isDark, isRunning, params: p, flags, overlay
     ctx.lineTo(cxPt, cyPt);
   }
   ctx.lineTo(massX - halfM, midY);
+  ctx.strokeStyle = isDark ? '#334155' : '#475569';
+  ctx.lineWidth = 4.5;
   ctx.stroke();
+  ctx.strokeStyle = isDark ? '#38bdf8' : '#0284c7';
+  ctx.lineWidth = 2.0;
+  ctx.stroke();
+  ctx.restore();
 
-  ctx.fillStyle = '#8b5cf6';
-  ctx.fillRect(massX - halfM, midY - halfM, massSize, massSize);
-  ctx.strokeStyle = '#c4b5fd';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(massX - halfM, midY - halfM, massSize, massSize);
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 11px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(`${m}kg`, massX, midY + 4);
+  drawStudioMetallicBlock(ctx, massX - halfM, midY - halfM, massSize, massSize, {
+    topColor: '#a78bfa',
+    midColor: '#7c3aed',
+    bottomColor: '#4c1d95',
+    borderColor: '#ddd6fe',
+    radius: 7,
+    label: `${m}kg`,
+    labelColor: '#ffffff'
+  });
 
   if (ov.showVectors) {
     const fLen = Math.max(-55, Math.min(55, -k * x * 12));
@@ -1534,10 +1547,11 @@ function drawPendulum({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, pu
     ctx.stroke();
   }
 
-  ctx.fillStyle = isDark ? '#64748b' : '#94a3b8';
-  ctx.beginPath();
-  ctx.arc(pivotX, pivotY, 6, 0, Math.PI * 2);
-  ctx.fill();
+  drawStudioSphere(ctx, pivotX, pivotY, 6.5, {
+    baseColor: '#64748b',
+    highlightColor: '#e2e8f0',
+    shadowColor: '#1e293b'
+  });
 
   ctx.strokeStyle = isDark ? '#94a3b8' : '#475569';
   ctx.lineWidth = 2.5;
@@ -1546,13 +1560,12 @@ function drawPendulum({ ctx, w, h, t, isDark, params: p, flags, overlays: ov, pu
   ctx.lineTo(bobX, bobY);
   ctx.stroke();
 
-  ctx.fillStyle = '#ec4899';
-  ctx.beginPath();
-  ctx.arc(bobX, bobY, 16, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#fbcfe8';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  drawStudioSphere(ctx, bobX, bobY, 16.5, {
+    baseColor: '#ec4899',
+    highlightColor: '#fce7f3',
+    shadowColor: '#831843',
+    shadowOffset: 0
+  });
 
   if (ov.showVectors && Math.abs(v) > 0.02) {
     const vx = v * Math.cos(theta) * 28;
@@ -2722,7 +2735,7 @@ function drawDopplerEffect({ ctx, w, h, t, isDark, params: p, overlays: ov, push
 }
 
 // 19. Photoelectric Effect (Lớp 12)
-function drawPhotoelectricEffect({ ctx, w, h, t, isDark, params: p, overlays: ov, pushTelemetry }: DrawCtx) {
+function drawPhotoelectricEffect({ ctx, w, h, t, isDark, params: p, overlays: ov, pushTelemetry, perfMode = 'balanced' }: DrawCtx) {
   const lambdaNm = Math.max(150, Math.min(760, p.wavelengthNm ?? 280));
   const workEv = Math.max(1.2, Math.min(5.5, p.workFunctionEv ?? 2.14));
   const stopV = Math.max(-5, Math.min(5, p.voltageUak ?? 1.5));
@@ -2787,21 +2800,13 @@ function drawPhotoelectricEffect({ ctx, w, h, t, isDark, params: p, overlays: ov
     const px = startX + (catX - startX) * progress;
     const py = startY + (targetY - startY) * progress;
 
-    ctx.strokeStyle = beamColor;
-    ctx.globalAlpha = 0.3;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(catX, targetY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 1;
-
-    ctx.fillStyle = beamColor;
-    ctx.beginPath();
-    ctx.arc(px, py, 4.5, 0, Math.PI * 2);
-    ctx.fill();
+    drawStudioOpticalBeam(ctx, startX, startY, catX, targetY, beamColor, perfMode, 1.8);
+    drawStudioSphere(ctx, px, py, 4.8, {
+      baseColor: beamColor,
+      highlightColor: '#ffffff',
+      shadowColor: beamColor,
+      perfMode
+    });
   }
 
   if (canEmit) {
@@ -2818,10 +2823,12 @@ function drawPhotoelectricEffect({ ctx, w, h, t, isDark, params: p, overlays: ov
         const dist = Math.sin(phase * Math.PI) * travelSpan * maxReachRatio;
         ex = catX + 8 + dist;
       }
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(ex, yOff, 4, 0, Math.PI * 2);
-      ctx.fill();
+      drawStudioSphere(ctx, ex, yOff, 4.4, {
+        baseColor: '#38bdf8',
+        highlightColor: '#f0f9ff',
+        shadowColor: '#0369a1',
+        perfMode
+      });
       if (ov.showVectors) {
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 1.2;
@@ -2852,50 +2859,27 @@ function drawPhotoelectricEffect({ ctx, w, h, t, isDark, params: p, overlays: ov
  * and PhysicsInline2DSim (inline per-step visual lab inside every Physics lecture step).
  */
 export function renderPhysics2DSimulation(opts: Physics2DRenderOptions): void {
-  const { simType, ctx, w, h, t, isDark, params, overlays, pushTelemetry } = opts;
+  const {
+    simType,
+    ctx,
+    w,
+    h,
+    t,
+    isDark,
+    params,
+    overlays,
+    pushTelemetry,
+    perfMode = 'balanced',
+    dragState = ZERO_STUDIO_DRAG
+  } = opts;
 
-  // Clear Canvas Background with subtle studio radial vignette
-  const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.45, 24, w * 0.5, h * 0.5, Math.max(w, h) * 0.78);
-  if (isDark) {
-    bgGrad.addColorStop(0, '#10182b');
-    bgGrad.addColorStop(1, '#080d19');
-  } else {
-    bgGrad.addColorStop(0, '#ffffff');
-    bgGrad.addColorStop(1, '#f1f5f9');
-  }
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, w, h);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  const benchY = drawStudioLabBackdrop(ctx, w, h, isDark, perfMode, {
+    subject: 'physics',
+    showGrid: overlays.showRulerGrid
+  });
 
-  // Draw Grid / Ruler Overlay
-  if (overlays.showRulerGrid) {
-    ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.08)' : 'rgba(15, 23, 42, 0.06)';
-    ctx.lineWidth = 1;
-    const gridSize = 30;
-    ctx.beginPath();
-    for (let x = 0; x < w; x += gridSize) {
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-    }
-    for (let y = 0; y < h; y += gridSize) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-    }
-    ctx.stroke();
-
-    ctx.strokeStyle = isDark ? 'rgba(56, 189, 248, 0.09)' : 'rgba(2, 132, 199, 0.08)';
-    ctx.beginPath();
-    for (let x = 0; x < w; x += gridSize * 4) {
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-    }
-    for (let y = 0; y < h; y += gridSize * 4) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-    }
-    ctx.stroke();
-  }
+  ctx.save();
+  ctx.translate(dragState.offsetX, dragState.offsetY);
 
   switch (simType) {
     case 'ohm_circuit':
@@ -2970,7 +2954,10 @@ export function renderPhysics2DSimulation(opts: Physics2DRenderOptions): void {
         params,
         flags: opts.flags,
         overlays,
-        pushTelemetry
+        pushTelemetry,
+        perfMode,
+        dragState,
+        standalone: false
       });
       break;
     default: {
@@ -2991,6 +2978,14 @@ export function renderPhysics2DSimulation(opts: Physics2DRenderOptions): void {
       break;
     }
   }
+
+  ctx.restore();
+
+  drawStudioFloorReticle(ctx, w, h, dragState, isDark, 'physics');
+  drawStudioIncomingLight(ctx, w, h, undefined, isDark, perfMode, {
+    subject: 'physics',
+    benchY
+  });
 
   // Subtle Time Stamp badge in top-right of canvas
   ctx.save();

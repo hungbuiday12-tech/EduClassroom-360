@@ -58,7 +58,8 @@ const CHEM_2D_TO_3D: Record<ChemistrySimType, Chemistry3DMode> = {
   acid_base_oxide_2d: 'indicator_bench_3d',
   oxygen_combustion_2d: 'combustion_reactor_3d',
   mass_conservation_2d: 'mass_balance_3d',
-  solution_solubility_2d: 'solution_mixing_3d'
+  solution_solubility_2d: 'solution_mixing_3d',
+  ir_ms_spectroscopy_2d: 'spectroscopy_prism_3d'
 };
 
 const KEYWORD_RULES: {
@@ -76,7 +77,8 @@ const KEYWORD_RULES: {
   { pattern: /quỳ tím|thang ph|oxide|oxit|muối|acid.*base|bazơ|trung hòa|bắp cải tím/i, sim2d: 'acid_base_oxide_2d', sim3d: 'indicator_bench_3d', label: 'Acid – Base – Oxide – Muối & Chỉ Thị Màu pH' },
   { pattern: /orbital|obitan|phân lớp|cấu hình electron|lượng tử/i, sim2d: 'atomic_orbitals_2d', sim3d: 'atomic_orbitals_3d', label: 'Cấu hình Electron & Orbital Nguyên tử' },
   { pattern: /tuần hoàn|bán kính|độ âm điện|năng lượng ion/i, sim2d: 'periodic_trends_2d', sim3d: 'periodic_tower_3d', label: 'Biến thiên Tuần hoàn Tính chất Nguyên tố' },
-  { pattern: /quang phổ|ngọn lửa|vạch phát xạ|nmr|hồng ngoại/i, sim2d: 'flame_spectroscopy_2d', sim3d: 'spectroscopy_prism_3d', label: 'Quang phổ Vạch & Màu Ngọn lửa Ion Kim loại' },
+  { pattern: /phổ hồng ngoại|phổ ir|phổ khối|ms.*m\/z|nmr|độ bất bão hòa|số sóng/i, sim2d: 'ir_ms_spectroscopy_2d', sim3d: 'spectroscopy_prism_3d', label: 'Phổ Hồng Ngoại IR, Khối Phổ MS & Độ Bất Bão Hòa' },
+  { pattern: /quang phổ|ngọn lửa|vạch phát xạ/i, sim2d: 'flame_spectroscopy_2d', sim3d: 'spectroscopy_prism_3d', label: 'Quang phổ Vạch & Màu Ngọn lửa Ion Kim loại' },
   { pattern: /vsepr|liên kết|cộng hóa trị|lai hóa|sp2|sp3|hydrogen/i, sim2d: 'vsepr_bonding_2d', sim3d: 'vsepr_geometry_3d', label: 'Hình học Phân tử VSEPR & Lai hóa Orbital' },
   { pattern: /mạng tinh thể|nacl|kim cương|đặc khít|bcc|fcc/i, sim2d: 'crystal_packing_2d', sim3d: 'crystal_lattice_3d', label: 'Mạng Tinh thể Ion / Kim loại / Cộng hóa trị' },
   { pattern: /phức chất|phối tử|trường tinh thể|t2g|kim loại chuyển tiếp/i, sim2d: 'complex_ligand_2d', sim3d: 'coordination_complex_3d', label: 'Phức chất Phối trí & Tách mức Trường tinh thể' },

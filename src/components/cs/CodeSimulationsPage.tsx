@@ -3,11 +3,25 @@ import { ArrowLeft, BookOpen, Box, Code2, Home, Layers } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { AlgorithmVisualizer } from './AlgorithmVisualizer';
-import { CS3DVisualizer } from './CS3DVisualizer';
+import { CS3DVisualizer, CS3DSimMode } from './CS3DVisualizer';
+import { AlgoId } from './visualizer/types';
 
 interface CodeSimulationsPageProps {
   onBack?: () => void;
 }
+
+const VALID_CS3D_MODES: CS3DSimMode[] = [
+  'sort_3d',
+  'bst_3d',
+  'graph_3d',
+  'maze_3d',
+  'stack_queue_3d',
+  'segtree_3d',
+  'trie_3d',
+  'dp_table_3d',
+  'flow_network_3d',
+  'spatial_octree_3d'
+];
 
 export const CodeSimulationsPage: React.FC<CodeSimulationsPageProps> = ({ onBack }) => {
   const { language } = useLanguage();
@@ -15,6 +29,10 @@ export const CodeSimulationsPage: React.FC<CodeSimulationsPageProps> = ({ onBack
   const { location, navigate, goBack, goClassroom } = useNavigation();
 
   const activeTab: 'viz2d' | 'viz3d' = location.csSimTab === 'viz3d' ? 'viz3d' : 'viz2d';
+  const initial3DMode =
+    location.csAlgoId && VALID_CS3D_MODES.includes(location.csAlgoId as CS3DSimMode)
+      ? (location.csAlgoId as CS3DSimMode)
+      : undefined;
 
   const setActiveTab = (tab: 'viz2d' | 'viz3d') => {
     navigate({ subject: 'cs_sims', csSimTab: tab });
@@ -105,9 +123,15 @@ export const CodeSimulationsPage: React.FC<CodeSimulationsPageProps> = ({ onBack
       </section>
 
       {activeTab === 'viz2d' ? (
-        <AlgorithmVisualizer onBack={onBack || goBack} />
+        <AlgorithmVisualizer
+          initialAlgoId={location.csAlgoId as AlgoId | undefined}
+          onBack={onBack || goBack}
+        />
       ) : (
-        <CS3DVisualizer onBack={onBack || goBack} />
+        <CS3DVisualizer
+          initialMode={initial3DMode}
+          onBack={onBack || goBack}
+        />
       )}
     </div>
   );

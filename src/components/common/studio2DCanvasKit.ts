@@ -839,3 +839,311 @@ export function drawStudioSensorProbe(
 
   ctx.restore();
 }
+
+export interface StudioSphereOpts {
+  baseColor?: string;
+  highlightColor?: string;
+  shadowColor?: string;
+  rimColor?: string;
+  perfMode?: PerformanceMode;
+  shadowOffset?: number;
+}
+
+/**
+ * Renders a photorealistic 3D-shaded sphere with top-left specular highlight,
+ * Fresnel rim sheen, and optional ground contact shadow.
+ */
+export function drawStudioSphere(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  opts: StudioSphereOpts = {}
+) {
+  const {
+    baseColor = '#3b82f6',
+    highlightColor = '#e0f2fe',
+    shadowColor = '#1e3a8a',
+    rimColor = 'rgba(255,255,255,0.45)',
+    perfMode = 'balanced',
+    shadowOffset = 0
+  } = opts;
+
+  ctx.save();
+  if (shadowOffset > 0) {
+    const shGrad = ctx.createRadialGradient(x, y + shadowOffset, 1, x, y + shadowOffset, radius * 1.35);
+    shGrad.addColorStop(0, 'rgba(2, 6, 23, 0.42)');
+    shGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+    ctx.fillStyle = shGrad;
+    ctx.beginPath();
+    ctx.ellipse(x, y + shadowOffset, radius * 1.15, radius * 0.36, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (perfMode === 'ultra') {
+    ctx.shadowColor = baseColor;
+    ctx.shadowBlur = 14;
+  }
+
+  const sphereGrad = ctx.createRadialGradient(
+    x - radius * 0.34,
+    y - radius * 0.36,
+    Math.max(1, radius * 0.08),
+    x,
+    y,
+    radius
+  );
+  sphereGrad.addColorStop(0, highlightColor);
+  sphereGrad.addColorStop(0.32, baseColor);
+  sphereGrad.addColorStop(1, shadowColor);
+
+  ctx.fillStyle = sphereGrad;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+
+  // Rim arc & crisp specular glint
+  ctx.strokeStyle = rimColor;
+  ctx.lineWidth = 1.25;
+  ctx.stroke();
+
+  if (perfMode !== 'smooth' && radius >= 5) {
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.beginPath();
+    ctx.ellipse(x - radius * 0.34, y - radius * 0.34, radius * 0.22, radius * 0.13, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
+ * Renders a machined metallic / lab block with bevel highlight and brushed gradient.
+ */
+export function drawStudioMetallicBlock(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  opts: {
+    topColor?: string;
+    midColor?: string;
+    bottomColor?: string;
+    borderColor?: string;
+    radius?: number;
+    label?: string;
+    labelColor?: string;
+  } = {}
+) {
+  const {
+    topColor = '#94a3b8',
+    midColor = '#475569',
+    bottomColor = '#1e293b',
+    borderColor = 'rgba(226, 232, 240, 0.38)',
+    radius = 6,
+    label,
+    labelColor = '#f8fafc'
+  } = opts;
+
+  ctx.save();
+  const grad = ctx.createLinearGradient(x, y, x, y + height);
+  grad.addColorStop(0, topColor);
+  grad.addColorStop(0.45, midColor);
+  grad.addColorStop(1, bottomColor);
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, height, radius);
+  ctx.fill();
+
+  // Top bevel specular edge
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y + 1.5);
+  ctx.lineTo(x + width - radius, y + 1.5);
+  ctx.stroke();
+
+  if (label) {
+    ctx.fillStyle = labelColor;
+    ctx.font = '700 11px ui-sans-serif, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x + width / 2, y + height / 2);
+  }
+  ctx.restore();
+}
+
+/**
+ * Renders a Bunsen laboratory burner with brushed metal barrel, air collar, and animated flame.
+ */
+export function drawStudioBurnerFlame(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  baseY: number,
+  intensity: number,
+  t: number,
+  perfMode: PerformanceMode = 'balanced',
+  flameColor = '#38bdf8'
+) {
+  const clampedInt = Math.max(0, Math.min(1.2, intensity));
+  ctx.save();
+
+  // Heavy cast-iron base & brass air-regulator collar
+  drawStudioMetallicBlock(ctx, x - 34, baseY - 12, 68, 12, {
+    topColor: '#475569',
+    midColor: '#334155',
+    bottomColor: '#0f172a',
+    radius: 4
+  });
+  drawStudioMetallicBlock(ctx, x - 11, baseY - 64, 22, 52, {
+    topColor: '#cbd5e1',
+    midColor: '#64748b',
+    bottomColor: '#334155',
+    radius: 2
+  });
+  drawStudioMetallicBlock(ctx, x - 14, baseY - 26, 28, 10, {
+    topColor: '#fbbf24',
+    midColor: '#d97706',
+    bottomColor: '#78350f',
+    radius: 2
+  });
+
+  if (clampedInt > 0.05) {
+    const flameH = 44 + clampedInt * 48;
+    const flicker = Math.sin(t * 11) * 4 + Math.cos(t * 17) * 2;
+    const nozzleY = baseY - 64;
+
+    if (perfMode !== 'smooth') {
+      const aura = ctx.createRadialGradient(x, nozzleY - flameH * 0.45, 4, x, nozzleY - flameH * 0.45, flameH * 1.15);
+      aura.addColorStop(0, `${flameColor}66`);
+      aura.addColorStop(0.45, `${flameColor}22`);
+      aura.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.arc(x, nozzleY - flameH * 0.45, flameH * 1.15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (perfMode === 'ultra') {
+      ctx.shadowColor = flameColor;
+      ctx.shadowBlur = 18;
+    }
+
+    const outerG = ctx.createLinearGradient(x, nozzleY, x, nozzleY - flameH);
+    outerG.addColorStop(0, flameColor);
+    outerG.addColorStop(0.55, flameColor);
+    outerG.addColorStop(1, 'rgba(255,255,255,0.05)');
+    ctx.fillStyle = outerG;
+    ctx.beginPath();
+    ctx.moveTo(x - 13, nozzleY);
+    ctx.quadraticCurveTo(x - 19, nozzleY - flameH * 0.55, x + flicker, nozzleY - flameH);
+    ctx.quadraticCurveTo(x + 19, nozzleY - flameH * 0.55, x + 13, nozzleY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Inner bright blue-white cone
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+    ctx.beginPath();
+    ctx.moveTo(x - 6, nozzleY);
+    ctx.quadraticCurveTo(x - 8, nozzleY - flameH * 0.28, x + flicker * 0.45, nozzleY - flameH * 0.48);
+    ctx.quadraticCurveTo(x + 8, nozzleY - flameH * 0.28, x + 6, nozzleY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Renders a crisp laser / optical ray beam with soft bloom halo matching perfMode.
+ */
+export function drawStudioOpticalBeam(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  color: string,
+  perfMode: PerformanceMode = 'balanced',
+  lineWidth = 2.4
+) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  if (perfMode !== 'smooth') {
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = perfMode === 'ultra' ? 0.28 : 0.18;
+    ctx.lineWidth = lineWidth * (perfMode === 'ultra' ? 4.2 : 2.8);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+
+  if (perfMode === 'ultra') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = Math.max(0.8, lineWidth * 0.35);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * Renders a metallic helical spring coil between (x, yStart) and (x, yEnd).
+ */
+export function drawStudioSpringCoil(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  yStart: number,
+  yEnd: number,
+  coils = 11,
+  halfWidth = 14,
+  dark = true
+) {
+  ctx.save();
+  const len = yEnd - yStart;
+  const lead = Math.min(14, Math.abs(len) * 0.1);
+  const bodyLen = len - lead * 2;
+  const step = bodyLen / (coils * 2);
+
+  // Dark under-stroke for depth
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = dark ? '#475569' : '#334155';
+  ctx.lineWidth = 4.2;
+  ctx.beginPath();
+  ctx.moveTo(x, yStart);
+  ctx.lineTo(x, yStart + lead);
+  for (let i = 0; i < coils * 2; i++) {
+    const cy = yStart + lead + (i + 0.5) * step;
+    const cx = x + (i % 2 === 0 ? halfWidth : -halfWidth);
+    ctx.lineTo(cx, cy);
+  }
+  ctx.lineTo(x, yEnd - lead);
+  ctx.lineTo(x, yEnd);
+  ctx.stroke();
+
+  // Metallic specular top highlight
+  ctx.strokeStyle = dark ? '#cbd5e1' : '#94a3b8';
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+  ctx.restore();
+}
+

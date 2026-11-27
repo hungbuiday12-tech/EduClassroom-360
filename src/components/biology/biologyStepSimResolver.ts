@@ -55,7 +55,8 @@ const BIO_2D_TO_3D: Record<BiologySimType, Biology3DMode> = {
   vertebrate_taxonomy_2d: 'comparative_hearts_3d',
   digestion_enzymes_2d: 'digestive_tract_3d',
   kingdoms_invertebrates_2d: 'invertebrate_biodiversity_3d',
-  human_skeleton_senses_2d: 'skeleton_senses_3d'
+  human_skeleton_senses_2d: 'skeleton_senses_3d',
+  biomolecules_2d: 'biomolecules_3d'
 };
 
 const KEYWORD_RULES: {
@@ -71,6 +72,7 @@ const KEYWORD_RULES: {
   { pattern: /lưỡng cư|bò sát|tim 2 ngăn|tim 3 ngăn|có xương sống|cá chép|chim bồ câu/i, sim2d: 'vertebrate_taxonomy_2d', sim3d: 'comparative_hearts_3d', label: 'Tiến Hóa Động Vật Có Xương Sống (Cá → Lưỡng cư → Bò sát → Chim → Thú)' },
   { pattern: /xương|cơ bắp|khớp động|hệ vận động|cận thị|viễn thị|thị giác|mắt người|thính giác|màng nhĩ|ốc tai/i, sim2d: 'human_skeleton_senses_2d', sim3d: 'skeleton_senses_3d', label: 'Hệ Vận Động (Xương–Khớp–Cơ) & Cơ Quan Thụ Cảm (Mắt – Tai)' },
   { pattern: /tiêu hóa|dạ dày|ruột non|nhung mao|amylase|pepsin|tuyến nước bọt/i, sim2d: 'digestion_enzymes_2d', sim3d: 'digestive_tract_3d', label: 'Hệ Tiêu Hóa Người, Enzym & Hấp Thụ Ruột Non' },
+  { pattern: /đại phân tử|nước.*liên kết hiđrô|carbohydrate|lipid|phospholipid|axit nucleic|bậc cấu trúc.*protein/i, sim2d: 'biomolecules_2d', sim3d: 'biomolecules_3d', label: 'Nước & 4 Đại phân tử Sinh học (Cacbohiđrat – Lipid – Protein – Nucleic Acid)' },
   { pattern: /thẩm thấu|ưu trương|nhược trương|màng sinh chất|vận chuyển/i, sim2d: 'membrane_osmosis_2d', sim3d: 'phospholipid_bilayer_3d', label: 'Màng Sinh chất & Cân bằng Thẩm thấu' },
   { pattern: /tế bào nhân thực|bào quan|golgi|lưới nội chất|tế bào thực vật/i, sim2d: 'cell_organelles_2d', sim3d: 'eukaryotic_cell_3d', label: 'Cấu trúc Tế bào Nhân thực & Bào quan' },
   { pattern: /virus|phage|sinh tan|tiềm tan|capsid/i, sim2d: 'viral_lytic_cycle_2d', sim3d: 'virus_bacteriophage_3d', label: 'Chu trình Nhân lên của Virus & Phage T4' },

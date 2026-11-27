@@ -72,20 +72,29 @@ export function buildBiologyLectureSteps(lesson: BiologyLesson): LectureStep[] {
       stepType: idx === 0 ? 'concept' : 'derivation',
       conceptSection: isSpecialized
         ? `${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}`
-        : `**Khái niệm cốt lõi & Đặc điểm cần nhớ:**\n${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}\n• **Liên hệ thực tế**: Hãy hình dung cấu tạo sinh học luôn gắn liền với chức năng sống của tế bào/cơ thể.`,
+        : `**Giải thích đơn giản, dễ hiểu (${lesson.grade}):**\n${sec.content}\n\n• **Ý chính cần nhớ**: ${lesson.subtitle}\n• **Liên hệ cơ thể & thiên nhiên**: Luôn gắn cấu tạo của sinh vật (tế bào, cơ quan, hệ sinh thái) với công việc hằng ngày mà nó đảm nhiệm.`,
       formulaSection: formula
         ? {
             primaryFormula: formula,
             secondaryFormulas: secondary,
-            variablesNote: `Áp dụng cho chủ đề "${lesson.title}" (${lesson.stageLabel || lesson.grade}).`
+            variablesNote: `Áp dụng trực tiếp cho "${lesson.title}" (${lesson.stageLabel || lesson.grade}).`
           }
         : undefined,
       deepDiveSection: isSpecialized
         ? `${sec.content}\n\n**Phương pháp học sâu Sinh học ${lesson.grade} (Chuyên/HSG)**:\n• Liên hệ trực tiếp cấu trúc phân tử/tế bào với chức năng sinh lí tương ứng.\n• Khi làm bài tập quy luật di truyền hoặc sinh thái, kiểm tra điều kiện áp dụng (độc lập/liên kết, ngẫu phối/tự thụ).`
-        : `**Hướng dẫn từng bước dễ hiểu (${lesson.grade}):**\n1. **Xác định đối tượng sinh học**: Bài đang xét ở cấp độ phân tử (DNA/mRNA), tế bào (nguyên/giảm phân), cơ thể hay quần thể.\n2. **Nhận diện quy luật**: Kiểm tra các từ khóa dấu hiệu (ví dụ tỉ lệ $3:1, 9:3:3:1$, chiều mạch khuôn $3'\\to 5'$, hay trạng thái ưu/nhược trương).\n3. **Quan sát mô phỏng**: Mở mô hình 2D/3D ngay bên dưới và nhấn các nút tương tác để thấy cơ chế vận hành sống động.`,
+        : `**Cách hiểu bài từng bước (${lesson.grade}):**\n1. **Nhìn đúng cấp độ**: Xác định xem bài đang nói về phân tử (DNA), tế bào (nhân, ti thể), cơ thể (tim, phổi, lá cây) hay quần thể.\n2. **Hiểu nhân – quả sinh học**: Hỏi "vì sao cơ quan này có hình dạng đó?" để nhớ chức năng tự nhiên mà không cần học vẹt.\n3. **Quan sát mô hình 2D/3D**: Bật mô phỏng ngay bên dưới để thấy chuyển động tế bào, mạch dẫn hay sơ đồ lai chạy từng bước.`,
+      stepByStepNotes: isSpecialized
+        ? undefined
+        : [
+            `Bước 1 (Đọc ý chính): "${sec.heading}" giải thích cấu tạo và hoạt động sống trong ${lesson.title}.`,
+            'Bước 2 (Ghi nhớ từ khóa): Nắm các đại lượng hoặc tỉ lệ quan trọng (nếu có) và điều kiện môi trường tác động.',
+            'Bước 3 (Xem 2D/3D trực tiếp): Nhấn nút điều khiển trên khung mô phỏng ngay bên dưới để tự tay kiểm chứng.'
+          ],
       teacherExplanation: sec.content,
       formulaHighlight: formula || undefined,
-      quickIntuition: `Đọc kĩ khái niệm ở trên rồi thử kích hoạt mô phỏng sinh học 2D/3D bên dưới để quan sát diễn biến theo thời gian thực.`,
+      quickIntuition: isSpecialized
+        ? `Đọc kĩ khái niệm ở trên rồi thử kích hoạt mô phỏng sinh học 2D/3D bên dưới để quan sát diễn biến theo thời gian thực.`
+        : `Đọc phần giải thích ngắn gọn ở trên rồi mở ngay mô phỏng 2D/3D bên dưới để nhìn trực tiếp sự sống vận hành thay vì phải tưởng tượng chay.`,
       workedExample:
         idx === lesson.theorySections.length - 1 && essay
           ? {
@@ -94,7 +103,9 @@ export function buildBiologyLectureSteps(lesson: BiologyLesson): LectureStep[] {
               answer: essay.finalAnswer
             }
           : undefined,
-      keyTakeaway: `Nắm chắc khái niệm, đặc điểm và quy luật sinh học trong mục "${sec.heading}".`,
+      keyTakeaway: isSpecialized
+        ? `Nắm chắc khái niệm, đặc điểm và quy luật sinh học trong mục "${sec.heading}".`
+        : `Chỉ cần nắm bản chất cơ chế của "${sec.heading}" và biết cách xem biểu hiện thực tế trên mô hình 2D/3D.`,
       miniQuiz: mcq
         ? [
             {
@@ -177,6 +188,16 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
   useEffect(() => {
     setSelectedStage('all');
   }, [selectedTrack, selectedGrade, selectedTier]);
+
+  useEffect(() => {
+    if (location.catalogGrade) {
+      setSelectedGrade(location.catalogGrade);
+      setSelectedStage('all');
+    }
+    if (location.catalogTrack) {
+      setSelectedTrack(location.catalogTrack);
+    }
+  }, [location.catalogGrade, location.catalogTrack]);
 
   const baseTrackLessons = useMemo(() => {
     return BIOLOGY_LESSONS.filter((l) => {
@@ -344,7 +365,7 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
                   <span>{isEn ? 'Back' : 'Quay lại'}</span>
                 </button>
                 <span className="font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider">
-                  Sinh Học 9 – 12 &amp; Bồi Dưỡng Chuyên
+                  Sinh Học 6 – 12 &amp; Bồi Dưỡng Chuyên
                 </span>
                 <span aria-hidden="true">·</span>
                 <span>{BIOLOGY_LESSONS.length} bài giảng chuẩn 2D/3D</span>
@@ -387,7 +408,7 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
                 <Layers className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
-                <span>Trang Mô Phỏng &amp; Sandbox Sinh Học Tách Riêng Theo {BIOLOGY_DOMAINS.length} Lĩnh Vực (Lớp 9 – 12)</span>
+                <span>Trang Mô Phỏng &amp; Sandbox Sinh Học Tách Riêng Theo {BIOLOGY_DOMAINS.length} Lĩnh Vực (Lớp 6 – 12)</span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {BIOLOGY_DOMAINS.map((d) => d.shortName).join(' · ')} — kèm Dịch mã Gen DNA/mRNA, Hardy–Weinberg &amp; Tế bào 3D
@@ -410,8 +431,8 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
               [
                 {
                   id: 'khong_chuyen' as CurriculumTrack,
-                  title: 'Khu GDPT 2018 (Lớp 9 – 12)',
-                  sub: `KHTN 9 & Sinh 10–12 chuẩn mới · ${BIOLOGY_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học`,
+                  title: 'Khu GDPT 2018 (Lớp 6 – 12)',
+                  sub: `KHTN 6–9 & Sinh 10–12 chuẩn mới · ${BIOLOGY_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học`,
                   accentHex: '#0284c7',
                   secondaryHex: '#38bdf8',
                   icon: Dna,
@@ -427,7 +448,7 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
                 {
                   id: 'gdpt_2006' as CurriculumTrack,
                   title: 'Khu GDPT 2006 (Không chuyên)',
-                  sub: `Sinh học 9–12 chuẩn SGK 2006 · ${BIOLOGY_LESSONS.filter((l) => l.track === 'gdpt_2006').length} bài kèm 2D & 3D`,
+                  sub: `Sinh học 6–12 chuẩn SGK 2006 · ${BIOLOGY_LESSONS.filter((l) => l.track === 'gdpt_2006').length} bài kèm 2D & 3D`,
                   accentHex: '#0d9488',
                   secondaryHex: '#10b981',
                   icon: BookOpen,
@@ -528,7 +549,7 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
             {isStandardTrack ? (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-xs font-semibold text-slate-500 mr-1">Khối lớp:</span>
-                {(['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((grade) => {
+                {(['all', 'Lớp 6', 'Lớp 7', 'Lớp 8', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((grade) => {
                   const count =
                     grade === 'all'
                       ? BIOLOGY_LESSONS.filter((l) => l.track === selectedTrack).length

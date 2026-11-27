@@ -57,7 +57,9 @@ export type Math3DMode =
   | 'circle_theorems_3d'
   | 'tangent_surface_3d'
   | 'probability_bell_3d'
-  | 'geometric_transform_3d';
+  | 'geometric_transform_3d'
+  | 'arithmetic_prism_3d'
+  | 'solid_prism_nets_3d';
 
 interface Math3DViewProps {
   initialMode?: Math3DMode;
@@ -146,6 +148,15 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
   // Geometric Transform 3D mode (Tịnh tiến · Phép quay · Vị tự trong không gian Oxyz)
   const [transType3D, setTransType3D] = useState<'translation' | 'rotation' | 'homothety'>('translation');
   const [transParam3D, setTransParam3D] = useState(1.5);
+
+  // Arithmetic Prism 3D mode (Khối ƯCLN / BCNN Lớp 6-7)
+  const [gcdA, setGcdA] = useState(6);
+  const [gcdB, setGcdB] = useState(4);
+  const [gcdC, setGcdC] = useState(4);
+
+  // Solid Prism & Pyramid Nets 3D mode (Hình hộp · Lăng trụ · Chóp đều & Khai triển Lớp 7-8)
+  const [solidKind, setSolidKind] = useState<'box' | 'prism' | 'pyramid'>('box');
+  const [unfoldRatio, setUnfoldRatio] = useState(0.25);
 
   // Animation & hardware cutaway state
   const [isAnimating, setIsAnimating] = useState(true);
@@ -2020,6 +2031,220 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
       };
     }
 
+    // -------------------------------------------------------------
+    // MODE 12: Arithmetic GCD/LCM Cube Packing 3D
+    // -------------------------------------------------------------
+    else if (mode === 'arithmetic_prism_3d') {
+      const gcd = (x: number, y: number): number => (y === 0 ? x : gcd(y, x % y));
+      const d = gcd(gcd(gcdA, gcdB), gcdC);
+      const scale = 0.52;
+      const nx = Math.max(1, Math.round(gcdA / d));
+      const ny = Math.max(1, Math.round(gcdC / d));
+      const nz = Math.max(1, Math.round(gcdB / d));
+      const cubeSide = d * scale;
+      const totalW = gcdA * scale;
+      const totalH = gcdC * scale;
+      const totalD = gcdB * scale;
+
+      const palette = [0x38bdf8, 0x6366f1, 0x10b981, 0xf59e0b, 0xec4899];
+      const cubeGeo = new THREE.BoxGeometry(cubeSide * 0.92, cubeSide * 0.92, cubeSide * 0.92);
+      const edgeGeo = new THREE.EdgesGeometry(cubeGeo);
+      const subGroup = new THREE.Group();
+
+      let idx = 0;
+      for (let ix = 0; ix < nx; ix++) {
+        for (let iy = 0; iy < ny; iy++) {
+          for (let iz = 0; iz < nz; iz++) {
+            const col = palette[(ix + iy + iz) % palette.length];
+            const cubeMat = new THREE.MeshPhysicalMaterial({
+              color: col,
+              roughness: 0.25,
+              metalness: 0.15,
+              transparent: true,
+              opacity: 0.85,
+              clearcoat: 0.45
+            });
+            const m = new THREE.Mesh(cubeGeo, cubeMat);
+            const px = -totalW / 2 + (ix + 0.5) * cubeSide;
+            const py = (iy + 0.5) * cubeSide;
+            const pz = -totalD / 2 + (iz + 0.5) * cubeSide;
+            m.position.set(px, py, pz);
+            m.userData.basePos = new THREE.Vector3(px, py, pz);
+            m.userData.expDir = new THREE.Vector3(
+              ix - (nx - 1) / 2,
+              iy - (ny - 1) / 2 + 0.3,
+              iz - (nz - 1) / 2
+            );
+            m.add(new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.45 })));
+            subGroup.add(m);
+            idx++;
+          }
+        }
+      }
+      group.add(subGroup);
+
+      // Bounding outer wireframe box
+      const outerBox = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(totalW, totalH, totalD)),
+        new THREE.LineBasicMaterial({ color: 0xfacc15 })
+      );
+      outerBox.position.set(0, totalH / 2, 0);
+      group.add(outerBox);
+
+      addLabel(`Khối ${gcdA} × ${gcdB} × ${gcdC}`, [0, totalH + 0.75, 0], 0xfde047, 0.3);
+      addLabel(`Xếp khít ${idx} khối cạnh ƯCLN = ${d}`, [0, -0.45, totalD / 2 + 0.6], 0x38bdf8, 0.26);
+
+      mathTickRef.current = (_dt, elapsed) => {
+        const exp = showCutaway ? cutawayOffset * 1.4 : 0.08 * (0.5 + 0.5 * Math.sin(elapsed * 1.4));
+        subGroup.children.forEach((c) => {
+          const base = c.userData.basePos as THREE.Vector3;
+          const dir = c.userData.expDir as THREE.Vector3;
+          if (base && dir) {
+            c.position.copy(base).addScaledVector(dir, exp);
+          }
+        });
+      };
+    }
+
+    // -------------------------------------------------------------
+    // MODE 13: Solid Prisms & Unfolding 3D Nets
+    // -------------------------------------------------------------
+    else if (mode === 'solid_prism_nets_3d') {
+      const sideMat = (col: number) =>
+        new THREE.MeshPhysicalMaterial({
+          color: col,
+          roughness: 0.28,
+          metalness: 0.12,
+          transparent: true,
+          opacity: 0.86,
+          side: THREE.DoubleSide
+        });
+
+      const foldTarget = 1 - unfoldRatio; // 1 = folded 3D, 0 = flat 2D net
+      const pivots: { group: THREE.Group; axis: 'x' | 'z'; maxAngle: number }[] = [];
+
+      if (solidKind === 'box') {
+        const W = 2.0;
+        const D = 1.6;
+        const H = 1.8;
+        const baseMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, D), sideMat(0x0ea5e9));
+        baseMesh.rotation.x = -Math.PI / 2;
+        baseMesh.position.y = 0.02;
+        group.add(baseMesh);
+
+        const makeFlap = (
+          px: number,
+          pz: number,
+          fw: number,
+          fh: number,
+          axis: 'x' | 'z',
+          maxAngle: number,
+          offsetX: number,
+          offsetZ: number,
+          col: number
+        ) => {
+          const piv = new THREE.Group();
+          piv.position.set(px, 0.02, pz);
+          const panel = new THREE.Mesh(new THREE.PlaneGeometry(fw, fh), sideMat(col));
+          panel.rotation.x = -Math.PI / 2;
+          panel.position.set(offsetX, 0, offsetZ);
+          panel.add(new THREE.LineSegments(new THREE.EdgesGeometry(panel.geometry), new THREE.LineBasicMaterial({ color: 0xf8fafc })));
+          piv.add(panel);
+          group.add(piv);
+          pivots.push({ group: piv, axis, maxAngle });
+          return piv;
+        };
+
+        makeFlap(0, D / 2, W, H, 'x', -Math.PI / 2, 0, H / 2, 0x38bdf8);
+        makeFlap(0, -D / 2, W, H, 'x', Math.PI / 2, 0, -H / 2, 0x38bdf8);
+        makeFlap(W / 2, 0, H, D, 'z', Math.PI / 2, H / 2, 0, 0x6366f1);
+        const leftFlap = makeFlap(-W / 2, 0, H, D, 'z', -Math.PI / 2, -H / 2, 0, 0x6366f1);
+
+        // Top lid attached to left flap
+        const lidPiv = new THREE.Group();
+        lidPiv.position.set(-H, 0, 0);
+        const lidMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, D), sideMat(0x10b981));
+        lidMesh.rotation.x = -Math.PI / 2;
+        lidMesh.position.set(-W / 2, 0, 0);
+        lidMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(lidMesh.geometry), new THREE.LineBasicMaterial({ color: 0xf8fafc })));
+        lidPiv.add(lidMesh);
+        leftFlap.add(lidPiv);
+        pivots.push({ group: lidPiv, axis: 'z', maxAngle: -Math.PI / 2 });
+
+        addLabel(`Hình Hộp Chữ Nhật (V = a·b·h)`, [0, 2.55, 0], 0x7dd3fc, 0.28);
+      } else if (solidKind === 'prism') {
+        const s = 2.0;
+        const hPrism = 2.2;
+        const rTri = s / Math.sqrt(3);
+        const prismGeo = new THREE.CylinderGeometry(rTri, rTri, hPrism, 3);
+        const prismMesh = new THREE.Mesh(prismGeo, sideMat(0x10b981));
+        prismMesh.position.y = hPrism / 2 + 0.02;
+        prismMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(prismGeo), new THREE.LineBasicMaterial({ color: 0xf8fafc })));
+        group.add(prismMesh);
+
+        // Unfolded lateral rectangle strip alongside when unfoldRatio > 0.05
+        const stripGroup = new THREE.Group();
+        for (let f = 0; f < 3; f++) {
+          const panel = new THREE.Mesh(new THREE.PlaneGeometry(s * 0.85, hPrism * 0.85), sideMat(f % 2 === 0 ? 0x38bdf8 : 0x6366f1));
+          panel.rotation.x = -Math.PI / 2;
+          panel.position.set(-s * 0.85 + f * s * 0.86, 0.03, 2.2);
+          panel.add(new THREE.LineSegments(new THREE.EdgesGeometry(panel.geometry), new THREE.LineBasicMaterial({ color: 0xfde047 })));
+          stripGroup.add(panel);
+        }
+        stripGroup.scale.setScalar(Math.max(0.001, unfoldRatio));
+        stripGroup.visible = unfoldRatio > 0.05;
+        group.add(stripGroup);
+        addLabel(`Lăng Trụ Đứng Tam Giác (S_xq = C·h)`, [0, hPrism + 0.75, 0], 0x6ee7b7, 0.28);
+      } else {
+        // Regular square pyramid with 4 unfolding triangular faces
+        const B = 2.2;
+        const slant = 2.4;
+        const baseMesh = new THREE.Mesh(new THREE.PlaneGeometry(B, B), sideMat(0xf59e0b));
+        baseMesh.rotation.x = -Math.PI / 2;
+        baseMesh.position.y = 0.02;
+        baseMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(baseMesh.geometry), new THREE.LineBasicMaterial({ color: 0xfef08a })));
+        group.add(baseMesh);
+
+        const foldAngle = Math.acos((B / 2) / slant); // angle from flat floor up to pyramid apex
+        const triShape = new THREE.Shape();
+        triShape.moveTo(-B / 2, 0);
+        triShape.lineTo(B / 2, 0);
+        triShape.lineTo(0, slant);
+        triShape.closePath();
+        const triGeo = new THREE.ShapeGeometry(triShape);
+
+        const facesCfg: { px: number; pz: number; rotY: number; axis: 'x' | 'z'; sign: number }[] = [
+          { px: 0, pz: B / 2, rotY: 0, axis: 'x', sign: -1 },
+          { px: 0, pz: -B / 2, rotY: Math.PI, axis: 'x', sign: 1 },
+          { px: B / 2, pz: 0, rotY: Math.PI / 2, axis: 'z', sign: 1 },
+          { px: -B / 2, pz: 0, rotY: -Math.PI / 2, axis: 'z', sign: -1 }
+        ];
+        facesCfg.forEach((fc) => {
+          const piv = new THREE.Group();
+          piv.position.set(fc.px, 0.02, fc.pz);
+          const fWrapper = new THREE.Group();
+          fWrapper.rotation.y = fc.rotY;
+          const tMesh = new THREE.Mesh(triGeo, sideMat(0xec4899));
+          tMesh.rotation.x = Math.PI / 2;
+          tMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(triGeo), new THREE.LineBasicMaterial({ color: 0xfdf2f8 })));
+          fWrapper.add(tMesh);
+          piv.add(fWrapper);
+          group.add(piv);
+          pivots.push({ group: piv, axis: fc.axis, maxAngle: fc.sign * (Math.PI - foldAngle) });
+        });
+        addLabel(`Hình Chóp Tứ Giác Đều & Khai Triển`, [0, 2.7, 0], 0xf9a8d4, 0.28);
+      }
+
+      let curFold = foldTarget;
+      mathTickRef.current = (dt) => {
+        curFold = THREE.MathUtils.damp(curFold, foldTarget, 7, dt);
+        pivots.forEach((pv) => {
+          if (pv.axis === 'x') pv.group.rotation.x = curFold * pv.maxAngle;
+          else pv.group.rotation.z = curFold * pv.maxAngle;
+        });
+      };
+    }
+
     const cont = mountRef.current;
     if (cont) {
       syncLine2Resolution(group, cont.clientWidth || 800, cont.clientHeight || 500);
@@ -2057,7 +2282,12 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
     bellMu,
     bellSigma,
     transType3D,
-    transParam3D
+    transParam3D,
+    gcdA,
+    gcdB,
+    gcdC,
+    solidKind,
+    unfoldRatio
   ]);
 
   // Derived math calculations for display
@@ -2121,6 +2351,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
               {mode === 'tangent_surface_3d' && 'Bề Mặt Đạo Hàm, Vector Pháp Tuyến & Tiếp Diện 3D'}
               {mode === 'probability_bell_3d' && 'Chuông Phân Phối Chuẩn & Xác Suất Gauss 3D'}
               {mode === 'geometric_transform_3d' && 'Phép Biến Hình & Tọa Độ Không Gian Oxyz 3D'}
+              {mode === 'arithmetic_prism_3d' && 'Khối Lập Phương ƯCLN / BCNN & Tỉ Số 3D'}
+              {mode === 'solid_prism_nets_3d' && 'Hình Hộp, Lăng Trụ & Khai Triển Hình Chóp 3D'}
             </span>
           </div>
 
@@ -2138,7 +2370,9 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
                 { id: 'conic_sections_3d' as Math3DMode, label: 'Mặt Nón Conic' },
                 { id: 'line_plane_oxyz' as Math3DMode, label: 'Đường & Mặt Oxyz' },
                 { id: 'integral_disks_3d' as Math3DMode, label: 'Đĩa Tích Phân' },
-                { id: 'geometric_transform_3d' as Math3DMode, label: 'Biến Hình 3D' }
+                { id: 'geometric_transform_3d' as Math3DMode, label: 'Biến Hình 3D' },
+                { id: 'arithmetic_prism_3d' as Math3DMode, label: 'Khối ƯCLN/BCNN' },
+                { id: 'solid_prism_nets_3d' as Math3DMode, label: 'Khai Triển Khối' }
               ]
                 .filter((m) => !allowedModes || allowedModes.length === 0 || allowedModes.includes(m.id))
                 .map((m) => (
@@ -2938,6 +3172,75 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
                       value={transParam3D}
                       onChange={(e) => setTransParam3D(Number(e.target.value))}
                       className="w-full accent-teal-400 h-1.5"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Controls for Arithmetic Prism 3D */}
+              {mode === 'arithmetic_prism_3d' && (
+                <div className="space-y-2 text-xs">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-300">Chiều dài a:</span>
+                        <span className="font-mono font-bold text-sky-400">{gcdA}</span>
+                      </div>
+                      <input type="range" min="2" max="12" step="1" value={gcdA} onChange={(e) => setGcdA(Number(e.target.value))} className="w-full accent-sky-400 h-1.5" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-300">Chiều rộng b:</span>
+                        <span className="font-mono font-bold text-emerald-400">{gcdB}</span>
+                      </div>
+                      <input type="range" min="2" max="10" step="1" value={gcdB} onChange={(e) => setGcdB(Number(e.target.value))} className="w-full accent-emerald-400 h-1.5" />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-300">Chiều cao c:</span>
+                        <span className="font-mono font-bold text-amber-400">{gcdC}</span>
+                      </div>
+                      <input type="range" min="2" max="10" step="1" value={gcdC} onChange={(e) => setGcdC(Number(e.target.value))} className="w-full accent-amber-400 h-1.5" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Controls for Solid Prism & Pyramid Nets 3D */}
+              {mode === 'solid_prism_nets_3d' && (
+                <div className="space-y-2.5 text-xs">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {([
+                      { id: 'box', label: 'Hình hộp CN' },
+                      { id: 'prism', label: 'Lăng trụ đứng' },
+                      { id: 'pyramid', label: 'Chóp tứ giác đều' }
+                    ] as const).map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setSolidKind(item.id)}
+                        className={`py-1.5 rounded-[3px] border text-[11px] font-bold transition-colors ${
+                          solidKind === item.id
+                            ? 'bg-sky-600 border-sky-400 text-white'
+                            : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-slate-300">Độ mở khai triển lưới 2D ↔ 3D:</span>
+                      <span className="font-mono font-bold text-amber-400">{Math.round(unfoldRatio * 100)}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.02"
+                      value={unfoldRatio}
+                      onChange={(e) => setUnfoldRatio(Number(e.target.value))}
+                      className="w-full accent-sky-400 h-1.5"
                     />
                   </div>
                 </div>

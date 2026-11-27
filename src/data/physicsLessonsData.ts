@@ -6,11 +6,13 @@ import { PHYSICS_GDPT_12_LESSONS } from './physicsGdpt2018Grade12';
 import { PHYSICS_GDPT_ELECTIVES } from './physicsGdpt2018Electives';
 import { PHYSICS_EXTRA_10_LESSONS } from './physicsExtra10Lessons';
 import { PHYSICS_GDPT_2006_LESSONS } from './physicsGdpt2006Lessons';
+import { PHYSICS_MIDDLE_SCHOOL_LESSONS } from './physicsMiddleSchoolLessons';
 
 export const PHYSICS_LESSONS: PhysicsLesson[] = [
   // ============================================================================
-  // KHU KHÔNG CHUYÊN — CHUẨN CHƯƠNG TRÌNH GDPT 2018 (KHTN 9 & VẬT LÍ 10–12)
+  // KHU KHÔNG CHUYÊN — CHUẨN CHƯƠNG TRÌNH GDPT 2018 & 2006 (LỚP 6–12)
   // ============================================================================
+  ...PHYSICS_MIDDLE_SCHOOL_LESSONS,
 
   // ---------- LỚP 9 (KHTN 9 — ĐẦY ĐỦ 17 BÀI CHƯƠNG I–XIV + CẦU NỐI LÝ 10) ----------
   ...PHYSICS_GDPT_9_LESSONS,

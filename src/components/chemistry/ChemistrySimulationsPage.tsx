@@ -189,7 +189,7 @@ export const ChemistrySimulationsPage: React.FC<{ onBack?: () => void }> = ({ on
                 <span>{isEn ? 'Back' : 'Quay lại'}</span>
               </button>
               <span className="px-2 py-0.5 rounded-sm bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold">
-                Khu Tách Riêng · Hóa học (Lớp 9 – 12)
+                Khu Tách Riêng · Hóa học (Lớp 6 – 12)
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">

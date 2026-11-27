@@ -26,7 +26,7 @@ import { FreeformOpticsRayLab } from './FreeformOpticsRayLab';
 import { ChladniPlateLab } from './ChladniPlateLab';
 import { FormattedText } from '../common/MathRenderer';
 
-type GradeFilter = 'all' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+type GradeFilter = 'all' | 'Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
 type DimFilter = 'all' | '2d' | '3d';
 
 const DomainPhysicsAnimation: React.FC<{ domainId: PhysicsDomainId }> = ({ domainId }) => {
@@ -329,7 +329,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
                 <span>{isEn ? 'Back' : 'Quay lại'}</span>
               </button>
               <span className="font-mono font-bold text-blue-700 dark:text-sky-400 uppercase tracking-wider">
-                {isEn ? 'SYNAPSE INTERACTIVE PHYSICS LABS · GRADES 9–12' : 'PHÒNG THÍ NGHIỆM VẬT LÍ TÁCH RIÊNG · LỚP 9–12'}
+                {isEn ? 'SYNAPSE INTERACTIVE PHYSICS LABS · GRADES 6–12' : 'PHÒNG THÍ NGHIỆM VẬT LÍ TÁCH RIÊNG · LỚP 6–12'}
               </span>
             </div>
 
@@ -388,7 +388,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
               <Sliders className="w-3.5 h-3.5" />
               {isEn ? 'Grade:' : 'Khối lớp:'}
             </span>
-            {(['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as GradeFilter[]).map((g) => {
+            {(['all', 'Lớp 6', 'Lớp 7', 'Lớp 8', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as GradeFilter[]).map((g) => {
               const active = gradeFilter === g;
               return (
                 <button
@@ -402,7 +402,7 @@ export const PhysicsDomainsPage: React.FC<{ onBack?: () => void }> = ({ onBack }
                   }`}
                 >
                   {active && <span className="sim-led-square mr-1.5 text-cyan-300 align-middle" />}
-                  {g === 'all' ? (isEn ? 'All Grades' : 'Tất cả (9–12)') : g}
+                  {g === 'all' ? (isEn ? 'All Grades' : 'Tất cả (6–12)') : g}
                 </button>
               );
             })}

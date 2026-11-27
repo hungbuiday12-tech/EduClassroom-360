@@ -166,8 +166,8 @@ export const AppDownloadGuideSection: React.FC<AppDownloadGuideSectionProps> = (
                 </div>
                 <p className="text-[11px] text-slate-300 leading-snug">
                   {isEn
-                    ? 'Pre-caches 2D/3D engines, formulas, and lessons locally.'
-                    : 'Lưu sẵn lõi WebGL 3D, công thức và toàn bộ bài giảng lớp 9–12.'}
+                    ? 'Pre-caches 2D/3D engines, formulas, and Grade 6–12 lessons locally.'
+                    : 'Lưu sẵn lõi WebGL 3D, công thức và toàn bộ bài giảng lớp 6–12.'}
                 </p>
               </div>
               <div className="rounded-lg bg-slate-900 border border-slate-800 p-3 space-y-1">

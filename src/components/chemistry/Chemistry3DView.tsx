@@ -55,6 +55,7 @@ import {
   syncLine2Resolution,
   updateBillboardLabels
 } from '../../lib/three3DEnhancements';
+import { buildMiddleSchool3DChemScene } from './chemistry3DMiddleSchoolScenes';
 
 interface Chemistry3DViewProps {
   mode: Chemistry3DMode;
@@ -1814,6 +1815,23 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
             gpuPool.spawn((Math.random() - 0.5) * 1.4, 1.6, (Math.random() - 0.5) * 1.4, 0, -1.9, 0, 1.0, 1.0, 0x38bdf8);
           }
         };
+        break;
+      }
+
+      case 'matter_states_3d':
+      case 'separation_lab_3d':
+      case 'ionic_covalent_3d':
+      case 'indicator_bench_3d': {
+        onLiveUpdate = buildMiddleSchool3DChemScene({
+          mode,
+          root,
+          accentPoint,
+          gpuPool,
+          dynamicSpinners,
+          registerPart,
+          addLabel,
+          glassMat
+        });
         break;
       }
 

@@ -1,5 +1,13 @@
 import { BiologySimType } from '../../types';
 import { PerformanceMode } from '../../context/BackgroundContext';
+import { renderMiddleSchool2DBioSim } from './biology2DMiddleSchoolRenderer';
+import {
+  drawPixelSprite,
+  getPlantRoleplaySprite,
+  getTerrariumCarnivoreSpec,
+  getTerrariumHerbivoreSpec,
+  getTrophicTierSprite
+} from './pixelSpriteEngine';
 
 export interface BioSimTelemetry {
   metrics: { label: string; value: number | string; unit?: string }[];
@@ -878,7 +886,8 @@ export function renderBiology2DSim(
       const openPct = soil < 25 ? 12 : Math.min(100, Math.round(soil * 0.9));
       const rate = round(((100 - hum) / 80) * (1 + wind * 0.12) * (openPct / 100) * 12.5, 1);
 
-      // Guard cells & stomatal pore + rising xylem blue particles
+      // Ambient botanical glow + Guard cells & stomatal pore + pixel plant companion
+      drawBioGlow(ctx, cx, cy, 110, 'rgba(16,185,129,0.28)', 'rgba(56,189,248,0.08)', perfMode);
       ctx.strokeStyle = '#10b981';
       ctx.lineWidth = 10;
       const gap = 4 + (openPct / 100) * 20;
@@ -889,11 +898,18 @@ export function renderBiology2DSim(
       ctx.arc(cx + gap, cy, 44, Math.PI * 0.6, Math.PI * 1.4);
       ctx.stroke();
 
-      for (let i = 0; i < 8; i++) {
+      // Crisp pixel potted plant on left showing wilting vs turgid state
+      const plantSpec = getPlantRoleplaySprite('bean', 3, { water: soil, pollinated: false });
+      drawPixelSprite(ctx, `transp_bean_${soil < 25 ? 'dry' : 'wet'}`, plantSpec, w * 0.18, cy + 52, 4.4, {
+        anchorBottom: true
+      });
+
+      for (let i = 0; i < 10; i++) {
         const wy = cy + 60 - ((t * (18 + rate * 4) + i * 24) % 130);
-        ctx.fillStyle = '#38bdf8';
+        const alpha = Math.max(0.2, (wy - (cy - 70)) / 130);
+        ctx.fillStyle = `rgba(56, 189, 248, ${alpha.toFixed(2)})`;
         ctx.beginPath();
-        ctx.arc(cx + Math.sin(t * 2 + i) * 6, wy, 3.5, 0, Math.PI * 2);
+        ctx.arc(cx + Math.sin(t * 2 + i) * 7, wy, 3.8, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.fillStyle = fg;
@@ -915,23 +931,43 @@ export function renderBiology2DSim(
       const intact = Math.round(params.intactTip ?? 1) === 1;
       const bend = intact ? (angle * (auxin / 100)) * 0.75 : 0;
 
-      // Sun beam icon
+      // Sun corona & volumetric sun beam
       const rad = (angle * Math.PI) / 180;
       const sunX = cx + Math.sin(rad) * 140;
       const sunY = cy - Math.cos(rad) * 110;
-      ctx.fillStyle = '#fbbf24';
+      drawBioGlow(ctx, sunX, sunY, 64, 'rgba(253,224,71,0.55)', 'rgba(251,191,36,0.1)', perfMode);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const beamG = ctx.createLinearGradient(sunX, sunY, cx, cy + 75);
+      beamG.addColorStop(0, 'rgba(254, 240, 138, 0.25)');
+      beamG.addColorStop(1, 'rgba(254, 240, 138, 0)');
+      ctx.fillStyle = beamG;
+      ctx.beginPath();
+      ctx.moveTo(sunX - 16, sunY);
+      ctx.lineTo(sunX + 16, sunY);
+      ctx.lineTo(cx + 54, cy + 80);
+      ctx.lineTo(cx - 54, cy + 80);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = '#fde047';
       ctx.beginPath();
       ctx.arc(sunX, sunY, 16, 0, Math.PI * 2);
       ctx.fill();
 
-      // Coleoptile stem curving toward light
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 14;
-      ctx.lineCap = 'round';
+      // Smooth terracotta soil pot
+      ctx.fillStyle = '#9a3412';
       ctx.beginPath();
-      ctx.moveTo(cx, cy + 75);
-      ctx.quadraticCurveTo(cx, cy, cx + bend * 1.4, cy - 68);
-      ctx.stroke();
+      ctx.roundRect(cx - 34, cy + 56, 68, 28, 6);
+      ctx.fill();
+
+      // Crisp pixel plant leaning toward light source
+      const sproutSpec = getPlantRoleplaySprite('bean', intact ? 2 : 1, { water: 80, pollinated: false });
+      drawPixelSprite(ctx, `tropism_plant_${intact ? 'tip' : 'cut'}`, sproutSpec, cx, cy + 60, 6.2, {
+        anchorBottom: true,
+        rotationRad: (bend * Math.PI) / 180
+      });
 
       ctx.fillStyle = fg;
       ctx.font = 'bold 12px sans-serif';
@@ -1333,10 +1369,16 @@ export function renderBiology2DSim(
       ctx.stroke();
 
       const markerIdx = Math.floor((t * 16) % 160);
-      ctx.fillStyle = '#10b981';
-      ctx.beginPath();
-      ctx.arc(padL + (markerIdx / 159) * plotW, padB - (preyPts[markerIdx] / maxPop) * plotH, 5, 0, Math.PI * 2);
-      ctx.fill();
+      const animF = Math.floor(t * 5) % 2;
+      const mxPrey = padL + (markerIdx / 159) * plotW;
+      const myPrey = padB - (preyPts[markerIdx] / maxPop) * plotH;
+      const mxPred = padL + (markerIdx / 159) * plotW;
+      const myPred = padB - (predPts[markerIdx] / maxPop) * plotH;
+
+      drawBioGlow(ctx, mxPrey, myPrey, 24, 'rgba(16,185,129,0.55)', 'rgba(16,185,129,0)', perfMode);
+      drawBioGlow(ctx, mxPred, myPred, 24, 'rgba(249,115,22,0.55)', 'rgba(249,115,22,0)', perfMode);
+      drawPixelSprite(ctx, `lv_prey_${animF}`, getTerrariumHerbivoreSpec('rainforest', animF), mxPrey, myPrey, 1.5);
+      drawPixelSprite(ctx, `lv_pred_${animF}`, getTerrariumCarnivoreSpec('rainforest', animF), mxPred, myPred, 1.5);
 
       ctx.fillStyle = fg;
       ctx.font = 'bold 12px sans-serif';
@@ -1410,17 +1452,35 @@ export function renderBiology2DSim(
       const levels = Math.max(3, Math.min(5, Math.round(params.levels ?? 4)));
       const labels = ['Bậc 1: Sinh vật sản xuất', 'Bậc 2: Động vật ăn cỏ', 'Bậc 3: Thú ăn thịt 1', 'Bậc 4: Thú ăn thịt 2', 'Bậc 5: Đỉnh chuỗi'];
       const cols = ['#10b981', '#0ea5e9', '#6366f1', '#f59e0b', '#ef4444'];
+      const animF = Math.floor(t * 4) % 2;
 
+      drawBioGlow(ctx, cx, cy, Math.max(w, h) * 0.45, 'rgba(16,185,129,0.16)', 'rgba(245,158,11,0.05)', perfMode);
       for (let i = 0; i < levels; i++) {
-        const bw = (w - 140) * Math.pow(0.68, i);
+        const bw = (w - 130) * Math.pow(0.7, i);
         const bh = (h - 90) / levels;
         const y = h - 38 - (i + 1) * bh;
         const eVal = round(kcal * Math.pow(eff / 100, i), 1);
-        ctx.fillStyle = cols[i];
-        ctx.fillRect(cx - bw / 2, y + 3, bw, bh - 6);
+        const barG = ctx.createLinearGradient(cx - bw / 2, y, cx + bw / 2, y + bh);
+        barG.addColorStop(0, cols[i]);
+        barG.addColorStop(1, `${cols[i]}bb`);
+        ctx.fillStyle = barG;
+        ctx.beginPath();
+        ctx.roundRect(cx - bw / 2, y + 3, bw, bh - 6, 6);
+        ctx.fill();
+
+        const spriteLv = Math.min(3, i);
+        drawPixelSprite(
+          ctx,
+          `pyr2d_${spriteLv}_${animF}`,
+          getTrophicTierSprite(spriteLv, animF),
+          cx - bw / 2 + 22,
+          y + bh * 0.5,
+          Math.max(1.2, Math.min(2.0, (bh - 12) / 16))
+        );
+
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 11px sans-serif';
-        ctx.fillText(`${labels[i]} (${eVal} kcal)`, cx - bw / 2 + 10, y + bh * 0.56);
+        ctx.fillText(`${labels[i]} (${eVal} kcal)`, cx - bw / 2 + 42, y + bh * 0.56);
       }
       ctx.fillStyle = fg;
       ctx.font = 'bold 12px sans-serif';
@@ -1770,10 +1830,7 @@ export function renderBiology2DSim(
     }
 
     default: {
-      return {
-        metrics: [{ label: 'Sim ID', value: simType }],
-        statusNote: 'Chế độ mô phỏng Sinh học 2D sẵn sàng.'
-      };
+      return renderMiddleSchool2DBioSim(ctx, w, h, simType, params, t, dark, perfMode);
     }
   }
 }

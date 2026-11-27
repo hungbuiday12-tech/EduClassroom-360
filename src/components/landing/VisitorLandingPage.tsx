@@ -399,7 +399,7 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     },
     math: {
       label: isEn ? 'Math 2D & 3D' : 'Toán 2D & 3D',
-      badge: isEn ? `${mathCount} Grades 9–12 topics` : `${mathCount} chuyên đề 9–12`,
+      badge: isEn ? `${mathCount} Grades 6–12 topics` : `${mathCount} chuyên đề 6–12`,
       headline: isEn
         ? 'Oxy Analytic Grapher, Circle Geometry & 11 Oxyz 3D Scenes'
         : 'Đồ thị Oxy, Đường tròn Tương tác & 11 mô hình Oxyz 3D',
@@ -422,19 +422,19 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
     physics: {
       label: isEn ? 'Physics 2D & 3D' : 'Vật Lí 2D & 3D',
       badge: isEn
-        ? `${phyCounts.domainCount} Domains · ${physicsCount} lessons (Grades 9–12)`
-        : `${phyCounts.domainCount} Lĩnh vực tách riêng · ${physicsCount} bài 9–12`,
+        ? `${phyCounts.domainCount} Domains · ${physicsCount} lessons (Grades 6–12)`
+        : `${phyCounts.domainCount} Lĩnh vực tách riêng · ${physicsCount} bài 6–12`,
       headline: isEn
-        ? `${phyCounts.domainCount} Dedicated Physics Domains (2D & Standardized 3D) + THPT/Olympiad Lectures`
+        ? `${phyCounts.domainCount} Dedicated Physics Domains (2D & Standardized 3D) + THCS/THPT/Olympiad`
         : `Mô Phỏng Vật Lí 2D/3D Tách Riêng ${phyCounts.domainCount} Chuyên Đề (Chuẩn Hóa Bệ Pháo 3D)`,
       summary: isEn
-        ? `Separate pages for Mechanics, Waves/Oscillations, Electricity/Magnetism, Optics/Quantum & Thermal/Nuclear with precision 3D projectile cannon alignment, drag-and-drop 36-tool lab bench, and clear THPT/Specialized lessons.`
-        : `Tách riêng ${phyCounts.domainCount} chuyên đề (Cơ học, Sóng & Dao động, Điện & Điện từ, Quang & Lượng tử, Nhiệt & Hạt nhân) kèm bệ pháo ném xiên 3D đồng bộ chuẩn tâm nòng, bộ 36 dụng cụ đo kéo thả & bài giảng THPT/Chuyên.`,
+        ? `Separate pages for Mechanics, Waves/Oscillations, Electricity/Magnetism, Optics/Quantum & Thermal/Nuclear with precision 3D projectile cannon alignment, drag-and-drop 36-tool lab bench, and clear Grades 6–12 lessons.`
+        : `Tách riêng ${phyCounts.domainCount} chuyên đề (Cơ học, Sóng & Dao động, Điện & Điện từ, Quang & Lượng tử, Nhiệt & Hạt nhân) kèm bệ pháo ném xiên 3D đồng bộ chuẩn tâm nòng, bộ 36 dụng cụ đo kéo thả & bài giảng Lớp 6–12 / Chuyên.`,
       highlights: isEn
         ? [
             `${phyCounts.count2D} 2D Labs & ${phyCounts.count3D} 3D Models across ${phyCounts.domainCount} domains`,
             'Drag-and-drop Ammeter, Voltmeter, Oscilloscope, Ruler & 32 more tools',
-            'Calibrated 3D Cannon ballistics + adaptive Grade 9–12 & Olympiad notes',
+            'Calibrated 3D Cannon ballistics + adaptive Grade 6–12 & Olympiad notes',
           ]
         : [
             `${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D chia thành ${phyCounts.domainCount} lĩnh vực riêng`,
@@ -452,8 +452,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         ? 'Dedicated Chemistry Zone: Titration, Stoichiometry, Organic & VSEPR 3D'
         : 'Khu Vực Hóa Học Riêng: Chuẩn Độ, Cân Bằng PTHH, Hữu Cơ & VSEPR 3D',
       summary: isEn
-        ? `Full Grades 9–12 GDPT 2006, 2018 & Olympiad lectures paired with ${CHEMISTRY_2D_SIMS.length} 2D interactive canvases, ${CHEMISTRY_3D_SIMS.length} 3D VSEPR/crystal labs, 4 standalone Chemistry Sandboxes, and 350 Chemistry exams.`
-        : `Trọn bộ ${chemistryCount} bài giảng GDPT 2006, 2018 & Chuyên HSG cùng ${CHEMISTRY_2D_SIMS.length} thí nghiệm 2D, ${CHEMISTRY_3D_SIMS.length} mô hình VSEPR/Tinh thể 3D, 4 Sandbox tách riêng (Pha chế, Cân bằng PTHH, Hữu cơ, Điện phân) và 350 đề thi Hóa.`,
+        ? `Full Grades 6–12 GDPT 2006, 2018 & Olympiad lectures paired with ${CHEMISTRY_2D_SIMS.length} 2D interactive canvases, ${CHEMISTRY_3D_SIMS.length} 3D VSEPR/crystal labs, 4 standalone Chemistry Sandboxes, and 350 Chemistry exams.`
+        : `Trọn bộ ${chemistryCount} bài giảng Lớp 6–12 (GDPT 2006, 2018 & Chuyên HSG) cùng ${CHEMISTRY_2D_SIMS.length} thí nghiệm 2D, ${CHEMISTRY_3D_SIMS.length} mô hình VSEPR/Tinh thể 3D, 4 Sandbox tách riêng và 350 đề thi Hóa.`,
       highlights: isEn
         ? [
             `${chemistryCount} lessons + Syn Chem AI (Ctrl+H) & 350 Chem exams`,
@@ -476,8 +476,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
         ? 'Dedicated Biology Zone: Cell Atlas, DNA/CRISPR 3D & Mendel Genetics Sandbox'
         : 'Khu Vực Sinh Học Riêng: Atlas Tế Bào, ADN/CRISPR 3D & Sandbox Di Truyền',
       summary: isEn
-        ? `Complete Grades 9–12 GDPT 2006, 2018 & Olympiad lectures paired with ${BIOLOGY_2D_SIMS.length} 2D labs, ${BIOLOGY_3D_SIMS.length} 3D cellular/DNA scenes, 4 standalone Biology Sandboxes, and 350 Biology exams.`
-        : `Đủ ${biologyCount} bài giảng GDPT 2006, 2018 & Chuyên HSG cùng ${BIOLOGY_2D_SIMS.length} mô phỏng 2D, ${BIOLOGY_3D_SIMS.length} mô hình Tế bào/ADN 3D, 4 Sandbox tách riêng (Lai Menđen, Giải mã mARN, Kính hiển vi, Hệ sinh thái) và 350 đề Sinh.`,
+        ? `Complete Grades 6–12 GDPT 2006, 2018 & Olympiad lectures paired with ${BIOLOGY_2D_SIMS.length} 2D labs, ${BIOLOGY_3D_SIMS.length} 3D cellular/DNA scenes, 4 standalone Biology Sandboxes, and 350 Biology exams.`
+        : `Đủ ${biologyCount} bài giảng Lớp 6–12 (GDPT 2006, 2018 & Chuyên HSG) cùng ${BIOLOGY_2D_SIMS.length} mô phỏng 2D, ${BIOLOGY_3D_SIMS.length} mô hình Tế bào/ADN 3D, 4 Sandbox tách riêng và 350 đề Sinh.`,
       highlights: isEn
         ? [
             `${biologyCount} lessons + Syn Bio AI (Ctrl+B) & 350 Biology exams`,
@@ -882,8 +882,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
               <Star className="w-3.5 h-3.5 shrink-0 text-amber-500 dark:text-amber-300 fill-amber-400" />
               <span className="truncate sm:whitespace-normal">
                 {isEn
-                  ? 'Interactive Visual Learning Ecosystem Grades 9–12 & Olympiad'
-                  : 'Hệ Sinh Thái Học Tập Trực Quan 9–12 & Chuyên Quốc Gia'}
+                  ? 'Interactive Visual Learning Ecosystem Grades 6–12 · Math–Physics–CS Core'
+                  : 'Hệ Sinh Thái Liên Thông Lớp 6–12 · Mũi Nhọn Toán – Lý – Tin'}
               </span>
             </div>
 
@@ -901,8 +901,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">
               {isEn ? (
                 <>
-                  Complete Grades 9–12 &amp; Olympiad STEM workspace featuring{' '}
-                  <strong className="font-semibold text-slate-900 dark:text-white">Free Base Classroom ({totalLessons} lessons across 5 subjects · {totalExams} exams · Chemistry &amp; Biology 2D/3D + Sandboxes · Sublime 4 Code Trace 1-1 · 5 Subject AI Tutors)</strong>{' '}
+                  Complete Grades 6–12 THCS/THPT &amp; Olympiad STEM workspace (Math–Physics–CS spearhead) featuring{' '}
+                  <strong className="font-semibold text-slate-900 dark:text-white">Free Base Classroom ({totalLessons} lessons across Math, Physics, Chem, Bio 6–12 &amp; standalone CS · {totalExams} exams · 2D/3D Labs &amp; Sandboxes · Sublime 4 Code Trace 1-1)</strong>{' '}
                   and{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Synapse Pre ({preTotal} 3D/4D Studios split by subject · Dedicated Syn AI Pro &amp; 3B1B Video · Voice OS · Shared Syn Meet 3D)</strong>, plus{' '}
                   <strong className="font-semibold text-slate-900 dark:text-white">Holo Atlas 58-part 3D &amp; WebAR Desk Pro</strong>.
@@ -3007,8 +3007,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? `Interactive Grade 9–12 labs split into ${phyCounts.domainCount} clean domains: Mechanics, Waves, Electricity/RLC, Optics/Quantum & Thermal/Nuclear, plus drag-and-drop lab apparatus and clear THPT/Specialized lessons.`
-                      : `Tổng hợp thí nghiệm Lớp 9–12 tương tác tách riêng ${phyCounts.domainCount} lĩnh vực: Cơ học, Dao động & Sóng, Điện từ & RLC, Quang & Lượng tử, Nhiệt & Hạt nhân kèm dụng cụ kéo thả.`}
+                      ? `Interactive Grade 6–12 labs split into ${phyCounts.domainCount} clean domains: Mechanics, Waves, Electricity/RLC, Optics/Quantum & Thermal/Nuclear, plus drag-and-drop lab apparatus and clear THCS/THPT/Specialized lessons.`
+                      : `Tổng hợp thí nghiệm Lớp 6–12 tương tác tách riêng ${phyCounts.domainCount} lĩnh vực: Cơ học, Dao động & Sóng, Điện từ & RLC, Quang & Lượng tử, Nhiệt & Hạt nhân kèm dụng cụ kéo thả.`}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
@@ -3068,8 +3068,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Plot functions & shade definite integrals; explore 2D Circle geometry, Conics, tangent cones, and 8 rotatable Oxyz 3D models alongside 5-step Grade 9–12 lessons.'
-                      : 'Vẽ đồ thị đa thức, mũ-logarit, tô diện tích tích phân; tương tác đường tròn 2D (tiếp tuyến, phương tích) & 8 mô hình Oxyz 3D xoay tự do kèm bài giảng 5 bước.'}
+                      ? 'Plot functions & shade definite integrals; explore 2D Circle geometry, Conics, tangent cones, and 8 rotatable Oxyz 3D models alongside 5-step Grade 6–12 lessons.'
+                      : 'Vẽ đồ thị đa thức, mũ-logarit, tô diện tích tích phân; tương tác đường tròn 2D (tiếp tuyến, phương tích) & 8 mô hình Oxyz 3D xoay tự do kèm bài giảng 5 bước lớp 6–12.'}
                   </p>
                   <ul className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
                     <li className="flex items-center gap-1.5">
@@ -3442,8 +3442,8 @@ export const VisitorLandingPage: React.FC<VisitorLandingPageProps> = ({
                   </h4>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                     {isEn
-                      ? 'Smart Knowledge Map & adaptive weekly planner for Grades 9–12, daily MCQ & AI-graded Essay Arena rankings, plus the collaborative STEM Study Forum.'
-                      : 'Bản đồ tri thức thông minh tự chẩn đoán lỗ hổng kiến thức & xếp lịch tuần, thi Đấu Trường Tuần (Trắc nghiệm & Tự luận AI chấm) lên BXH trực tuyến, và Diễn đàn hỏi đáp 24/7.'}
+                      ? 'Smart Knowledge Map & adaptive weekly planner for Grades 6–12, daily MCQ & AI-graded Essay Arena rankings, plus the collaborative STEM Study Forum.'
+                      : 'Bản đồ tri thức thông minh lớp 6–12 tự chẩn đoán lỗ hổng kiến thức & xếp lịch tuần, thi Đấu Trường Tuần (Trắc nghiệm & Tự luận AI chấm) lên BXH trực tuyến, và Diễn đàn hỏi đáp 24/7.'}
                   </p>
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     <button

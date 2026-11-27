@@ -51,6 +51,7 @@ import {
   syncLine2Resolution,
   updateBillboardLabels
 } from '../../lib/three3DEnhancements';
+import { buildMiddleSchool3DBioScene } from './biology3DMiddleSchoolScenes';
 
 interface Biology3DViewProps {
   mode: Biology3DMode;
@@ -1641,6 +1642,24 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
           if (p2) p2.home.x = cross ? 0.42 : 0.75;
           if (cross) chiasma.scale.setScalar(1 + Math.sin(t * 4) * 0.12);
         };
+        break;
+      }
+
+      case 'plant_flower_seed_3d':
+      case 'comparative_hearts_3d':
+      case 'digestive_tract_3d': {
+        const res = buildMiddleSchool3DBioScene({
+          mode,
+          parts,
+          pulsers,
+          gpuPool,
+          bioAccentLight,
+          register,
+          addLabel,
+          shellMat
+        });
+        onLiveUpdate = res.onLiveUpdate;
+        customEmit = res.customEmit;
         break;
       }
 

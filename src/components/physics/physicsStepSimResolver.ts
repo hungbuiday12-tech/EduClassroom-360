@@ -1437,6 +1437,23 @@ function resolveByStepContent(
   const has = (kw: string, inTitleFirst = false) =>
     inTitleFirst ? titleNorm.includes(kw) : fullNorm.includes(kw);
 
+  // 0. Middle School Grade 6-8 Labs
+  if (has('binh chia do', true) || has('gioi han do', true) || has('do chia nho nhat', true) || has('luc ke', true) || has('nhiet ke', true) || (has('do chieu dai', true) || has('do the tich', true) || has('do khoi luong', true))) {
+    return { simId: 'measurement_tools_2d', reason: 'Dụng cụ đo thực hành: Thước, Bình chia độ, Lực kế & Nhiệt kế' };
+  }
+  if (has('no vi nhiet', true) || has('bang kep', true) || has('nhiet giai', true)) {
+    return { simId: 'thermal_expansion_2d', reason: 'Sự nở vì nhiệt của Rắn – Lỏng – Khí & Băng kép' };
+  }
+  if (has('guong phang', true) || has('phan xa anh sang', true) || has('anh ao qua guong', true) || has('tia toi', true)) {
+    return { simId: 'plane_mirror_2d', reason: 'Phản xạ ánh sáng trên gương phẳng (i\' = i) & Ảnh ảo đối xứng' };
+  }
+  if (has('may co don gian', true) || has('rong roc dong', true) || (has('don bay', true) && has('rong roc'))) {
+    return { simId: 'simple_machines_2d', reason: 'Máy cơ đơn giản: Đòn bẩy, Ròng rọc động & Mặt phẳng nghiêng' };
+  }
+  if (has('binh thong nhau', true) || has('may ep thuy luc', true) || has('ap suat khi quyen', true) || has('ap suat chat ran', true) || (has('ap suat', true) && !has('archimedes', true) && !has('khi li tuong', true))) {
+    return { simId: 'fluid_pressure_2d', reason: 'Áp suất p = F/S, p = d·h & Máy ép thủy lực Pascal' };
+  }
+
   // 1. Specific Mechanics & Measurements
   if (has('van toc trung binh', true) || has('chia chang', true) || has('tinh vtb')) {
     return { simId: 'average_velocity_stages', reason: 'Mô phỏng chia chặng tính vận tốc trung bình v_tb' };
@@ -1657,6 +1674,9 @@ function resolveByStepContent(
   }
   if (has('tan sac', true) || has('lang kinh', true)) {
     return { simId: 'prism_dispersion', reason: 'Tán sắc ánh sáng qua lăng kính' };
+  }
+  if (has('guong phang', true)) {
+    return { simId: 'plane_mirror_2d', reason: 'Phản xạ ánh sáng & ảnh ảo gương phẳng' };
   }
   if (has('guong', true)) {
     return { simId: 'spherical_mirror', reason: 'Tạo ảnh qua gương cầu' };

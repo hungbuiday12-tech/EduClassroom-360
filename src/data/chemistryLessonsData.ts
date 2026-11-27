@@ -6,6 +6,7 @@ import { CHEMISTRY_GDPT_2006_EXTRA_LESSONS } from './chemistryGdpt2006ExtraLesso
 import { CHEMISTRY_CHUYEN_LESSONS } from './chemistryChuyenLessons';
 import { CHEMISTRY_CHUYEN_EXTRA_LESSONS } from './chemistryChuyenExtraLessons';
 import { CHEMISTRY_SYLLABUS_MODULES } from './chemistrySyllabusModules';
+import { CHEMISTRY_MIDDLE_SCHOOL_LESSONS } from './chemistryMiddleSchoolLessons';
 
 interface ChemSupplementarySpec {
   id: string;
@@ -223,6 +224,7 @@ const BUILT_SUPPLEMENTARY: ChemistryLesson[] = CHEM_SUPPLEMENTARY_SPECS.map((s) 
 );
 
 export const CHEMISTRY_LESSONS: ChemistryLesson[] = [
+  ...CHEMISTRY_MIDDLE_SCHOOL_LESSONS,
   ...CHEMISTRY_GDPT_2018_LESSONS,
   ...CHEMISTRY_GDPT_2018_EXTRA_LESSONS,
   ...CHEMISTRY_GDPT_2006_LESSONS,

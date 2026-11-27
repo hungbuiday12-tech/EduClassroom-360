@@ -10,6 +10,7 @@ import { MATH_GDPT_12_LESSONS } from './mathGdpt2018Grade12';
 import { MATH_GDPT_ELECTIVES } from './mathGdpt2018Electives';
 import { MATH_EXTRA_10_LESSONS } from './mathExtra10Lessons';
 import { MATH_GDPT_2006_LESSONS } from './mathGdpt2006Lessons';
+import { MATH_MIDDLE_SCHOOL_LESSONS } from './mathMiddleSchoolLessons';
 export { PHYSICS_LESSONS } from './physicsLessonsData';
 export { CS_LESSONS } from './csLessonsData';
 
@@ -837,6 +838,7 @@ const withMathSupplement = (lec: MathLecture): MathLecture => {
 };
 
 export const MATH_LECTURES: MathLecture[] = [
+  ...MATH_MIDDLE_SCHOOL_LESSONS,
   ...BASE_MATH_LECTURES.map(withMathSupplement).sort(
     (a, b) => (a.lessonNumber ?? 99) - (b.lessonNumber ?? 99)
   ),

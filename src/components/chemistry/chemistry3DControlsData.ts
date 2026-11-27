@@ -801,5 +801,133 @@ export const CHEMISTRY_3D_CONFIGS: Record<Chemistry3DMode, Chem3DModeConfig> = {
         probeParams: { tempC: p.tempC ?? 25, conc: 0.4, ph }
       };
     }
+  ),
+
+  matter_states_3d: makeDefaultModeConfig(
+    'matter_states_3d',
+    'Ba Thể Rắn – Lỏng – Khí & Chuyển Thể 3D',
+    'Thay đổi nhiệt độ để xem các phân tử rung trong mạng rắn (dưới 0°C), trượt lỏng (0–100°C) hoặc bay tự do khi hóa hơi.',
+    '\\text{Rắn } (\\Delta E \\uparrow) \\xrightarrow{\\text{Nóng chảy}} \\text{Lỏng } (\\Delta E \\uparrow) \\xrightarrow{\\text{Bay hơi}} \\text{Khí}',
+    [
+      { key: 'tempC', label: 'Nhiệt độ bình chất', unit: '°C', min: -25, max: 140, step: 5, defaultVal: 25, accentClass: 'accent-amber-500' },
+      { key: 'pressureAtm', label: 'Áp suất nén', unit: 'bar', min: 1, max: 4, step: 0.5, defaultVal: 1, accentClass: 'accent-sky-500' }
+    ],
+    [
+      { label: 'Thể rắn (−15°C)', description: 'Xếp khít trật tự, chỉ dao động tại chỗ', params: { tempC: -15, pressureAtm: 1 }, flags: { showAirMix: false } },
+      { label: 'Thể lỏng (30°C)', description: 'Trượt tự do trong phần đáy bình', params: { tempC: 30, pressureAtm: 1 }, flags: { showAirMix: false } },
+      { label: 'Thể khí (125°C)', description: 'Chuyển động nhiệt hỗn loạn chiếm cả bình', params: { tempC: 125, pressureAtm: 1 }, flags: { showAirMix: false } }
+    ],
+    [
+      { id: 'air_mix', label: 'Hiển thị thành phần Không khí (78% N₂ / 21% O₂)', kind: 'toggle', flagKey: 'showAirMix', accent: 'sky' },
+      { id: 'reset_exp', label: 'Về 25°C (Thể lỏng)', kind: 'reset', accent: 'rose' }
+    ],
+    { showAirMix: false },
+    (p, f) => {
+      const t = p.tempC ?? 25;
+      const stateLabel = f.showAirMix
+        ? 'Không khí: 78% N₂ (lam) + 21% O₂ (đỏ duy trì cháy) + 1% CO₂/khí hiếm'
+        : t < 0
+        ? `Thể Rắn (${t}°C): Lực liên kết mạnh giữ nguyên hình dạng`
+        : t < 100
+        ? `Thể Lỏng (${t}°C): Các hạt trượt lên nhau theo hình dạng bình`
+        : `Thể Khí (${t}°C): Các hạt bay tán loạn mọi hướng, dễ nén`;
+      return {
+        equationText: stateLabel,
+        statusNote: 'Đun nóng cung cấp thêm năng lượng giúp các hạt thắng lực hút để chuyển từ Rắn → Lỏng → Khí.',
+        probeParams: { tempC: t, conc: 0.5 }
+      };
+    }
+  ),
+
+  separation_lab_3d: makeDefaultModeConfig(
+    'separation_lab_3d',
+    'Bàn Thí Nghiệm Tách Chất 3D (Lọc – Cô Cạn – Chiết – Nam Châm)',
+    'Chọn dụng cụ tách chất phù hợp với từng loại hỗn hợp: phễu giấy lọc cát, bát sứ cô cạn muối, phễu chiết dầu–nước.',
+    '\\text{Rắn không tan (Lọc)} \\mid \\text{Rắn tan (Cô cạn)} \\mid \\text{2 lỏng tách lớp (Chiết)}',
+    [
+      { key: 'methodId', label: 'Dụng cụ (1:Lọc 2:Cô cạn 3:Chiết 4:Nam châm)', unit: '', min: 1, max: 4, step: 1, defaultVal: 1, accentClass: 'accent-emerald-500' },
+      { key: 'tempC', label: 'Cường độ nhiệt / Hút từ', unit: '°C', min: 25, max: 120, step: 5, defaultVal: 60, accentClass: 'accent-amber-500' }
+    ],
+    [
+      { label: 'Phễu lọc (Cát + Nước)', description: 'Cát giữ lại trên giấy lọc, nước chảy qua', params: { methodId: 1, tempC: 25 }, flags: { running: true } },
+      { label: 'Cô cạn (Nước muối)', description: 'Đun bay hơi nước thu muối kết tinh', params: { methodId: 2, tempC: 105 }, flags: { running: true } },
+      { label: 'Phễu chiết (Dầu + Nước)', description: 'Mở khóa van xả lớp nước dưới ra trước', params: { methodId: 3, tempC: 25 }, flags: { running: true } },
+      { label: 'Nam châm hút Fe khỏi S', description: 'Tách bột sắt có từ tính khỏi lưu huỳnh', params: { methodId: 4, tempC: 25 }, flags: { running: true } }
+    ],
+    [
+      { id: 'run_sep', label: 'Bật/Tạm dừng quá trình tách', kind: 'toggle', flagKey: 'running', accent: 'emerald' },
+      { id: 'reset_exp', label: 'Đặt lại hỗn hợp ban đầu', kind: 'reset', accent: 'rose' }
+    ],
+    { running: true },
+    (p) => {
+      const m = Math.round(p.methodId ?? 1);
+      const names = ['Lọc qua giấy lọc (Cát + Nước)', 'Cô cạn bằng đèn cồn (Muối + Nước)', 'Chiết bằng phễu chiết (Dầu ăn + Nước)', 'Nam châm hút sắt (Bột Fe + Bột S)'];
+      return {
+        equationText: `Phương pháp ${m}: ${names[m - 1] ?? names[0]}`,
+        statusNote: 'Muốn tách chất chính xác cần dựa vào sự khác nhau về tính chất vật lí (tính tan, nhiệt độ sôi, khối lượng riêng, từ tính).',
+        probeParams: { tempC: p.tempC ?? 60, conc: 0.5 }
+      };
+    }
+  ),
+
+  ionic_covalent_3d: makeDefaultModeConfig(
+    'ionic_covalent_3d',
+    'Liên Kết Ion (Cho–Nhận NaCl) & Cộng Hóa Trị (Góp Chung H₂O) 3D',
+    'Quan sát electron lớp ngoài cùng chuyển từ kim loại sang phi kim (Ion) hoặc quay quanh cả hai hạt nhân (Cộng hóa trị).',
+    '\\text{Na} + \\text{Cl} \\to \\text{Na}^+\\text{Cl}^- \\quad|\\quad 2\\text{H} + \\text{O} \\to \\text{H}_2\\text{O}',
+    [
+      { key: 'bondType', label: 'Loại LK (1:Ion NaCl / 2:CHT H₂O)', unit: '', min: 1, max: 2, step: 1, defaultVal: 1, accentClass: 'accent-sky-500' },
+      { key: 'shellZ', label: 'Tốc độ quỹ đạo e', unit: '×', min: 0.5, max: 2.0, step: 0.25, defaultVal: 1.0, accentClass: 'accent-amber-500' }
+    ],
+    [
+      { label: 'Liên kết Ion (NaCl)', description: 'Na nhường 1e cho Cl trở thành Na⁺ hút Cl⁻', params: { bondType: 1, shellZ: 1.0 }, flags: { bonded: true } },
+      { label: 'Liên kết Cộng hóa trị (H₂O)', description: 'Oxy và 2 Hydro góp chung 2 cặp electron', params: { bondType: 2, shellZ: 1.0 }, flags: { bonded: true } }
+    ],
+    [
+      { id: 'bond_toggle', label: 'Kích hoạt / Tách nguyên tử', kind: 'toggle', flagKey: 'bonded', accent: 'sky' },
+      { id: 'reset_exp', label: 'Đặt lại trạng thái ban đầu', kind: 'reset', accent: 'rose' }
+    ],
+    { bonded: true },
+    (p, f) => {
+      const isIon = Math.round(p.bondType ?? 1) === 1;
+      return {
+        equationText: isIon
+          ? (f.bonded ? 'Ion Na⁺ (10e) hút tĩnh điện Ion Cl⁻ (18e) → Tinh thể NaCl bền vững' : 'Nguyên tử Na (2-8-1) và Cl (2-8-7) chuẩn bị cho–nhận 1e')
+          : (f.bonded ? 'Oxy (6e ngoài) góp chung với 2 Hydro → đủ 8e bền vững (H₂O)' : 'Nguyên tử O và 2 H ở trạng thái tách rời'),
+        statusNote: 'Kim loại nhường e tạo ion dương, phi kim nhận e tạo ion âm (LK Ion); hai phi kim góp chung cặp e (LK Cộng hóa trị).',
+        probeParams: { tempC: 25, conc: 0.5 }
+      };
+    }
+  ),
+
+  indicator_bench_3d: makeDefaultModeConfig(
+    'indicator_bench_3d',
+    'Giá Ống Nghiệm Acid – Base – Thang pH 0–14 & Thử Quỳ Tím 3D',
+    'Điều chỉnh pH dung dịch để quan sát giấy quỳ tím đổi màu Đỏ/Xanh, phenolphthalein hóa Hồng và bọt khí H₂ khi thả kẽm vào Acid.',
+    '\\text{pH} < 7 \\text{ (Acid: Quỳ đỏ)} \\mid \\text{pH} = 7 \\text{ (Trung tính)} \\mid \\text{pH} > 7 \\text{ (Base: Quỳ xanh)}',
+    [
+      { key: 'ph', label: 'Độ pH dung dịch', unit: 'pH', min: 1.0, max: 13.5, step: 0.5, defaultVal: 2.0, accentClass: 'accent-rose-500' },
+      { key: 'tempC', label: 'Nhiệt độ dung dịch', unit: '°C', min: 20, max: 70, step: 5, defaultVal: 25, accentClass: 'accent-amber-500' }
+    ],
+    [
+      { label: 'Acid HCl (pH = 1.5 · Quỳ ĐỎ)', description: 'Thả viên Zn sủi bọt khí H₂ mạnh', params: { ph: 1.5, tempC: 25 }, flags: { addZn: true } },
+      { label: 'Nước cất (pH = 7.0 · Trung tính)', description: 'Giấy quỳ giữ màu tím, không khí thoát ra', params: { ph: 7.0, tempC: 25 }, flags: { addZn: false } },
+      { label: 'Kiềm NaOH (pH = 12.5 · Quỳ XANH)', description: 'Giấy quỳ hóa xanh thẫm, chỉ thị chuyển hồng', params: { ph: 12.5, tempC: 25 }, flags: { addZn: false } }
+    ],
+    [
+      { id: 'zn_drop', label: 'Thả viên Kẽm Zn vào cốc', kind: 'toggle', flagKey: 'addZn', accent: 'amber' },
+      { id: 'reset_exp', label: 'Rửa cốc về Acid chuẩn', kind: 'reset', accent: 'rose' }
+    ],
+    { addZn: true },
+    (p, f) => {
+      const ph = p.ph ?? 2.0;
+      const kind = ph < 6.5 ? 'Acid (Quỳ hóa ĐỎ)' : ph > 7.5 ? 'Base / Kiềm (Quỳ hóa XANH · Phenolphthalein HỒNG)' : 'Trung tính (Quỳ TÍM)';
+      const gas = ph < 5.5 && f.addZn ? ' · Đang sủi khí H₂↑ (Zn + 2H⁺)' : '';
+      return {
+        equationText: `pH = ${ph.toFixed(1)} → ${kind}${gas}`,
+        statusNote: 'Thang pH chạy từ 0 đến 14: càng nhỏ hơn 7 tính Acid càng mạnh; càng lớn hơn 7 tính Kiềm càng mạnh.',
+        probeParams: { tempC: p.tempC ?? 25, conc: 0.5, ph }
+      };
+    }
   )
 };

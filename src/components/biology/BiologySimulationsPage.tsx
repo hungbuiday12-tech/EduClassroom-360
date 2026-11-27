@@ -187,7 +187,7 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
                 <span>{isEn ? 'Back' : 'Quay lại'}</span>
               </button>
               <span className="px-2 py-0.5 rounded-sm bg-teal-500/15 text-teal-700 dark:text-teal-300 font-bold">
-                Khu Tách Riêng · Sinh học (Lớp 9 – 12)
+                Khu Tách Riêng · Sinh học (Lớp 6 – 12)
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">

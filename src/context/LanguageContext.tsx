@@ -46,8 +46,8 @@ export const TRANSLATIONS: Record<string, { vi: string; en: string }> = {
     en: `Advanced academic platform featuring real-time 2D/3D interactive simulations, live Online Judge, and ${TOTAL_EXAMS} official national exam papers.`,
   },
   'brand.tagline': {
-    vi: 'Vũ trụ học tập mô phỏng Toán - Lí - Tin THCS & THPT',
-    en: 'Interactive STEM Learning Galaxy for Grades 9-12',
+    vi: 'Hệ Sinh Thái Học Tập STEM Liên Thông Lớp 6–12 · Mũi Nhọn Toán – Lý – Tin',
+    en: 'Connected STEM Learning Ecosystem (Grades 6–12) · Math, Physics & CS Focus',
   },
 
   // Common actions & buttons
@@ -79,8 +79,11 @@ export const TRANSLATIONS: Record<string, { vi: string; en: string }> = {
   'btn.import': { vi: 'Nhập file', en: 'Import' },
   'btn.save': { vi: 'Lưu thay đổi', en: 'Save Changes' },
 
-  // Grades (Lớp 9, 10, 11, 12)
-  'grade.all': { vi: 'Tất cả các lớp (9-12)', en: 'All Grades (9-12)' },
+  // Grades (Lớp 6 -> 12)
+  'grade.all': { vi: 'Tất cả các lớp (6–12)', en: 'All Grades (6–12)' },
+  'grade.6': { vi: 'Lớp 6 (THCS)', en: 'Grade 6 (Middle School)' },
+  'grade.7': { vi: 'Lớp 7 (THCS)', en: 'Grade 7 (Middle School)' },
+  'grade.8': { vi: 'Lớp 8 (THCS)', en: 'Grade 8 (Middle School)' },
   'grade.9': { vi: 'Lớp 9 (THCS)', en: 'Grade 9 (Junior High)' },
   'grade.10': { vi: 'Lớp 10 (THPT)', en: 'Grade 10 (High School)' },
   'grade.11': { vi: 'Lớp 11 (THPT)', en: 'Grade 11 (High School)' },
@@ -117,19 +120,19 @@ export const TRANSLATIONS: Record<string, { vi: string; en: string }> = {
   // Math Tabs & Features
   'math.title': { vi: 'Toán Học Tương Tác 360°', en: 'Interactive Mathematics 360°' },
   'math.desc': {
-    vi: 'Khảo sát đồ thị hàm số 2D, phòng thực hành vẽ hình học phẳng, mô phỏng không gian Oxyz 3D và kho bài giảng Lớp 9 - 12',
-    en: '2D function graphing, dynamic Euclidean geometry studio, 3D Oxyz spatial simulation, and comprehensive curriculum for Grades 9-12',
+    vi: 'Khảo sát đồ thị hàm số 2D, phòng thực hành vẽ hình học phẳng, mô phỏng không gian Oxyz 3D và kho bài giảng Lớp 6 – 12',
+    en: '2D function graphing, dynamic Euclidean geometry studio, 3D Oxyz spatial simulation, and comprehensive curriculum for Grades 6–12',
   },
   'math.tab.grapher': { vi: 'Đồ thị hàm số 2D', en: '2D Function Grapher' },
   'math.tab.geometry': { vi: 'Vẽ hình học phẳng', en: 'Plane Geometry Studio' },
   'math.tab.3d': { vi: 'Không gian Oxyz 3D', en: '3D Spatial Geometry' },
-  'math.tab.lectures': { vi: 'Bài giảng & Trắc nghiệm (Lớp 9-12)', en: 'Lectures & Quizzes (Grades 9-12)' },
+  'math.tab.lectures': { vi: 'Bài giảng & Trắc nghiệm (Lớp 6–12)', en: 'Lectures & Quizzes (Grades 6–12)' },
 
   // Physics Tabs & Features
   'physics.title': { vi: 'Phòng Thí Nghiệm Vật Lí 2D & 3D', en: 'Physics Laboratory 2D & 3D' },
   'physics.desc': {
-    vi: 'Mô phỏng chuyển động cơ học, điện từ học, quang hình và dao động sóng từ Lớp 9 đến Lớp 12',
-    en: 'Simulating Newtonian mechanics, electromagnetism, optics, and wave oscillations for Grades 9 through 12',
+    vi: 'Mô phỏng chuyển động cơ học, điện từ học, quang hình và dao động sóng liên thông từ Lớp 6 đến Lớp 12',
+    en: 'Simulating Newtonian mechanics, electromagnetism, optics, and wave oscillations for Grades 6 through 12',
   },
 
   // CS Tabs & Features

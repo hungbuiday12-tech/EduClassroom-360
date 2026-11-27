@@ -714,5 +714,98 @@ export const BIOLOGY_3D_CONFIGS: Record<Biology3DMode, Bio3DModeConfig> = {
       statusNote: 'Nhấn trực tiếp vào bất kì bào quan nào trong cảnh 3D để xem tên và vai trò sinh học của bào quan đó.',
       metricsSummary: `Type=${f.plantMode ? 'Plant' : 'Animal'}, Act=${p.activity ?? 70}%`
     })
+  ),
+
+  plant_flower_seed_3d: makeBioCfg(
+    'plant_flower_seed_3d',
+    'Hoa Lưỡng Tính, Thụ Tinh & Tạo Quả – Hạt 3D',
+    'Khám phá Đài, Tràng, Nhị (bao phấn), Nhụy (bầu chứa noãn) và quá trình hạt phấn rơi xuống đầu nhụy tạo quả.',
+    '\\text{Hạt phấn} \\xrightarrow{\\text{Thụ phấn}} \\text{Đầu nhụy} \\to \\text{Thụ tinh Noãn} \\implies \\text{Quả & Hạt}',
+    [
+      { key: 'pollinationPct', label: 'Tiến trình Thụ phấn → Tạo quả', unit: '%', min: 0, max: 100, step: 10, defaultVal: 45, accentClass: 'accent-amber-500' },
+      { key: 'moisture', label: 'Độ ẩm & Ánh sáng', unit: '%', min: 20, max: 100, step: 10, defaultVal: 75, accentClass: 'accent-emerald-500' }
+    ],
+    [
+      { label: 'Hoa nở thu hút côn trùng', description: 'Bao phấn bung hạt phấn vàng bay sang đầu nhụy', params: { pollinationPct: 30, moisture: 75 }, flags: { fertilized: false } },
+      { label: 'Sau thụ tinh (Bầu thành Quả)', description: 'Cánh hoa rụng bớt, bầu nhụy phình to thành quả chứa hạt', params: { pollinationPct: 95, moisture: 80 }, flags: { fertilized: true } }
+    ],
+    [
+      { id: 'fert_toggle', label: 'Hoàn tất Thụ tinh tạo Quả', kind: 'toggle', flagKey: 'fertilized', accent: 'emerald' },
+      { id: 'reset_bio', label: 'Về giai đoạn Hoa nở', kind: 'reset', accent: 'rose' }
+    ],
+    { fertilized: false },
+    (p, f) => ({
+      equationText: f.fertilized || (p.pollinationPct ?? 45) >= 80
+        ? 'Sau thụ tinh: Bầu nhụy phát triển thành QUẢ, Noãn phát triển thành HẠT!'
+        : `Đang thụ phấn (${p.pollinationPct ?? 45}%): Hạt phấn bám đầu nhụy nảy ống phấn xuống noãn`,
+      statusNote: 'Hoa có cả nhị (tạo hạt phấn) và nhụy (chứa noãn) gọi là hoa lưỡng tính (như hoa bưởi, hoa phượng, hoa đậu).',
+      metricsSummary: `Poll=${p.pollinationPct ?? 45}%, Fert=${Boolean(f.fertilized)}`
+    })
+  ),
+
+  comparative_hearts_3d: makeBioCfg(
+    'comparative_hearts_3d',
+    'Tiến Hóa Tim Động Vật Có Xương Sống (2 → 3 → 4 Ngăn) 3D',
+    'Đặt cạnh nhau để đối chiếu cấu tạo và nhịp đập của Tim Cá (2 ngăn), Tim Ếch (3 ngăn) và Tim Chim/Thú (4 ngăn).',
+    '\\text{Cá (2 ngăn, biến nhiệt)} \\to \\text{Lưỡng cư/Bò sát (3 ngăn)} \\to \\text{Chim & Thú (4 ngăn, hằng nhiệt)}',
+    [
+      { key: 'animalStage', label: 'Nhóm chọn nổi bật (1:Cá 2:Ếch 3:Thú)', unit: '', min: 1, max: 3, step: 1, defaultVal: 3, accentClass: 'accent-rose-500' },
+      { key: 'heartRate', label: 'Nhịp tim sinh học', unit: 'bpm', min: 40, max: 140, step: 10, defaultVal: 75, accentClass: 'accent-emerald-500' }
+    ],
+    [
+      { label: '1. Tim Cá (2 ngăn)', description: '1 tâm nhĩ + 1 tâm thất, 1 vòng tuần hoàn', params: { animalStage: 1, heartRate: 55 }, flags: { showAllThree: true } },
+      { label: '2. Tim Ếch (3 ngăn)', description: '2 tâm nhĩ + 1 tâm thất chung (máu pha)', params: { animalStage: 2, heartRate: 65 }, flags: { showAllThree: true } },
+      { label: '3. Tim Chim & Thú (4 ngăn)', description: 'Vách ngăn hoàn chỉnh, tách riêng máu giàu O₂ và nghèo O₂', params: { animalStage: 3, heartRate: 80 }, flags: { showAllThree: true } }
+    ],
+    [
+      { id: 'compare_toggle', label: 'Hiện cả 3 tim đối chiếu', kind: 'toggle', flagKey: 'showAllThree', accent: 'sky' },
+      { id: 'reset_bio', label: 'Về chế độ Tim 4 ngăn', kind: 'reset', accent: 'rose' }
+    ],
+    { showAllThree: true },
+    (p) => {
+      const s = Math.round(p.animalStage ?? 3);
+      const label = s === 1 ? 'Cá: Tim 2 ngăn (1 nhĩ + 1 thất) · Máu đi nuôi cơ thể là máu đỏ tươi qua mang'
+        : s === 2 ? 'Lưỡng cư (Ếch): Tim 3 ngăn (2 nhĩ + 1 thất) · Máu pha trộn ở tâm thất'
+        : 'Chim & Thú: Tim 4 ngăn (2 nhĩ + 2 thất) · Máu không pha trộn → Hằng nhiệt!';
+      return {
+        equationText: label,
+        statusNote: 'Sự xuất hiện vách ngăn tâm thất hoàn chỉnh giúp Chim và Thú cung cấp O₂ hiệu quả cao để giữ thân nhiệt ổn định.',
+        metricsSummary: `Stage=${s}, HR=${p.heartRate ?? 75}bpm`
+      };
+    }
+  ),
+
+  digestive_tract_3d: makeBioCfg(
+    'digestive_tract_3d',
+    'Ống Tiêu Hóa Người (Miệng – Thực Quản – Dạ Dày – Ruột Non) 3D',
+    'Quan sát viên thức ăn đi qua khoang miệng (Amylase), dạ dày co bóp tiết Pepsin/HCl và hấp thụ qua lông ruột non.',
+    '\\text{Miệng (Amylase)} \\to \\text{Dạ dày (Pepsin + HCl)} \\to \\text{Ruột non (Hấp thụ máu)}',
+    [
+      { key: 'bolusPos', label: 'Vị trí viên thức ăn (1→3)', unit: '', min: 1, max: 3, step: 0.1, defaultVal: 2.0, accentClass: 'accent-amber-500' },
+      { key: 'enzymeAct', label: 'Hoạt độ Enzym tiêu hóa', unit: '%', min: 20, max: 100, step: 10, defaultVal: 80, accentClass: 'accent-emerald-500' }
+    ],
+    [
+      { label: 'Chặng 1: Thực quản xuống Dạ dày', description: 'Nhu động thực quản đẩy thức ăn đã trộn Amylase xuống dạ dày', params: { bolusPos: 1.2, enzymeAct: 85 }, flags: { peristalsis: true } },
+      { label: 'Chặng 2: Dạ dày (pH ≈ 2)', description: 'Dạ dày co bóp mạnh, Pepsin phân cắt Protein', params: { bolusPos: 2.0, enzymeAct: 90 }, flags: { peristalsis: true } },
+      { label: 'Chặng 3: Ruột non (Vi nhung mao)', description: 'Chất dinh dưỡng ngấm qua thành ruột non vào mạch máu', params: { bolusPos: 2.9, enzymeAct: 95 }, flags: { peristalsis: true } }
+    ],
+    [
+      { id: 'peri_toggle', label: 'Bật/Tạm dừng nhu động co bóp', kind: 'toggle', flagKey: 'peristalsis', accent: 'emerald' },
+      { id: 'reset_bio', label: 'Đưa thức ăn về đầu ống', kind: 'reset', accent: 'rose' }
+    ],
+    { peristalsis: true },
+    (p) => {
+      const pos = p.bolusPos ?? 2.0;
+      const stage = pos < 1.6
+        ? 'Thực quản → Đang đưa tinh bột đã cắt dở bởi Amylase xuống dạ dày'
+        : pos < 2.4
+        ? 'Dạ dày (pH ≈ 2): Acid HCl diệt khuẩn & Enzym Pepsin phân cắt Protein'
+        : 'Ruột non (dài 5–6 m): Enzym tụy + dịch mật tiêu hóa hoàn tất & hấp thụ qua lông ruột';
+      return {
+        equationText: stage,
+        statusNote: 'Ruột non có diện tích hấp thụ cực lớn nhờ nếp gấp niêm mạc, lông ruột và vi nhung mao dày đặc.',
+        metricsSummary: `Zone=${pos.toFixed(1)}, Enz=${p.enzymeAct ?? 80}%`
+      };
+    }
   )
 };

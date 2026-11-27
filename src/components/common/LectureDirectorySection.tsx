@@ -21,7 +21,17 @@ import {
 } from 'lucide-react';
 
 export type DirectorySubjectFilter = 'all' | 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
-export type DirectoryTrackFilter = 'all' | 'khong_chuyen' | 'chuyen';
+export type DirectoryTrackFilter = 'all' | 'khong_chuyen' | 'gdpt_2006' | 'chuyen';
+export type DirectoryGradeFilter =
+  | 'all'
+  | 'Lớp 6'
+  | 'Lớp 7'
+  | 'Lớp 8'
+  | 'Lớp 9'
+  | 'Lớp 10'
+  | 'Lớp 11'
+  | 'Lớp 12'
+  | 'cs_separate';
 
 export interface LectureDirectoryTarget {
   subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
@@ -34,14 +44,24 @@ interface UnifiedLectureItem {
   indexNumber: number;
   title: string;
   metaLine: string;
-  track: 'khong_chuyen' | 'chuyen';
+  gradeKey: string;
+  track: 'khong_chuyen' | 'gdpt_2006' | 'chuyen';
   searchText: string;
 }
+
+const normalizeGradeKey = (rawGrade?: string, fallback?: string): string => {
+  const txt = `${rawGrade || ''} ${fallback || ''}`;
+  for (const g of ['Lớp 6', 'Lớp 7', 'Lớp 8', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12']) {
+    if (txt.includes(g)) return g;
+  }
+  return 'Chuyên / Khác';
+};
 
 interface LectureDirectorySectionProps {
   id: string;
   subjectFilter: DirectorySubjectFilter;
   onSubjectFilterChange: (subject: DirectorySubjectFilter) => void;
+  gradeFilterRequest?: DirectoryGradeFilter;
   onSelectLecture: (target: LectureDirectoryTarget) => void;
   onSelectCsTrack?: (trackId: CSTrackId) => void;
   actionHintVi?: string;
@@ -52,6 +72,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
   id,
   subjectFilter,
   onSubjectFilterChange,
+  gradeFilterRequest,
   onSelectLecture,
   onSelectCsTrack,
   actionHintVi,
@@ -60,15 +81,28 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
   const { language } = useLanguage();
   const isEn = language === 'en';
   const [trackFilter, setTrackFilter] = useState<DirectoryTrackFilter>('all');
+  const [gradeFilter, setGradeFilter] = useState<DirectoryGradeFilter>('all');
   const [query, setQuery] = useState('');
+
+  React.useEffect(() => {
+    if (gradeFilterRequest) {
+      setGradeFilter(gradeFilterRequest);
+    }
+  }, [gradeFilterRequest]);
 
   const allItems = useMemo<UnifiedLectureItem[]>(() => {
     const mathItems: UnifiedLectureItem[] = MATH_LECTURES.map((l, idx) => {
-      const isChuyen = l.track === 'chuyen' || l.gradeGroup === 'Chuyên Toán';
+      const tr: UnifiedLectureItem['track'] =
+        l.track === 'chuyen' || l.gradeGroup === 'Chuyên Toán'
+          ? 'chuyen'
+          : l.track === 'gdpt_2006'
+            ? 'gdpt_2006'
+            : 'khong_chuyen';
+      const gradeKey = normalizeGradeKey(l.gradeGroup, l.grade);
       const parts = [
-        l.grade || (isChuyen ? 'Chuyên Toán' : 'THPT'),
+        l.grade || (tr === 'chuyen' ? 'Chuyên Toán' : 'THPT'),
         l.category || 'Toán học',
-        isChuyen ? (isEn ? 'Specialized' : 'Chuyên / HSG') : (isEn ? 'Standard' : 'Cơ bản GDPT')
+        tr === 'chuyen' ? (isEn ? 'Specialized' : 'Chuyên / HSG') : tr === 'gdpt_2006' ? 'GDPT 2006' : 'GDPT 2018'
       ];
       return {
         id: l.id,
@@ -76,16 +110,19 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
         indexNumber: idx + 1,
         title: l.title,
         metaLine: parts.join(' · '),
-        track: isChuyen ? 'chuyen' : 'khong_chuyen',
+        gradeKey,
+        track: tr,
         searchText: `${l.title} ${l.grade} ${l.category || ''} ${l.description || ''}`.toLowerCase()
       };
     });
 
     const physicsItems: UnifiedLectureItem[] = PHYSICS_LESSONS.map((l, idx) => {
-      const isChuyen = l.track === 'chuyen';
+      const tr: UnifiedLectureItem['track'] =
+        l.track === 'chuyen' ? 'chuyen' : l.track === 'gdpt_2006' ? 'gdpt_2006' : 'khong_chuyen';
+      const gradeKey = normalizeGradeKey(l.grade);
       const parts = [
         l.grade,
-        l.tier || (isChuyen ? (isEn ? 'Specialized' : 'Chuyên / HSG') : (isEn ? 'Standard' : 'Cơ bản GDPT')),
+        l.tier || (tr === 'chuyen' ? (isEn ? 'Specialized' : 'Chuyên / HSG') : tr === 'gdpt_2006' ? 'GDPT 2006' : 'GDPT 2018'),
         l.subtitle
       ].filter(Boolean);
       return {
@@ -94,16 +131,19 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
         indexNumber: idx + 1,
         title: l.title,
         metaLine: parts.slice(0, 2).join(' · '),
-        track: isChuyen ? 'chuyen' : 'khong_chuyen',
+        gradeKey,
+        track: tr,
         searchText: `${l.title} ${l.grade} ${l.subtitle} ${l.description || ''}`.toLowerCase()
       };
     });
 
     const chemistryItems: UnifiedLectureItem[] = CHEMISTRY_LESSONS.map((l, idx) => {
-      const isChuyen = l.track === 'chuyen';
+      const tr: UnifiedLectureItem['track'] =
+        l.track === 'chuyen' ? 'chuyen' : l.track === 'gdpt_2006' ? 'gdpt_2006' : 'khong_chuyen';
+      const gradeKey = normalizeGradeKey(l.grade);
       const parts = [
         l.grade,
-        l.tier || (isChuyen ? (isEn ? 'Specialized' : 'Chuyên / HSG') : (isEn ? 'Standard' : 'Cơ bản GDPT')),
+        l.tier || (tr === 'chuyen' ? (isEn ? 'Specialized' : 'Chuyên / HSG') : tr === 'gdpt_2006' ? 'GDPT 2006' : 'GDPT 2018'),
         l.subtitle
       ].filter(Boolean);
       return {
@@ -112,16 +152,19 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
         indexNumber: idx + 1,
         title: l.title,
         metaLine: parts.slice(0, 2).join(' · '),
-        track: isChuyen ? 'chuyen' : 'khong_chuyen',
+        gradeKey,
+        track: tr,
         searchText: `${l.title} ${l.grade} ${l.subtitle} ${l.description || ''}`.toLowerCase()
       };
     });
 
     const biologyItems: UnifiedLectureItem[] = BIOLOGY_LESSONS.map((l, idx) => {
-      const isChuyen = l.track === 'chuyen';
+      const tr: UnifiedLectureItem['track'] =
+        l.track === 'chuyen' ? 'chuyen' : l.track === 'gdpt_2006' ? 'gdpt_2006' : 'khong_chuyen';
+      const gradeKey = normalizeGradeKey(l.grade);
       const parts = [
         l.grade,
-        l.tier || (isChuyen ? (isEn ? 'Specialized' : 'Chuyên / HSG') : (isEn ? 'Standard' : 'Cơ bản GDPT')),
+        l.tier || (tr === 'chuyen' ? (isEn ? 'Specialized' : 'Chuyên / HSG') : tr === 'gdpt_2006' ? 'GDPT 2006' : 'GDPT 2018'),
         l.subtitle
       ].filter(Boolean);
       return {
@@ -130,7 +173,8 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
         indexNumber: idx + 1,
         title: l.title,
         metaLine: parts.slice(0, 2).join(' · '),
-        track: isChuyen ? 'chuyen' : 'khong_chuyen',
+        gradeKey,
+        track: tr,
         searchText: `${l.title} ${l.grade} ${l.subtitle} ${l.description || ''}`.toLowerCase()
       };
     });
@@ -148,6 +192,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
         indexNumber: idx + 1,
         title: l.title,
         metaLine: parts.slice(0, 2).join(' · '),
+        gradeKey: 'cs_separate',
         track: isChuyen ? 'chuyen' : 'khong_chuyen',
         searchText: `${l.title} ${l.topic} ${l.level} ${l.vnoiPhase || ''}`.toLowerCase()
       };
@@ -161,10 +206,17 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
     return allItems.filter((item) => {
       if (subjectFilter !== 'all' && item.subject !== subjectFilter) return false;
       if (trackFilter !== 'all' && item.track !== trackFilter) return false;
+      if (gradeFilter !== 'all') {
+        if (gradeFilter === 'cs_separate') {
+          if (item.subject !== 'cs') return false;
+        } else if (item.subject === 'cs' || item.gradeKey !== gradeFilter) {
+          return false;
+        }
+      }
       if (kw && !item.searchText.includes(kw)) return false;
       return true;
     });
-  }, [allItems, subjectFilter, trackFilter, query]);
+  }, [allItems, subjectFilter, trackFilter, gradeFilter, query]);
 
   const groupedBySubject = useMemo(() => {
     return {
@@ -178,14 +230,15 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
 
   const filteredCsTracks = useMemo(() => {
     if (subjectFilter !== 'all' && subjectFilter !== 'cs') return [];
-    if (trackFilter === 'khong_chuyen') return [];
+    if (trackFilter === 'khong_chuyen' || trackFilter === 'gdpt_2006') return [];
+    if (gradeFilter !== 'all' && gradeFilter !== 'cs_separate') return [];
     const kw = query.trim().toLowerCase();
     return CS_SPECIALIZED_TRACKS.filter((t) => {
       if (!kw) return true;
       const hay = `${t.shortName} ${t.title} ${t.titleEn} ${t.categoryLabel} ${t.officialRef} ${t.summary}`.toLowerCase();
       return hay.includes(kw);
     });
-  }, [subjectFilter, trackFilter, query]);
+  }, [subjectFilter, trackFilter, gradeFilter, query]);
 
   const csSpecializedStageCount = useMemo(
     () => CS_SPECIALIZED_TRACKS.reduce((sum, t) => sum + t.stages.length, 0),
@@ -431,7 +484,7 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={isEn ? 'Search lesson title or grade...' : 'Tìm tên bài giảng, lớp 9–12...'}
+            placeholder={isEn ? 'Search lesson title or grade 6–12...' : 'Tìm tên bài giảng, lớp 6–12...'}
             className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/85 border border-slate-300/85 dark:border-white/15 rounded-md text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>
@@ -598,11 +651,22 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
             onClick={() => setTrackFilter('khong_chuyen')}
             className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
               trackFilter === 'khong_chuyen'
+                ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-sky-300 shadow-xs border border-sky-300/60 dark:border-sky-500/30'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            {isEn ? 'GDPT 2018' : 'GDPT 2018'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTrackFilter('gdpt_2006')}
+            className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
+              trackFilter === 'gdpt_2006'
                 ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-xs border border-emerald-300/60 dark:border-emerald-500/30'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
-            {isEn ? 'Standard' : 'Cơ bản GDPT'}
+            {isEn ? 'GDPT 2006' : 'GDPT 2006'}
           </button>
           <button
             type="button"
@@ -616,6 +680,50 @@ export const LectureDirectorySection: React.FC<LectureDirectorySectionProps> = (
             {isEn ? 'Specialized' : 'Chuyên / HSG'}
           </button>
         </div>
+      </div>
+
+      {/* Per-Grade Table of Contents Filter Strip (Khối 6 -> 12 + Tin học tách riêng) */}
+      <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/70 dark:border-white/10">
+        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1">
+          {isEn ? 'Grade ToC:' : 'Mục lục theo Khối:'}
+        </span>
+        {(
+          [
+            { id: 'all', label: isEn ? 'All (6–12 + CS)' : 'Tất cả khối (6–12 & Tin)' },
+            { id: 'Lớp 6', label: isEn ? 'Grade 6' : 'Khối 6' },
+            { id: 'Lớp 7', label: isEn ? 'Grade 7' : 'Khối 7' },
+            { id: 'Lớp 8', label: isEn ? 'Grade 8' : 'Khối 8' },
+            { id: 'Lớp 9', label: isEn ? 'Grade 9' : 'Khối 9' },
+            { id: 'Lớp 10', label: isEn ? 'Grade 10' : 'Khối 10' },
+            { id: 'Lớp 11', label: isEn ? 'Grade 11' : 'Khối 11' },
+            { id: 'Lớp 12', label: isEn ? 'Grade 12' : 'Khối 12' },
+            { id: 'cs_separate', label: isEn ? 'CS (Separate)' : 'Tin học (Tách riêng)' }
+          ] as Array<{ id: DirectoryGradeFilter; label: string }>
+        ).map((g) => {
+          const count =
+            g.id === 'all'
+              ? allItems.length
+              : g.id === 'cs_separate'
+                ? allItems.filter((i) => i.subject === 'cs').length
+                : allItems.filter((i) => i.subject !== 'cs' && i.gradeKey === g.id).length;
+          return (
+            <button
+              key={g.id}
+              type="button"
+              data-ripple="true"
+              onClick={() => setGradeFilter(g.id)}
+              className={`grade-toc-btn px-2.5 py-1.5 rounded text-xs font-semibold whitespace-nowrap cursor-pointer transition-all tabular-nums ${
+                gradeFilter === g.id
+                  ? g.id === 'cs_separate'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 shadow-xs'
+                  : 'bg-slate-100/90 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              {g.label} · {count}
+            </button>
+          );
+        })}
       </div>
 
       {/* Lecture Lists */}

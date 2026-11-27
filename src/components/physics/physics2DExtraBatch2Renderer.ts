@@ -1,5 +1,6 @@
 import { PhysicsSimType } from '../../types';
 import type { Extra2DOverlays, Extra2DTelemetryPayload } from './physics2DExtraRenderer';
+import { renderMiddleSchool2DPhysicsSim } from './physics2DMiddleSchoolRenderer';
 
 function drawVec(
   ctx: CanvasRenderingContext2D,
@@ -2093,6 +2094,6 @@ export function renderBatch2Extra2DPhysicsSim(
     }
 
     default:
-      return false;
+      return renderMiddleSchool2DPhysicsSim(simType, ctx, w, h, t, isDark, p, ov, pushTelemetry);
   }
 }

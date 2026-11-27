@@ -84,4 +84,9 @@ export const SIM_PRESETS: Record<string, SimBinding> = {
   em_wave_prop: makePreset('em_wave_3axis', 'em_wave_3d'),
   bohr: makePreset('hydrogen_spectrum', 'bohr_atom'),
   rel_velocity: makePreset('distance_displacement_rel', 'kinematics_3d'),
+  measurement_tools: makePreset('measurement_tools_2d', 'measurement_bench_3d'),
+  thermal_expansion: makePreset('thermal_expansion_2d', 'thermal_expansion_3d'),
+  plane_mirror: makePreset('plane_mirror_2d', 'plane_mirror_3d'),
+  simple_machines: makePreset('simple_machines_2d', 'lever_pulley_3d'),
+  fluid_pressure: makePreset('fluid_pressure_2d', 'hydraulic_press_3d'),
 };

@@ -364,7 +364,7 @@ export interface MathEssayProblem {
 export interface MathLecture {
   id: string;
   track?: CurriculumTrack;
-  gradeGroup?: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12' | 'Chuyên Toán';
+  gradeGroup?: 'Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12' | 'Chuyên Toán';
   tier?: SpecializedTier;
   lessonNumber?: number;
   stageLabel?: string;
@@ -415,7 +415,9 @@ export interface MathLecture {
     | 'circle_theorems_3d'
     | 'tangent_surface_3d'
     | 'probability_bell_3d'
-    | 'geometric_transform_3d';
+    | 'geometric_transform_3d'
+    | 'arithmetic_prism_3d'
+    | 'solid_prism_nets_3d';
   defaultGraphConfig?: Partial<FunctionPlotConfig>;
 }
 
@@ -492,7 +494,13 @@ export type PhysicsSimType =
   | 'phase_change_heating'
   | 'distance_displacement_rel'
   | 'power_plant_generator'
-  | 'fresnel_phasor_2d';
+  | 'fresnel_phasor_2d'
+  // Middle school (Lớp 6-8) 2D physics sims
+  | 'measurement_tools_2d'
+  | 'thermal_expansion_2d'
+  | 'plane_mirror_2d'
+  | 'simple_machines_2d'
+  | 'fluid_pressure_2d';
 
 export type Physics3DMode =
   | 'pendulum_spring'
@@ -555,7 +563,13 @@ export type Physics3DMode =
   | 'electrolysis_3d'
   | 'eye_optics_3d'
   | 'em_wave_3d'
-  | 'power_plant_3d';
+  | 'power_plant_3d'
+  // Middle school (Lớp 6-8) 3D physics sims
+  | 'measurement_bench_3d'
+  | 'thermal_expansion_3d'
+  | 'plane_mirror_3d'
+  | 'lever_pulley_3d'
+  | 'hydraulic_press_3d';
 
 export type PhysicsDomainId =
   | 'mechanics'
@@ -576,7 +590,7 @@ export interface PhysicsEssayExercise {
 export interface PhysicsLesson {
   id: string;
   track: CurriculumTrack;
-  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  grade: 'Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
   tier?: SpecializedTier;
   stageLabel?: string;
   sourceTag?: string;
@@ -660,7 +674,12 @@ export type ChemistrySimType =
   | 'stoichiometry_gas_2d'
   | 'carbonyl_alcohol_2d'
   | 'qualitative_ion_2d'
-  | 'metallurgy_furnace_2d';
+  | 'metallurgy_furnace_2d'
+  // Middle school (Lớp 6-8) 2D chemistry sims
+  | 'states_of_matter_2d'
+  | 'mixture_separation_2d'
+  | 'bohr_shells_2d'
+  | 'acid_base_oxide_2d';
 
 export type Chemistry3DMode =
   | 'atomic_orbitals_3d'
@@ -685,7 +704,12 @@ export type Chemistry3DMode =
   | 'metal_corrosion_3d'
   | 'alkene_addition_3d'
   | 'amino_peptide_3d'
-  | 'halogen_ion_bench_3d';
+  | 'halogen_ion_bench_3d'
+  // Middle school (Lớp 6-8) 3D chemistry sims
+  | 'matter_states_3d'
+  | 'separation_lab_3d'
+  | 'ionic_covalent_3d'
+  | 'indicator_bench_3d';
 
 export type ChemistryDomainId =
   | 'atomic_periodic'
@@ -698,7 +722,7 @@ export type ChemistryDomainId =
 export interface ChemistryLesson {
   id: string;
   track: CurriculumTrack;
-  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  grade: 'Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
   tier?: SpecializedTier;
   stageLabel?: string;
   sourceTag?: string;
@@ -761,7 +785,12 @@ export type BiologySimType =
   | 'viral_lytic_cycle_2d'
   | 'pcr_electrophoresis_2d'
   | 'blood_typing_2d'
-  | 'pedigree_genetics_2d';
+  | 'pedigree_genetics_2d'
+  // Middle school (Lớp 6-8) 2D biology sims
+  | 'microscope_cell_compare_2d'
+  | 'plant_organs_flowering_2d'
+  | 'vertebrate_taxonomy_2d'
+  | 'digestion_enzymes_2d';
 
 export type Biology3DMode =
   | 'eukaryotic_cell_3d'
@@ -784,7 +813,11 @@ export type Biology3DMode =
   | 'population_genetics_3d'
   | 'endocrine_pancreas_3d'
   | 'biotech_pcr_crispr_3d'
-  | 'gene_linkage_3d';
+  | 'gene_linkage_3d'
+  // Middle school (Lớp 6-8) 3D biology sims
+  | 'plant_flower_seed_3d'
+  | 'comparative_hearts_3d'
+  | 'digestive_tract_3d';
 
 export type BiologyDomainId =
   | 'cell_membrane'
@@ -797,7 +830,7 @@ export type BiologyDomainId =
 export interface BiologyLesson {
   id: string;
   track: CurriculumTrack;
-  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  grade: 'Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
   tier?: SpecializedTier;
   stageLabel?: string;
   sourceTag?: string;
@@ -964,7 +997,7 @@ export interface WorkflowStage {
 export interface RoadmapNode {
   id: string;
   subject: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
-  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12' | 'Cơ bản' | 'Trung cấp' | 'Nâng cao / HSG';
+  grade: 'Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12' | 'Cơ bản' | 'Trung cấp' | 'Nâng cao / HSG';
   order: number;
   title: string;
   titleEn: string;

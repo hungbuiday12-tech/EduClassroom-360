@@ -6,6 +6,7 @@ import {
   Chemistry3DMode,
   ChemistryDomainId,
   ChemistrySimType,
+  CurriculumTrack,
   FunctionPlotConfig,
   FutureLabTabId,
   MathLecture,
@@ -17,6 +18,16 @@ import {
 import { CSTrackId } from '../data/csTracksData';
 import { CURRICULUM_COUNTS } from '../data/curriculumCounts';
 import { PHYSICS_DOMAINS } from '../data/physicsDomainsData';
+
+export type CatalogGradeFilter =
+  | 'all'
+  | 'Lớp 6'
+  | 'Lớp 7'
+  | 'Lớp 8'
+  | 'Lớp 9'
+  | 'Lớp 10'
+  | 'Lớp 11'
+  | 'Lớp 12';
 
 export interface NavLocation {
   subject: SubjectType;
@@ -64,6 +75,8 @@ export interface NavLocation {
   tutorOpen: boolean;
   tutorSubject: SubjectType;
   tutorTab?: 'chat' | 'motion_reel';
+  catalogGrade: CatalogGradeFilter;
+  catalogTrack?: CurriculumTrack;
 }
 
 const DEFAULT_LOCATION: NavLocation = {
@@ -105,7 +118,9 @@ const DEFAULT_LOCATION: NavLocation = {
   coopInviteMeta: null,
   tutorOpen: false,
   tutorSubject: 'math',
-  tutorTab: 'chat'
+  tutorTab: 'chat',
+  catalogGrade: 'all',
+  catalogTrack: undefined
 };
 
 function getInitialLocation(): NavLocation {
@@ -359,7 +374,9 @@ function isSameLocation(a: NavLocation, b: NavLocation): boolean {
     a.futureTab === b.futureTab &&
     a.coopRoomCode === b.coopRoomCode &&
     a.tutorOpen === b.tutorOpen &&
-    a.tutorSubject === b.tutorSubject
+    a.tutorSubject === b.tutorSubject &&
+    a.catalogGrade === b.catalogGrade &&
+    a.catalogTrack === b.catalogTrack
   );
 }
 
@@ -461,7 +478,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // When switching to a subject from header/cards, reset that subject to its top catalog/overview while closing AI drawer
       const patch: Partial<NavLocation> = {
         subject,
-        tutorOpen: false
+        tutorOpen: false,
+        catalogGrade: 'all',
+        catalogTrack: undefined
       };
 
       if (subject === 'math') {

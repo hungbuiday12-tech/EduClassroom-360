@@ -83,7 +83,9 @@ import { CursorDodgeText } from './common/CursorDodgeText';
 import { AppearanceStudioBar } from './common/AppearanceStudioBar';
 import { GraphicsTierTriggerButton } from './common/GraphicsTierTriggerButton';
 import { ScrollProgressBar, ScrollReveal } from './common/ScrollReveal';
+import { AcademicCredibilityCover } from './common/AcademicCredibilityCover';
 import type {
+  DirectoryGradeFilter,
   DirectorySubjectFilter,
   LectureDirectoryTarget
 } from './common/LectureDirectorySection';
@@ -91,6 +93,190 @@ import type {
 const LectureDirectorySection = lazy(() =>
   import('./common/LectureDirectorySection').then((m) => ({ default: m.LectureDirectorySection }))
 );
+
+interface GradeBlockDefinition {
+  grade: 'Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  code: string;
+  stageVi: string;
+  stageEn: string;
+  summaryVi: string;
+  summaryEn: string;
+  tocVi: [string, string, string, string];
+  tocEn: [string, string, string, string];
+  borderClass: string;
+  badgeTextClass: string;
+}
+
+const GRADE_BLOCKS: GradeBlockDefinition[] = [
+  {
+    grade: 'Lớp 6',
+    code: '06',
+    stageVi: 'THCS · Nền tảng KHTN & Toán',
+    stageEn: 'Middle School · Foundations',
+    summaryVi:
+      'Làm quen tư duy số học, hình phẳng trực quan, đo lường vật lí SI, bản chất 3 thể chất & kính hiển vi tế bào.',
+    summaryEn:
+      'Build foundations in integers, plane geometry, SI measurement, states of matter, and cell microscopy.',
+    tocVi: [
+      'Số nguyên, ƯCLN/BCNN, phân số & hình phẳng',
+      'Đo lường SI, lực – trọng lực P=10m & lò xo',
+      'Chất, 3 thể Rắn/Lỏng/Khí, dung dịch & tách chất',
+      'Kính hiển vi, tế bào nhân sơ/thực & 5 giới sinh vật'
+    ],
+    tocEn: [
+      'Integers, GCD/LCM, fractions & plane geometry',
+      'SI measurement, force, gravity P=10m & springs',
+      'Matter states, mixtures, solutions & separation',
+      'Microscopy, prokaryotic/eukaryotic cells & 5 kingdoms'
+    ],
+    borderClass: 'border-sky-300/85 dark:border-sky-500/30 hover:border-sky-500',
+    badgeTextClass: 'text-sky-700 dark:text-sky-300'
+  },
+  {
+    grade: 'Lớp 7',
+    code: '07',
+    stageVi: 'THCS · Tư duy tỉ lệ & Sóng/Nguyên tử',
+    stageEn: 'Middle School · Ratios & Atoms',
+    summaryVi:
+      'Mở rộng sang số hữu tỉ, tam giác bằng nhau, tốc độ v=s/t – âm thanh – gương phẳng, nguyên tử sơ khai & quang hợp.',
+    summaryEn:
+      'Advance into rationals, congruent triangles, speed – sound – mirrors, atomic shells & photosynthesis.',
+    tocVi: [
+      'Số hữu tỉ, tỉ lệ thức, tam giác bằng nhau & lăng trụ',
+      'Tốc độ v=s/t, sóng âm, gương phẳng & từ trường',
+      'Nguyên tử, bảng tuần hoàn sơ khai & hóa trị',
+      'Quang hợp – hô hấp, mạch gỗ/rây & cảm ứng thực vật'
+    ],
+    tocEn: [
+      'Rationals, proportions, congruent triangles & prisms',
+      'Speed v=s/t, sound waves, mirrors & magnetic fields',
+      'Atomic structure, periodic basics & valence',
+      'Photosynthesis, xylem/phloem transport & plant tropism'
+    ],
+    borderClass: 'border-cyan-300/85 dark:border-cyan-500/30 hover:border-cyan-500',
+    badgeTextClass: 'text-cyan-700 dark:text-cyan-300'
+  },
+  {
+    grade: 'Lớp 8',
+    code: '08',
+    stageVi: 'THCS · Bản lề Đại số & Phản ứng hóa học',
+    stageEn: 'Middle School · Algebra & Reactions',
+    summaryVi:
+      'Bước ngoặt hằng đẳng thức – hàm bậc nhất – Thalès/Pythagore, áp suất/Archimedes, mol – pH & sinh lí người.',
+    summaryEn:
+      'Key bridge: algebraic identities, linear graphs, Thales/Pythagoras, pressure/buoyancy, moles/pH & human physiology.',
+    tocVi: [
+      '7 Hằng đẳng thức, hàm bậc nhất, Thalès & Pythagore',
+      'Áp suất, lực đẩy Archimedes, đòn bẩy & nhiệt học',
+      'Mol, bảo toàn khối lượng, nồng độ, pH & oxit/axit',
+      'Tuần hoàn, hô hấp, thần kinh người & hệ sinh thái'
+    ],
+    tocEn: [
+      'Algebraic identities, linear graphs, Thales & Pythagoras',
+      'Pressure, Archimedes buoyancy, levers & thermal basics',
+      'Moles, mass conservation, concentration, pH & acids',
+      'Circulatory, respiratory, neural systems & food webs'
+    ],
+    borderClass: 'border-teal-300/85 dark:border-teal-500/30 hover:border-teal-500',
+    badgeTextClass: 'text-teal-700 dark:text-teal-300'
+  },
+  {
+    grade: 'Lớp 9',
+    code: '09',
+    stageVi: 'THCS · Chuyển cấp vào 10 & HSG',
+    stageEn: 'Grade 9 · High-School Entrance & Honors',
+    summaryVi:
+      'Hoàn thiện căn thức, parabol, đường tròn nội tiếp, định luật Ôm – thấu kính, kim loại/hidrocacbon & di truyền Menđen.',
+    summaryEn:
+      'Master radicals, quadratics, circles, Ohm’s law & lenses, reactivity series & DNA/Mendel genetics.',
+    tocVi: [
+      'Căn thức, hệ PT, Parabol y=ax² & đường tròn',
+      'Định luật Ôm, công suất điện, khúc xạ & thấu kính',
+      'Dãy hoạt động kim loại, phi kim & hidrocacbon cơ bản',
+      'ADN/ARN, nguyên phân – giảm phân & quy luật Menđen'
+    ],
+    tocEn: [
+      'Radicals, equation systems, parabolas & circle geometry',
+      'Ohm’s law, electric power, refraction & thin lenses',
+      'Metal reactivity series, nonmetals & introductory organics',
+      'DNA/RNA, mitosis/meiosis & Mendel inheritance laws'
+    ],
+    borderClass: 'border-blue-300/85 dark:border-blue-500/35 hover:border-blue-500',
+    badgeTextClass: 'text-blue-700 dark:text-sky-300'
+  },
+  {
+    grade: 'Lớp 10',
+    code: '10',
+    stageVi: 'THPT · Khởi đầu phân hóa sâu',
+    stageEn: 'Grade 10 · Upper-Secondary Foundations',
+    summaryVi:
+      'Chuyển sang vectơ Oxy – bất phương trình – tổ hợp, động học – định luật Newton, orbital VSEPR – enthalpy & tế bào.',
+    summaryEn:
+      'Transition to Oxy vectors, combinatorics, kinematics & Newton’s laws, VSEPR orbitals/enthalpy & cell energy.',
+    tocVi: [
+      'Hàm bậc hai, vectơ Oxy, tổ hợp & xác suất',
+      'Động học, 3 định luật Newton & bảo toàn cơ năng',
+      'Cấu tạo Orbital, hình học VSEPR, oxi hóa–khử & Enthalpy',
+      'Bào quan tế bào nhân thực, thẩm thấu màng, Enzyme & ATP'
+    ],
+    tocEn: [
+      'Quadratics, Oxy vectors, combinatorics & probability',
+      'Kinematics, Newton’s 3 laws & energy conservation',
+      'Atomic orbitals, VSEPR geometry, redox & enthalpy',
+      'Cell organelles, membrane osmosis, enzymes & ATP'
+    ],
+    borderClass: 'border-indigo-300/85 dark:border-indigo-500/35 hover:border-indigo-500',
+    badgeTextClass: 'text-indigo-700 dark:text-indigo-300'
+  },
+  {
+    grade: 'Lớp 11',
+    code: '11',
+    stageVi: 'THPT · Trọng tâm bản lề thi ĐGNL',
+    stageEn: 'Grade 11 · Core Quantitative Bridge',
+    summaryVi:
+      'Nắm vững lượng giác, giới hạn – đạo hàm, quan hệ vuông góc 3D, dao động – sóng – điện trường, cân bằng hóa & sinh lí.',
+    summaryEn:
+      'Master trig, limits & derivatives, 3D perpendicularity, SHM/waves/electric fields, Le Chatelier & physiology.',
+    tocVi: [
+      'Lượng giác, dãy số, giới hạn – đạo hàm & vuông góc 3D',
+      'Dao động điều hòa, sóng giao thoa & điện trường/mạch kín',
+      'Cân bằng Le Chatelier, chuẩn độ pH & dẫn xuất hữu cơ',
+      'Trao đổi nước thực vật, chu kì tim, điện thế nơ-ron'
+    ],
+    tocEn: [
+      'Trigonometry, sequences, limits, derivatives & 3D geometry',
+      'Simple harmonic motion, wave interference & circuits',
+      'Le Chatelier equilibrium, pH titration & organic groups',
+      'Plant water transport, cardiac cycle & neural action potential'
+    ],
+    borderClass: 'border-amber-300/85 dark:border-amber-500/35 hover:border-amber-500',
+    badgeTextClass: 'text-amber-700 dark:text-amber-300'
+  },
+  {
+    grade: 'Lớp 12',
+    code: '12',
+    stageVi: 'THPT · Tổng ôn Tốt nghiệp & Đại học',
+    stageEn: 'Grade 12 · Graduation & University Prep',
+    summaryVi:
+      'Tổng hợp khảo sát hàm số, nguyên hàm – tích phân, Oxyz 3D, vật lí nhiệt – từ trường – hạt nhân, điện hóa & tiến hóa.',
+    summaryEn:
+      'Synthesize calculus & integrals, 3D Oxyz, thermal/EM induction/nuclear physics, electrochemistry & evolution.',
+    tocVi: [
+      'Khảo sát hàm số, nguyên hàm – tích phân, Oxyz 3D & Bayes',
+      'Vật lí nhiệt, khí lí tưởng, cảm ứng điện từ & hạt nhân',
+      'Ester – Lipid, Carbohydrate, Pin Galvani & Điện phân',
+      'Operon Lac, đột biến NST, Hardy–Weinberg & tiến hóa'
+    ],
+    tocEn: [
+      'Calculus, definite integrals, 3D Oxyz & Bayes probability',
+      'Thermal physics, ideal gas, EM induction & nuclear physics',
+      'Esters, carbohydrates, galvanic cells & electrolysis',
+      'Operon Lac, mutations, Hardy–Weinberg & evolution'
+    ],
+    borderClass: 'border-violet-300/85 dark:border-violet-500/35 hover:border-violet-500',
+    badgeTextClass: 'text-violet-700 dark:text-violet-300'
+  }
+];
 
 interface ClassroomOverviewProps {
   onNavigate: (subject: SubjectType) => void;
@@ -137,6 +323,8 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
     navigate
   } = useNavigation();
   const [directorySubject, setDirectorySubject] = useState<DirectorySubjectFilter>('all');
+  const [directoryGrade, setDirectoryGrade] = useState<DirectoryGradeFilter>('all');
+  const [selectedGradeTrack, setSelectedGradeTrack] = useState<'khong_chuyen' | 'gdpt_2006'>('khong_chuyen');
   const [growthTick, setGrowthTick] = useState(0);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
@@ -170,8 +358,12 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
     }
   };
 
-  const scrollToLectureDirectory = (subj: DirectorySubjectFilter = 'all') => {
+  const scrollToLectureDirectory = (
+    subj: DirectorySubjectFilter = 'all',
+    grade: DirectoryGradeFilter = 'all'
+  ) => {
     setDirectorySubject(subj);
+    setDirectoryGrade(grade);
     window.setTimeout(() => {
       const el = document.getElementById('classroom-lecture-directory');
       if (el) {
@@ -297,6 +489,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
   useEffect(() => {
     if (directoryScrollTick === 0) return;
     setDirectorySubject(directoryFilterRequest);
+    setDirectoryGrade('all');
     const timer = window.setTimeout(() => {
       const el = document.getElementById('classroom-lecture-directory');
       if (el) {
@@ -542,12 +735,12 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           <div className="text-xs sm:text-sm font-semibold tracking-wider text-accent-gradient hero-blend-shadow">
             {hasPremiumAccess
               ? isEn
-                ? '★ SYNAPSE PREMIUM EDITION · Interactive STEM Academy · Astra AI & 3B1B Video'
-                : '★ PHIÊN BẢN SYNAPSE PREMIUM · Học viện STEM Trực quan · AI Pro & Video 3B1B'
+                ? '★ SYNAPSE PREMIUM EDITION · Grades 6–12 STEM Academy · Math–Physics–CS Core'
+                : '★ PHIÊN BẢN SYNAPSE PREMIUM · Học viện STEM Lớp 6–12 · Mũi nhọn Toán – Lý – Tin'
               : t(
                   'overview.badge',
-                  'Học viện Mô phỏng Trực quan · Toán · Vật lí · Hóa học · Sinh học · Tin học (Lớp 9 – 12)',
-                  'Interactive STEM Academy · Math · Physics · Chemistry · Biology · CS (Grades 9–12)'
+                  'Học viện STEM Liên thông Lớp 6 – 12 · Mũi nhọn Toán – Lý – Tin · Hóa & Sinh THCS/THPT',
+                  'Interactive Grades 6–12 STEM Academy · Math–Physics–CS Spearhead & Chem/Bio'
                 )}
           </div>
 
@@ -555,18 +748,18 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             as="h1"
             text={t(
               'overview.heroTitle',
-              'Bục giảng ảo 5 môn: Toán, Vật lí, Hóa học, Sinh học & Tin học (Lớp 9 – 12)',
-              'Synapse Classroom: Math, Physics, Chemistry, Biology & CS (Grades 9–12)'
+              'Hệ sinh thái STEM Lớp 6 – 12 · Trọng tâm Toán – Lý – Tin & Hóa – Sinh trực quan',
+              'Synapse STEM Grades 6–12: Math–Physics–CS Core & Chemistry–Biology Labs'
             )}
-            highlightWords={['toán', 'vật', 'hóa', 'sinh', 'tin', 'synapse', 'math', 'physics', 'chemistry', 'biology']}
+            highlightWords={['toán', 'lý', 'tin', '6', '12', 'synapse', 'math', 'physics', 'cs']}
             className="font-display text-3xl sm:text-5xl lg:text-[3.15rem] font-semibold tracking-tight text-slate-900 dark:text-white leading-[1.16] text-balance max-w-3xl mx-auto hero-blend-shadow"
           />
 
           <p className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-200 leading-relaxed max-w-3xl mx-auto hero-blend-shadow">
             {t(
               'overview.heroDesc',
-              `Hệ sinh thái STEM toàn diện chia riêng Phòng Lab, Mô phỏng 2D/3D & Sandbox cho từng môn: Toán (2D & Oxyz 3D), Vật lí (${phyCounts.domainCount} lĩnh vực · ${phyCounts.total} Lab 2D/3D), Hóa học (${chemistryCount} bài GDPT 2018/2006/Chuyên · ${chemSimTotal} Lab 2D/3D + 4 Sandbox), Sinh học (${biologyCount} bài · ${bioSimTotal} Lab 2D/3D + 4 Sandbox), Tin học (5 lộ trình VNOI & C++ · IDE Sublime 4), Synapse Pre (${preTotal} Lab 3D/4D & Hạt GPU 28K), Syn AI 5 môn & ${totalExams} đề thi chuẩn.`,
-              `Complete STEM ecosystem with dedicated Labs, 2D/3D Simulations & Sandboxes per subject: Math (2D & Oxyz 3D), Physics (${phyCounts.domainCount} domains · ${phyCounts.total} labs), Chemistry (${chemistryCount} lessons · ${chemSimTotal} 2D/3D sims + 4 Sandboxes), Biology (${biologyCount} lessons · ${bioSimTotal} 2D/3D sims + 4 Sandboxes), CS (5 VNOI/C++ tracks · Sublime 4), Synapse Pre (${preTotal} 3D/4D labs), 5 AI Tutors & ${totalExams} curated exams.`
+              `Liên thông kiến thức từ Lớp 6 đến Lớp 12 (THCS học nâng cao, THPT ôn tập và củng cố chắc nền tảng): mỗi Khối lớp tích hợp đủ 4 môn Toán – Vật lí – Hóa học – Sinh học (GDPT 2018 & 2006) kèm mô phỏng 2D/3D ở từng phần; Tin học & Thuật toán được tách khu vực riêng phục vụ đội tuyển VNOI/C++ và dự án phần mềm (${totalLessons} bài · ${totalSimLabs}+ Lab 2D/3D · ${totalExams} đề thi).`,
+              `Vertical STEM continuity across Grades 6–12 (middle school enrichment + high school consolidation): each Grade Block organizes Math, Physics, Chemistry & Biology (GDPT 2018 & 2006) with 2D/3D labs at every step, while Computer Science sits in its own dedicated spearhead track (${totalLessons} lessons · ${totalSimLabs}+ 2D/3D labs · ${totalExams} exams).`
             )}
           </p>
 
@@ -886,14 +1079,30 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
         </div>
       </section>
 
-      {/* TABLE OF CONTENTS (MỤC LỤC TRANG CHÍNH) */}
+      {/* CREDIBILITY COVER SHEET (TỜ ĐẦU ĐỊNH HƯỚNG · KIỂM CHỨNG · LIÊN THÔNG 6 → 12) */}
+      <ScrollReveal direction="up">
+        <AcademicCredibilityCover
+          onOpenAuthors={() => {
+            onNavigate('authors');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onOpenRoadmap={() => {
+            onNavigate('roadmap');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onSelectGrade={(grade) => scrollToLectureDirectory('all', grade as DirectoryGradeFilter)}
+          onNavigate={onNavigate}
+        />
+      </ScrollReveal>
+
+      {/* TABLE OF CONTENTS (MỤC LỤC TRANG CHÍNH & TỪNG KHỐI LỚP 6–12) */}
       <ScrollReveal direction="up">
       <section className="sci-frame sci-scan-bar rounded-xl bg-white/90 dark:bg-slate-900/82 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-200/85 dark:border-sky-500/25 p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/70 dark:border-white/10">
           <div className="flex items-center gap-2.5">
             <ListOrdered className="w-5 h-5 text-blue-600 dark:text-sky-400 icon-anim-list shrink-0" />
             <h2 className="font-display text-sm sm:text-base font-semibold uppercase tracking-wider text-slate-900 dark:text-white">
-              {isEn ? 'Table of Contents · Jump to Lectures' : 'Mục Lục Trang Chính · Cuộn Nhanh Xuống Bài Giảng'}
+              {isEn ? 'Table of Contents · Jump by Grade (6–12) or Section' : 'Mục Lục Trang Chính · Chọn Nhanh Từng Khối 6–12'}
             </h2>
             <span aria-hidden="true" className="hidden sm:inline-flex items-end gap-[2px] h-3 pb-0.5 opacity-80">
               <span className="w-[2px] h-full bg-sky-500 rounded-xs sci-meter-1" />
@@ -903,9 +1112,42 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400">
             {isEn
-              ? 'Click any entry to scroll smoothly down to the lecture list or classroom tools'
-              : 'Bấm vào mục lục để cuộn xuống xem ngay danh sách bài giảng & các khu vực học tập'}
+              ? 'Jump straight to Grade 6–12 blocks, separate CS track, or the full lecture list'
+              : 'Bấm trực tiếp vào từng Khối lớp hoặc khu vực để mở đúng mục lục bài giảng'}
           </span>
+        </div>
+
+        {/* Row 1: Quick Per-Grade Table of Contents */}
+        <div className="space-y-2 pb-3 border-b border-slate-200/70 dark:border-white/10">
+          <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            {isEn ? 'Mục lục nhanh theo Khối lớp (6 → 12) & Tin học tách riêng' : 'Mục lục nhanh theo Khối lớp (6 → 12) & Tin học tách riêng'}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => scrollToSection('classroom-grade-blocks')}
+              className="grade-toc-btn px-3 py-2 text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white border border-sky-600 cursor-pointer"
+            >
+              {isEn ? 'All 7 Grade Blocks (6–12)' : 'Khung Chọn Khối 6–12'}
+            </button>
+            {(['Lớp 6', 'Lớp 7', 'Lớp 8', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => scrollToLectureDirectory('all', g)}
+                className="grade-toc-btn px-3 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800/70 hover:bg-sky-50 dark:hover:bg-sky-950/60 text-slate-800 dark:text-slate-100 border border-slate-300/85 dark:border-white/12 hover:border-sky-500 cursor-pointer"
+              >
+                {g}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => scrollToLectureDirectory('cs', 'cs_separate')}
+              className="grade-toc-btn px-3 py-2 text-xs font-bold bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-400/60 hover:border-emerald-500 cursor-pointer"
+            >
+              {isEn ? 'CS (Separate)' : 'Tin học (Tách riêng)'}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1525,408 +1767,266 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
       </section>
       </ScrollReveal>
 
-      {/* SECTION 1: 5 DEDICATED SUBJECT STUDIOS (Toán · Vật lí · Hóa học · Sinh học · Tin học) — Separated Labs, 2D/3D Sims & Sandboxes */}
+      {/* SECTION 1: 7 GRADE BLOCK CARDS (KHỐI 6 → KHỐI 12 WITH 4 SUBJECTS) + STANDALONE CS BLOCK */}
       <ScrollReveal direction="up">
-      <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 px-1">
+      <section id="classroom-grade-blocks" className="space-y-5 scroll-mt-20">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3 px-1">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-widest text-blue-700 dark:text-sky-400">
-              {isEn ? 'SEPARATED PER-SUBJECT LABS, SIMULATIONS & SANDBOXES' : 'CHIA RIÊNG KHU VỰC LAB · MÔ PHỎNG 2D/3D · SANDBOX CHO TỪNG MÔN'}
+              {isEn
+                ? 'GRADE-BY-GRADE ACADEMIC PORTAL · GRADES 6–12 (MATH · PHYSICS · CHEMISTRY · BIOLOGY)'
+                : 'CHỌN THEO KHỐI LỚP · ĐỦ 4 MÔN TOÁN – VẬT LÍ – HÓA HỌC – SINH HỌC (LỚP 6 → 12)'}
             </div>
             <h2 className="font-display text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-0.5">
-              {isEn ? '5 Core STEM Disciplines (Grades 9–12 & Olympiad)' : '5 Môn Học Trọng Tâm · Khu Vực Tách Biệt Theo Từng Môn'}
+              {isEn
+                ? 'Choose Your Grade Block (6 to 12) · Vertical Continuity'
+                : 'Khung Chọn Khối Lớp 6 – 12 · Tóm Tắt & Mục Lục Từng Khối'}
             </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-3xl">
+              {isEn
+                ? 'Middle schoolers (6–9) build early mastery and advanced reasoning; high schoolers (10–12) review and lock in core concepts with 2D/3D simulations. Computer Science sits in its own dedicated zone below.'
+                : 'Học sinh THCS (Lớp 6–9) học chắc nền tảng và nâng cao sớm; học sinh THPT (Lớp 10–12) ôn tập, củng cố và kiểm chứng trực quan qua Lab 2D/3D. Môn Tin học được tách riêng ở khung bên dưới.'}
+            </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
-            {isEn
-              ? 'Each subject has its own dedicated Lectures & Lab, 2D/3D Simulation Hub, and interactive Sandbox zone.'
-              : 'Mỗi môn có đủ 3 khu vực riêng biệt: Bài giảng & Lab, Kho Mô phỏng 2D/3D và Sandbox tương tác độc lập.'}
-          </p>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {isEn ? 'Program:' : 'Chương trình:'}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedGradeTrack('khong_chuyen')}
+              className={`grade-toc-btn px-3 py-1.5 text-xs font-semibold border cursor-pointer ${
+                selectedGradeTrack === 'khong_chuyen'
+                  ? 'bg-sky-600 text-white border-sky-600'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-white/15 hover:border-sky-500'
+              }`}
+            >
+              GDPT 2018 (Không chuyên)
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedGradeTrack('gdpt_2006')}
+              className={`grade-toc-btn px-3 py-1.5 text-xs font-semibold border cursor-pointer ${
+                selectedGradeTrack === 'gdpt_2006'
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-white/15 hover:border-indigo-500'
+              }`}
+            >
+              GDPT 2006 (Chuẩn cũ)
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-5">
-          {/* 1. MATH CARD (3 cols on xl) */}
-          <div
-            data-ripple="true"
-            onClick={() => onNavigate('math')}
-            className="xl:col-span-3 group sci-frame relative overflow-hidden bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-sky-300/85 dark:border-sky-500/30 hover:border-sky-500 hover:-translate-y-0.5 rounded-xl p-6 shadow-[0_14px_34px_-14px_rgba(14,165,233,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(14,165,233,0.3)] transition-all cursor-pointer flex flex-col justify-between gap-5"
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 360 120"
-              className="absolute inset-x-0 bottom-16 w-[200%] h-24 opacity-20 dark:opacity-30 pointer-events-none animate-wave-glide group-hover:opacity-45 transition-opacity"
-            >
-              <path d="M0 60 Q45 10 90 60 T180 60 T270 60 T360 60" fill="none" stroke="#0284c7" strokeWidth="2.5" />
-            </svg>
-            <div className="relative z-10 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="w-11 h-11 rounded-lg bg-sky-50 dark:bg-sky-950/60 border border-sky-200/90 dark:border-sky-800/70 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                  <Compass className="w-6 h-6 icon-anim-compass" />
-                </div>
-                <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded bg-sky-500/12 border border-sky-400/35 text-sky-700 dark:text-sky-300 tabular-nums">
-                  {mathCount} {isEn ? 'lessons' : 'bài'} · Oxy & Oxyz
-                </span>
-              </div>
-              <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                {isEn ? `Mathematics (${mathCount})` : `Toán học (${mathCount} bài)`}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                {isEn
-                  ? 'GDPT 2018, 2006 & Olympiad lessons, polynomial/integral grapher, 2D circle studio & 8 spatial Oxyz 3D scenes.'
-                  : 'Bài giảng GDPT 2018, 2006 & Chuyên, vẽ đồ thị Oxy/tích phân, xưởng đường tròn 2D & 8 mô hình Oxyz 3D.'}
-              </p>
-            </div>
+        {/* 7 Grade Cards Grid: Lớp 6 -> Lớp 12 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {GRADE_BLOCKS.map((gb) => {
+            const tocItems = isEn ? gb.tocEn : gb.tocVi;
+            return (
+              <div
+                key={gb.grade}
+                className={`grade-card-frame sci-frame bg-white/92 dark:bg-slate-900/84 backdrop-blur-md border ${gb.borderClass} p-5 shadow-xs flex flex-col justify-between gap-4`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <span className={gb.badgeTextClass}>KHỐI {gb.code}</span>
+                        <span aria-hidden="true">·</span>
+                        <span className="truncate">{isEn ? gb.stageEn : gb.stageVi}</span>
+                      </div>
+                      <h3 className="font-display text-lg font-extrabold text-slate-900 dark:text-white mt-0.5">
+                        {gb.grade}
+                      </h3>
+                    </div>
 
-            <div className="relative z-10 pt-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate({ subject: 'math', mathViewMode: 'catalog', mathTab: 'lectures', tutorOpen: false });
-                }}
-                className="cs-deck-btn min-h-[42px] px-3 py-2 rounded bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? 'Lectures & Lab' : 'Bài giảng & Lab'}</span>
-              </button>
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNavigate('math_sims');
-                }}
-                className="cs-deck-btn min-h-[42px] px-3 py-2 rounded bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/70 text-sky-800 dark:text-sky-200 border border-sky-300/80 dark:border-sky-500/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <LineChart className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? '2D/3D Grapher' : 'Mô phỏng 2D/3D'}</span>
-              </button>
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate({ subject: 'math_sims', mathTab: 'math3d', tutorOpen: false });
-                }}
-                className="cs-deck-btn min-h-[42px] px-3 py-2 rounded bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white border border-sky-400/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <Compass className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                <span>{isEn ? 'Oxyz Sandbox' : 'Sandbox Oxyz'}</span>
-              </button>
+                    <button
+                      type="button"
+                      onClick={() => scrollToLectureDirectory('all', gb.grade)}
+                      className="grade-toc-btn shrink-0 px-2.5 py-1.5 text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-sky-600 hover:text-white text-slate-700 dark:text-slate-200 border border-slate-300/80 dark:border-white/10 cursor-pointer flex items-center gap-1"
+                    >
+                      <ListOrdered className="w-3 h-3" />
+                      <span>{isEn ? 'Grade ToC' : 'Mục lục'}</span>
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {isEn ? gb.summaryEn : gb.summaryVi}
+                  </p>
+
+                  {/* Per-Grade Compact Table of Contents */}
+                  <div className="rounded bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200/80 dark:border-white/10 p-3 space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      {isEn ? `${gb.grade} Key Topics` : `Mục lục trọng tâm ${gb.grade}`}
+                    </div>
+                    <div className="grid grid-cols-1 gap-1 text-[11px] text-slate-700 dark:text-slate-200">
+                      <div className="flex items-start gap-1.5">
+                        <span className="font-bold text-sky-600 dark:text-sky-400 shrink-0">Toán:</span>
+                        <span className="line-clamp-1">{tocItems[0]}</span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <span className="font-bold text-amber-600 dark:text-amber-400 shrink-0">Vật lí:</span>
+                        <span className="line-clamp-1">{tocItems[1]}</span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <span className="font-bold text-violet-600 dark:text-violet-400 shrink-0">Hóa học:</span>
+                        <span className="line-clamp-1">{tocItems[2]}</span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <span className="font-bold text-teal-600 dark:text-teal-400 shrink-0">Sinh học:</span>
+                        <span className="line-clamp-1">{tocItems[3]}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4 Subject Buttons inside Grade Card (Math, Physics, Chemistry, Biology — NO CS here) */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    type="button"
+                    data-ripple="true"
+                    onClick={() => {
+                      navigate({
+                        subject: 'math',
+                        mathViewMode: 'catalog',
+                        mathTab: 'lectures',
+                        catalogGrade: gb.grade,
+                        catalogTrack: selectedGradeTrack,
+                        tutorOpen: false
+                      });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="grade-subject-btn min-h-[38px] px-2.5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Compass className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isEn ? 'Math' : 'Toán học'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-ripple="true"
+                    onClick={() => {
+                      navigate({
+                        subject: 'physics',
+                        physicsView: 'catalog',
+                        catalogGrade: gb.grade,
+                        catalogTrack: selectedGradeTrack,
+                        tutorOpen: false
+                      });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="grade-subject-btn min-h-[38px] px-2.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Zap className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isEn ? 'Physics' : 'Vật lí'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-ripple="true"
+                    onClick={() => {
+                      navigate({
+                        subject: 'chemistry',
+                        chemistryView: 'catalog',
+                        catalogGrade: gb.grade,
+                        catalogTrack: selectedGradeTrack,
+                        tutorOpen: false
+                      });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="grade-subject-btn min-h-[38px] px-2.5 py-2 bg-violet-50 dark:bg-violet-950/60 hover:bg-violet-600 text-violet-900 dark:text-violet-200 hover:text-white border border-violet-300/85 dark:border-violet-500/40 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <FlaskConical className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isEn ? 'Chemistry' : 'Hóa học'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-ripple="true"
+                    onClick={() => {
+                      navigate({
+                        subject: 'biology',
+                        biologyView: 'catalog',
+                        catalogGrade: gb.grade,
+                        catalogTrack: selectedGradeTrack,
+                        tutorOpen: false
+                      });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="grade-subject-btn min-h-[38px] px-2.5 py-2 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-600 text-teal-900 dark:text-teal-200 hover:text-white border border-teal-300/85 dark:border-teal-500/40 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Dna className="w-3.5 h-3.5 shrink-0" />
+                    <span>{isEn ? 'Biology' : 'Sinh học'}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* SEPARATE STANDALONE CS SECTION (OUTSIDE GRADES 6–12) */}
+        <div
+          id="classroom-cs-separate"
+          className="cs-spearhead-frame sci-frame bg-gradient-to-br from-emerald-50/90 via-white/95 to-cyan-50/85 dark:from-emerald-950/40 dark:via-slate-900/90 dark:to-cyan-950/35 border border-emerald-400/75 dark:border-emerald-500/40 p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-5"
+        >
+          <div className="space-y-2.5 min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+              <span>{isEn ? 'DEDICATED SEPARATE ZONE · COMPUTER SCIENCE' : 'KHU VỰC TÁCH RIÊNG NGOÀI KHỐI 6–12 · MÔN TIN HỌC'}</span>
+              <span aria-hidden="true">·</span>
+              <span>{isEn ? 'MATH–PHYSICS–CS SPEARHEAD' : 'MŨI NHỌN ĐỘI TUYỂN TOÁN – LÝ – TIN'}</span>
             </div>
+            <h3 className="font-display text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <Code2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>
+                {isEn
+                  ? `Computer Science & Algorithms (${csCount} + ${csSpecializedStageCount} Stages)`
+                  : `Tin học & Thuật toán (${csCount} bài VNOI + ${csSpecializedStageCount} chặng C++)`}
+              </span>
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed max-w-3xl">
+              {isEn
+                ? 'Computer Science is intentionally separated outside Grade 6–12 blocks (since Grades 6–8 focus on core Math & Science foundations), giving competitive coders direct access to 5 VNOI/C++ tracks, Sublime Text 4 IDE, Live Variable Trace 1-1, and 16 2D/3D algorithm visualizers.'
+                : 'Môn Tin học được tách riêng hoàn toàn khỏi khung Khối 6–12 (do khối 6–8 không cần thiết, tập trung vào Toán – Lý – Hóa – Sinh), giúp học sinh đội tuyển truy cập thẳng 5 lộ trình VNOI/C++, IDE Sublime Text 4, Truy vết biến 1-1 và 16 đồ thị thuật toán 2D/3D.'}
+            </p>
           </div>
 
-          {/* 2. PHYSICS CARD (3 cols on xl) */}
-          <div
-            data-ripple="true"
-            onClick={() => onNavigate('physics')}
-            className="xl:col-span-3 group sci-frame relative overflow-hidden bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-amber-300/85 dark:border-amber-500/30 hover:border-amber-500 hover:-translate-y-0.5 rounded-xl p-6 shadow-[0_14px_34px_-14px_rgba(245,158,11,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(245,158,11,0.3)] transition-all cursor-pointer flex flex-col justify-between gap-5"
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 320 200"
-              className="absolute inset-0 w-full h-full opacity-20 dark:opacity-35 pointer-events-none group-hover:opacity-50 transition-opacity"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 shrink-0 lg:w-[420px]">
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => onNavigate('cs')}
+              className="grade-subject-btn min-h-[42px] px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <path
-                d="M16 32 H130 L146 18 L162 46 L178 18 L194 32 H304 V168 H16 Z"
-                fill="none"
-                stroke="#fbbf24"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                className="animate-electric-flow"
-              />
-            </svg>
-            <div className="relative z-10 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="w-11 h-11 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200/90 dark:border-amber-800/70 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                  <Zap className="w-6 h-6 icon-anim-zap" />
-                </div>
-                <span className="font-mono text-[11px] font-bold px-2.5 py-1 rounded bg-amber-500/12 border border-amber-400/40 text-amber-800 dark:text-amber-300 tabular-nums">
-                  {physicsCount} {isEn ? 'lessons' : 'bài'} · {phyCounts.total} Lab 2D/3D
-                </span>
-              </div>
-              <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                {isEn ? `Experimental Physics (${physicsCount})` : `Vật lí thực nghiệm (${physicsCount} bài)`}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                {isEn
-                  ? `${phyCounts.count2D} 2D labs & ${phyCounts.count3D} 3D 60FPS models split into ${phyCounts.domainCount} domains, drag-and-drop 36 lab tools & What-If Physics 3D sandbox.`
-                  : `${phyCounts.count2D} Lab 2D & ${phyCounts.count3D} mô hình 3D chia thành ${phyCounts.domainCount} lĩnh vực, kéo thả 36 dụng cụ đo & Sandbox Định luật 3D.`}
-              </p>
-            </div>
-
-            <div className="relative z-10 pt-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNavigate('physics');
-                }}
-                className="cs-deck-btn min-h-[42px] px-3 py-2 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <Zap className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? 'Lectures & Lab' : 'Bài giảng & Lab'}</span>
-              </button>
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNavigate('physics_sims');
-                }}
-                className="cs-deck-btn min-h-[42px] px-3 py-2 rounded bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 border border-amber-300/85 dark:border-amber-500/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <Atom className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? '2D/3D Domains' : 'Mô phỏng 2D/3D'}</span>
-              </button>
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate({ subject: 'synapse_v2', futureTab: 'what_if_physics_3d', synapseMode: 'catalog', tutorOpen: false });
-                }}
-                className="cs-deck-btn min-h-[42px] px-3 py-2 rounded bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white border border-amber-500/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <Orbit className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>{isEn ? 'Physics Sandbox' : 'Sandbox 3D'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 3. CHEMISTRY CARD (2 cols on xl) */}
-          <div
-            data-ripple="true"
-            onClick={() => navigate({ subject: 'chemistry', chemistryView: 'catalog', tutorOpen: false })}
-            className="xl:col-span-2 group sci-frame relative overflow-hidden bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-violet-300/85 dark:border-violet-500/30 hover:border-violet-500 hover:-translate-y-0.5 rounded-xl p-6 shadow-[0_14px_34px_-14px_rgba(139,92,246,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(139,92,246,0.3)] transition-all cursor-pointer flex flex-col justify-between gap-5"
-          >
-            <span aria-hidden="true" className="chem-energy-sweep" />
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 220 140"
-              className="absolute right-0 bottom-12 w-44 h-28 opacity-20 dark:opacity-30 pointer-events-none group-hover:opacity-45 transition-opacity"
+              <Code2 className="w-4 h-4 shrink-0" />
+              <span>{isEn ? 'Lectures & Code Judge' : 'Bài giảng & Code Judge'}</span>
+            </button>
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => onNavigate('cs_sims')}
+              className="grade-subject-btn min-h-[42px] px-3.5 py-2 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border border-emerald-400/70 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <circle cx="155" cy="70" r="34" fill="none" stroke="#8b5cf6" strokeWidth="1.8" strokeDasharray="6 4" className="animate-orbit-slow" style={{ transformOrigin: '155px 70px' }} />
-              <circle cx="155" cy="70" r="18" fill="none" stroke="#f59e0b" strokeWidth="1.6" />
-              <line x1="121" y1="70" x2="90" y2="52" stroke="#8b5cf6" strokeWidth="1.8" className="animate-electric-flow" />
-              <circle cx="90" cy="52" r="5" fill="#10b981" />
-              <circle cx="155" cy="70" r="5" fill="#8b5cf6" />
-            </svg>
-            <div className="relative z-10 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="w-11 h-11 rounded-lg bg-violet-50 dark:bg-violet-950/60 border border-violet-200/90 dark:border-violet-800/70 text-violet-600 dark:text-violet-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                  <FlaskConical className="w-6 h-6 icon-anim-flask" />
-                </div>
-                <span className="font-mono text-[11px] font-bold px-2 py-1 rounded bg-violet-500/12 border border-violet-400/35 text-violet-800 dark:text-violet-300 tabular-nums">
-                  {chemistryCount} {isEn ? 'lessons' : 'bài'} · {chemSimTotal}+4
-                </span>
-              </div>
-              <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                {isEn ? `Chemistry (${chemistryCount})` : `Hóa học (${chemistryCount} bài)`}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                {isEn
-                  ? `GDPT 2018, 2006 & Olympiad lessons, ${CHEMISTRY_2D_SIMS.length} 2D + ${CHEMISTRY_3D_SIMS.length} 3D molecular labs & 4 Chemistry Sandboxes (Mix & Titration, Stoichiometry, Organic, Electrochem).`
-                  : `Đủ GDPT 2018, 2006 & Chuyên, ${CHEMISTRY_2D_SIMS.length} Lab 2D + ${CHEMISTRY_3D_SIMS.length} mô hình VSEPR/Tinh thể 3D & 4 Sandbox Hóa (Pha chế, Cân bằng PTHH, Hữu cơ, Điện phân).`}
-              </p>
-            </div>
-
-            <div className="relative z-10 pt-1 grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate({ subject: 'chemistry', chemistryView: 'catalog', tutorOpen: false });
-                }}
-                className="cs-deck-btn w-full min-h-[40px] px-3 py-2 rounded bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? 'Chemistry Lectures & Lab' : 'Bài giảng & Phòng Lab Hóa'}</span>
-              </button>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  data-ripple="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate({ subject: 'chemistry_sims', chemistryView: 'sim2d_hub', tutorOpen: false });
-                  }}
-                  className="cs-deck-btn min-h-[38px] px-2.5 py-2 rounded bg-violet-50 dark:bg-violet-950/60 hover:bg-violet-100 text-violet-900 dark:text-violet-200 border border-violet-300/80 dark:border-violet-500/40 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer whitespace-nowrap"
-                >
-                  <Atom className="w-3.5 h-3.5 shrink-0" />
-                  <span>{isEn ? '2D/3D Sims' : 'Mô phỏng 2D/3D'}</span>
-                </button>
-                <button
-                  type="button"
-                  data-ripple="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate({ subject: 'chemistry_sims', chemistryView: 'sandbox', tutorOpen: false });
-                  }}
-                  className="cs-deck-btn min-h-[38px] px-2.5 py-2 rounded bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white border border-violet-400/40 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer whitespace-nowrap"
-                >
-                  <FlaskConical className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-                  <span>{isEn ? 'Chem Sandbox' : 'Sandbox Hóa'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. BIOLOGY CARD (2 cols on xl) */}
-          <div
-            data-ripple="true"
-            onClick={() => navigate({ subject: 'biology', biologyView: 'catalog', tutorOpen: false })}
-            className="xl:col-span-2 group sci-frame relative overflow-hidden bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-teal-300/85 dark:border-teal-500/30 hover:border-teal-500 hover:-translate-y-0.5 rounded-xl p-6 shadow-[0_14px_34px_-14px_rgba(20,184,166,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(20,184,166,0.3)] transition-all cursor-pointer flex flex-col justify-between gap-5"
-          >
-            <span aria-hidden="true" className="bio-helix-sweep" />
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 240 120"
-              className="absolute right-0 bottom-14 w-48 h-24 opacity-20 dark:opacity-30 pointer-events-none group-hover:opacity-45 transition-opacity"
+              <Binary className="w-4 h-4 shrink-0" />
+              <span>{isEn ? '2D/3D Algorithms' : 'Mô phỏng Thuật toán 2D/3D'}</span>
+            </button>
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => navigate({ subject: 'cs', csViewMode: 'custom', tutorOpen: false })}
+              className="grade-subject-btn min-h-[42px] px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white border border-emerald-400/40 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <path d="M20 35 Q70 95 120 35 T220 35" fill="none" stroke="#14b8a6" strokeWidth="2.2" className="animate-wave-glide" />
-              <path d="M20 85 Q70 25 120 85 T220 85" fill="none" stroke="#38bdf8" strokeWidth="2" />
-              <line x1="70" y1="55" x2="70" y2="65" stroke="#10b981" strokeWidth="2" />
-              <line x1="120" y1="35" x2="120" y2="85" stroke="#14b8a6" strokeWidth="1.6" />
-              <line x1="170" y1="55" x2="170" y2="65" stroke="#38bdf8" strokeWidth="2" />
-            </svg>
-            <div className="relative z-10 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="w-11 h-11 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200/90 dark:border-teal-800/70 text-teal-600 dark:text-teal-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                  <Dna className="w-6 h-6 icon-anim-dna" />
-                </div>
-                <span className="font-mono text-[11px] font-bold px-2 py-1 rounded bg-teal-500/12 border border-teal-400/35 text-teal-800 dark:text-teal-300 tabular-nums">
-                  {biologyCount} {isEn ? 'lessons' : 'bài'} · {bioSimTotal}+4
-                </span>
-              </div>
-              <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                {isEn ? `Biology (${biologyCount})` : `Sinh học (${biologyCount} bài)`}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                {isEn
-                  ? `GDPT 2018, 2006 & Olympiad lessons, ${BIOLOGY_2D_SIMS.length} 2D + ${BIOLOGY_3D_SIMS.length} 3D cellular/DNA labs & 4 Biology Sandboxes (Mendel Punnett, Codon, Microscope, Ecosystem).`
-                  : `Đủ GDPT 2018, 2006 & Chuyên, ${BIOLOGY_2D_SIMS.length} Lab 2D + ${BIOLOGY_3D_SIMS.length} mô hình Tế bào/ADN 3D & 4 Sandbox Sinh (Lai Menđen, Giải mã mARN, Kính hiển vi, Hệ sinh thái).`}
-              </p>
-            </div>
-
-            <div className="relative z-10 pt-1 grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate({ subject: 'biology', biologyView: 'catalog', tutorOpen: false });
-                }}
-                className="cs-deck-btn w-full min-h-[40px] px-3 py-2 rounded bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? 'Biology Lectures & Lab' : 'Bài giảng & Phòng Lab Sinh'}</span>
-              </button>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  data-ripple="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate({ subject: 'biology_sims', biologyView: 'sim2d_hub', tutorOpen: false });
-                  }}
-                  className="cs-deck-btn min-h-[38px] px-2.5 py-2 rounded bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-900 dark:text-teal-200 border border-teal-300/80 dark:border-teal-500/40 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer whitespace-nowrap"
-                >
-                  <Microscope className="w-3.5 h-3.5 shrink-0" />
-                  <span>{isEn ? '2D/3D Sims' : 'Mô phỏng 2D/3D'}</span>
-                </button>
-                <button
-                  type="button"
-                  data-ripple="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate({ subject: 'biology_sims', biologyView: 'sandbox', tutorOpen: false });
-                  }}
-                  className="cs-deck-btn min-h-[38px] px-2.5 py-2 rounded bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white border border-teal-400/40 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer whitespace-nowrap"
-                >
-                  <Dna className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-                  <span>{isEn ? 'Bio Sandbox' : 'Sandbox Sinh'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 5. CS CARD (2 cols on xl) */}
-          <div
-            data-ripple="true"
-            onClick={() => onNavigate('cs')}
-            className="md:col-span-2 xl:col-span-2 group sci-frame relative overflow-hidden bg-white/90 dark:bg-slate-900/80 backdrop-blur-md ring-1 ring-inset ring-white/60 dark:ring-white/10 border border-emerald-300/85 dark:border-emerald-500/30 hover:border-emerald-500 hover:-translate-y-0.5 rounded-xl p-6 shadow-[0_14px_34px_-14px_rgba(16,185,129,0.18)] hover:shadow-[0_22px_46px_-16px_rgba(16,185,129,0.3)] transition-all cursor-pointer flex flex-col justify-between gap-5"
-          >
-            <div className="pointer-events-none absolute right-6 top-0 w-24 h-full overflow-hidden opacity-20 dark:opacity-30">
-              <div className="animate-matrix-sweep font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400 leading-tight select-none">
-                0101101<br />DP[i][j]<br />BFS(u)<br />1010011
-              </div>
-            </div>
-
-            <div className="relative z-10 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="w-11 h-11 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/90 dark:border-emerald-800/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
-                  <Code2 className="w-6 h-6 icon-anim-code" />
-                </div>
-                <span className="font-mono text-[11px] font-bold px-2 py-1 rounded bg-emerald-500/12 border border-emerald-400/35 text-emerald-800 dark:text-emerald-300 tabular-nums">
-                  {csCount}+{csSpecializedStageCount} {isEn ? 'stages' : 'chặng'}
-                </span>
-              </div>
-              <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white tracking-tight">
-                {isEn
-                  ? `CS · 5 Roadmaps (${csCount}+${csSpecializedStageCount})`
-                  : `Tin học · 5 Lộ Trình (${csCount}+${csSpecializedStageCount})`}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                {isEn
-                  ? '5 complete paths (VNOI CP + C++ Career), Sublime Text 4 IDE, Live Code Trace 1-1, Thought Replay & 16 algo 2D/3D graphs.'
-                  : '5 lộ trình VNOI & C++, IDE Sublime Text 4, Truy vết Biến 1-1, Replay Tư Duy, 16 đồ thị thuật toán 2D/3D & Sandbox Code.'}
-              </p>
-            </div>
-
-            <div className="relative z-10 pt-1 grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                data-ripple="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNavigate('cs');
-                }}
-                className="cs-deck-btn w-full min-h-[40px] px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <Code2 className="w-3.5 h-3.5 shrink-0" />
-                <span>{isEn ? 'Lectures & Judge Lab' : 'Bài giảng & Code Judge'}</span>
-              </button>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  data-ripple="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onNavigate('cs_sims');
-                  }}
-                  className="cs-deck-btn min-h-[38px] px-2.5 py-2 rounded bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-200 border border-emerald-300/80 dark:border-emerald-500/40 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer whitespace-nowrap"
-                >
-                  <Binary className="w-3.5 h-3.5 shrink-0" />
-                  <span>{isEn ? 'Algo 2D/3D' : 'Mô phỏng 2D/3D'}</span>
-                </button>
-                <button
-                  type="button"
-                  data-ripple="true"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate({ subject: 'cs', csViewMode: 'custom', tutorOpen: false });
-                  }}
-                  className="cs-deck-btn min-h-[38px] px-2.5 py-2 rounded bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white border border-emerald-400/40 text-xs font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer whitespace-nowrap"
-                >
-                  <Code2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>{isEn ? 'Code Sandbox' : 'Sandbox Code'}</span>
-                </button>
-              </div>
-            </div>
+              <Cpu className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{isEn ? 'Sublime Code Sandbox' : 'Sandbox Code Sublime'}</span>
+            </button>
+            <button
+              type="button"
+              data-ripple="true"
+              onClick={() => scrollToLectureDirectory('cs', 'cs_separate')}
+              className="grade-toc-btn min-h-[42px] px-3.5 py-2 bg-emerald-500/15 hover:bg-emerald-600 hover:text-white text-emerald-800 dark:text-emerald-200 border border-emerald-400/60 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <ListOrdered className="w-4 h-4 shrink-0" />
+              <span>{isEn ? 'CS Directory' : 'Mục lục Tin học'}</span>
+            </button>
           </div>
         </div>
       </section>
@@ -2647,6 +2747,7 @@ export const ClassroomOverview: React.FC<ClassroomOverviewProps> = ({
             id="classroom-lecture-directory"
             subjectFilter={directorySubject}
             onSubjectFilterChange={setDirectorySubject}
+            gradeFilterRequest={directoryGrade}
             onSelectLecture={handleSelectLectureFromDirectory}
             onSelectCsTrack={handleSelectCsTrackFromDirectory}
           />

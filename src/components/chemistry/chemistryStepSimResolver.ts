@@ -51,7 +51,11 @@ const CHEM_2D_TO_3D: Record<ChemistrySimType, Chemistry3DMode> = {
   stoichiometry_gas_2d: 'equilibrium_piston_3d',
   carbonyl_alcohol_2d: 'carbonyl_alcohol_3d',
   qualitative_ion_2d: 'halogen_ion_bench_3d',
-  metallurgy_furnace_2d: 'metal_corrosion_3d'
+  metallurgy_furnace_2d: 'metal_corrosion_3d',
+  states_of_matter_2d: 'matter_states_3d',
+  mixture_separation_2d: 'separation_lab_3d',
+  bohr_shells_2d: 'ionic_covalent_3d',
+  acid_base_oxide_2d: 'indicator_bench_3d'
 };
 
 const KEYWORD_RULES: {
@@ -60,7 +64,11 @@ const KEYWORD_RULES: {
   sim3d?: Chemistry3DMode;
   label: string;
 }[] = [
-  { pattern: /orbital|obitan|phân lớp|cấu hình electron|bohr|lượng tử/i, sim2d: 'atomic_orbitals_2d', sim3d: 'atomic_orbitals_3d', label: 'Cấu hình Electron & Orbital Nguyên tử' },
+  { pattern: /rắn|lỏng|khí|chuyển thể|nóng chảy|sôi|bay hơi|không khí|khí oxygen|duy trì sự cháy/i, sim2d: 'states_of_matter_2d', sim3d: 'matter_states_3d', label: 'Ba Thể Chất, Chuyển Thể & Thành Phần Không Khí' },
+  { pattern: /tách chất|giấy lọc|cô cạn|phễu chiết|nam châm|hỗn hợp|dung dịch|chất tinh khiết|đồng nhất/i, sim2d: 'mixture_separation_2d', sim3d: 'separation_lab_3d', label: 'Phân Loại Hỗn Hợp & Phương Pháp Tách Chất' },
+  { pattern: /mô hình bohr|lớp electron|hóa trị|nguyên tử khối|amu|cho.?nhận|góp chung|ion và cộng hóa trị/i, sim2d: 'bohr_shells_2d', sim3d: 'ionic_covalent_3d', label: 'Vỏ Nguyên Tử Bohr, Hóa Trị & Liên Kết Ion – CHT' },
+  { pattern: /quỳ tím|thang ph|oxide|oxit|muối|acid.*base|bazơ|trung hòa|bắp cải tím/i, sim2d: 'acid_base_oxide_2d', sim3d: 'indicator_bench_3d', label: 'Acid – Base – Oxide – Muối & Chỉ Thị Màu pH' },
+  { pattern: /orbital|obitan|phân lớp|cấu hình electron|lượng tử/i, sim2d: 'atomic_orbitals_2d', sim3d: 'atomic_orbitals_3d', label: 'Cấu hình Electron & Orbital Nguyên tử' },
   { pattern: /tuần hoàn|bán kính|độ âm điện|năng lượng ion/i, sim2d: 'periodic_trends_2d', sim3d: 'periodic_tower_3d', label: 'Biến thiên Tuần hoàn Tính chất Nguyên tố' },
   { pattern: /quang phổ|ngọn lửa|vạch phát xạ|nmr|hồng ngoại/i, sim2d: 'flame_spectroscopy_2d', sim3d: 'spectroscopy_prism_3d', label: 'Quang phổ Vạch & Màu Ngọn lửa Ion Kim loại' },
   { pattern: /vsepr|liên kết|cộng hóa trị|lai hóa|sp2|sp3|hydrogen/i, sim2d: 'vsepr_bonding_2d', sim3d: 'vsepr_geometry_3d', label: 'Hình học Phân tử VSEPR & Lai hóa Orbital' },

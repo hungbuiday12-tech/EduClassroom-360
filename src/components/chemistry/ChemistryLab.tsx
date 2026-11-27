@@ -82,20 +82,29 @@ export function buildChemistryLectureSteps(lesson: ChemistryLesson): LectureStep
       stepType: idx === 0 ? 'concept' : 'derivation',
       conceptSection: isSpecialized
         ? `${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}`
-        : `**Khái niệm cần nắm & Tính chất cốt lõi:**\n${sec.content}\n\n• **Trọng tâm ${lesson.grade}**: ${lesson.subtitle}\n• **Mẹo nhận biết nhanh**: Quan sát kĩ trạng thái chất (rắn, kết tủa, khí thoát ra, đổi màu dung dịch) để chọn đúng phản ứng.`,
+        : `**Giải thích đơn giản, dễ hiểu (${lesson.grade}):**\n${sec.content}\n\n• **Ý chính cần nhớ**: ${lesson.subtitle}\n• **Mẹo nhận biết ngoài đời**: Hãy chú ý trạng thái chất (rắn, lỏng, khí bay lên, kết tủa lắng xuống, hay đổi màu dung dịch) để đoán ngay hiện tượng trước khi viết công thức.`,
       formulaSection: formula
         ? {
             primaryFormula: formula,
             secondaryFormulas: secondary,
-            variablesNote: `Áp dụng cho chủ đề "${lesson.title}" (${lesson.stageLabel || lesson.grade}).`
+            variablesNote: `Áp dụng trực tiếp cho "${lesson.title}" (${lesson.stageLabel || lesson.grade}).`
           }
         : undefined,
       deepDiveSection: isSpecialized
         ? `${sec.content}\n\n**Phương pháp giải nhanh Hóa học ${lesson.grade} (Chuyên/HSG)**:\n• Viết đúng phương trình hóa học hoặc bán phản ứng oxi hóa – khử và cân bằng hệ số.\n• Áp dụng định luật bảo toàn khối lượng, bảo toàn nguyên tố và bảo toàn electron trước khi lập hệ phương trình.`
-        : `**Hướng dẫn từng bước dễ hiểu (${lesson.grade}):**\n1. **Đọc kĩ hiện tượng**: Xác định chất tham gia, chất sản phẩm và màu sắc/kết tủa/khí đặc trưng.\n2. **Cân bằng phương trình**: Ghi đúng hóa trị và cân bằng số nguyên tử hai vế trước khi tính số mol.\n3. **Đổi về số mol**: Dùng $n = m/M$, $n = C_M \\cdot V$ hoặc $n = V/24{,}79$ (điều kiện chuẩn) rồi tính theo tỉ lệ phương trình.`,
+        : `**Cách làm từng bước từ dễ đến khó (${lesson.grade}):**\n1. **Đọc kĩ hiện tượng**: Gạch chân xem chất nào cho vào, chất nào sinh ra (có bọt khí, kết tủa hay tỏa nhiệt không).\n2. **Viết & cân bằng phương trình**: Kiểm tra hóa trị để viết đúng công thức rồi đếm số nguyên tử hai vế bằng nhau.\n3. **Tính toán đơn giản**: Đổi dữ kiện đề bài sang số mol ($n = m/M$ hoặc $n = C_M \\cdot V$), rồi nhân chéo theo tỉ lệ phương trình.`,
+      stepByStepNotes: isSpecialized
+        ? undefined
+        : [
+            `Bước 1 (Hiểu bản chất): ${sec.heading} mô tả dấu hiệu nhận biết và tính chất đặc trưng của ${lesson.title}.`,
+            'Bước 2 (Kiểm tra điều kiện & cân bằng): Viết đúng công thức hóa học, cân bằng hệ số trước khi bấm máy tính.',
+            'Bước 3 (Kiểm chứng trên 2D/3D): Kéo thanh trượt và bấm dụng cụ thí nghiệm ở khung bên dưới để nhìn trực tiếp sự đổi màu, kết tủa hoặc khí.'
+          ],
       teacherExplanation: sec.content,
       formulaHighlight: formula || undefined,
-      quickIntuition: `Nắm bản chất "${sec.heading}" rồi thử tự tay thao tác trên phòng thí nghiệm 3D ngay bên dưới để thấy hiện tượng trực tiếp.`,
+      quickIntuition: isSpecialized
+        ? `Nắm bản chất "${sec.heading}" rồi thử tự tay thao tác trên phòng thí nghiệm 3D ngay bên dưới để thấy hiện tượng trực tiếp.`
+        : `Hãy tưởng tượng như ngoài đời thật cho mục "${sec.heading}", đọc 3 bước ngắn ở trên rồi kéo thử thí nghiệm 2D/3D ngay bên dưới để nhìn thấy phản ứng diễn ra trước mắt.`,
       workedExample:
         idx === lesson.theorySections.length - 1 && essay
           ? {
@@ -104,7 +113,9 @@ export function buildChemistryLectureSteps(lesson: ChemistryLesson): LectureStep
               answer: essay.finalAnswer
             }
           : undefined,
-      keyTakeaway: `Nắm chắc khái niệm, tính chất nhận biết và đơn vị chuẩn trong mục "${sec.heading}".`,
+      keyTakeaway: isSpecialized
+        ? `Nắm chắc khái niệm, tính chất nhận biết và đơn vị chuẩn trong mục "${sec.heading}".`
+        : `Chỉ cần nhớ: nhận diện dấu hiệu phản ứng ở "${sec.heading}", cân bằng đúng phương trình và tính qua số mol.`,
       miniQuiz: mcq
         ? [
             {
@@ -187,6 +198,16 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
   useEffect(() => {
     setSelectedStage('all');
   }, [selectedTrack, selectedGrade, selectedTier]);
+
+  useEffect(() => {
+    if (location.catalogGrade) {
+      setSelectedGrade(location.catalogGrade);
+      setSelectedStage('all');
+    }
+    if (location.catalogTrack) {
+      setSelectedTrack(location.catalogTrack);
+    }
+  }, [location.catalogGrade, location.catalogTrack]);
 
   const baseTrackLessons = useMemo(() => {
     return CHEMISTRY_LESSONS.filter((l) => {
@@ -358,7 +379,7 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
                   <span>{isEn ? 'Back' : 'Quay lại'}</span>
                 </button>
                 <span className="font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
-                  Hóa Học 9 – 12 &amp; Bồi Dưỡng Chuyên
+                  Hóa Học 6 – 12 &amp; Bồi Dưỡng Chuyên
                 </span>
                 <span aria-hidden="true">·</span>
                 <span>{CHEMISTRY_LESSONS.length} bài giảng chuẩn 2D/3D</span>
@@ -401,7 +422,7 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
                 <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Trang Mô Phỏng &amp; Sandbox Hóa Học Tách Riêng Theo {CHEMISTRY_DOMAINS.length} Lĩnh Vực (Lớp 9 – 12)</span>
+                <span>Trang Mô Phỏng &amp; Sandbox Hóa Học Tách Riêng Theo {CHEMISTRY_DOMAINS.length} Lĩnh Vực (Lớp 6 – 12)</span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {CHEMISTRY_DOMAINS.map((d) => d.shortName).join(' · ')} — kèm Bảng tuần hoàn tương tác, Chuẩn độ pH &amp; Mô hình VSEPR 3D
@@ -424,8 +445,8 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
               [
                 {
                   id: 'khong_chuyen' as CurriculumTrack,
-                  title: 'Khu GDPT 2018 (Lớp 9 – 12)',
-                  sub: `KHTN 9 & Hóa 10–12 chuẩn mới · ${CHEMISTRY_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học`,
+                  title: 'Khu GDPT 2018 (Lớp 6 – 12)',
+                  sub: `KHTN 6–9 & Hóa 10–12 chuẩn mới · ${CHEMISTRY_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học`,
                   accentHex: '#0284c7',
                   secondaryHex: '#38bdf8',
                   icon: FlaskConical,
@@ -441,7 +462,7 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
                 {
                   id: 'gdpt_2006' as CurriculumTrack,
                   title: 'Khu GDPT 2006 (Không chuyên)',
-                  sub: `Hóa học 9–12 chuẩn SGK 2006 · ${CHEMISTRY_LESSONS.filter((l) => l.track === 'gdpt_2006').length} bài kèm 2D & 3D`,
+                  sub: `KHTN/Hóa 6–12 chuẩn SGK 2006 · ${CHEMISTRY_LESSONS.filter((l) => l.track === 'gdpt_2006').length} bài kèm 2D & 3D`,
                   accentHex: '#059669',
                   secondaryHex: '#14b8a6',
                   icon: BookOpen,
@@ -543,7 +564,7 @@ export const ChemistryLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBa
             {isStandardTrack ? (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-xs font-semibold text-slate-500 mr-1">Khối lớp:</span>
-                {(['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((grade) => {
+                {(['all', 'Lớp 6', 'Lớp 7', 'Lớp 8', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((grade) => {
                   const count =
                     grade === 'all'
                       ? CHEMISTRY_LESSONS.filter((l) => l.track === selectedTrack).length

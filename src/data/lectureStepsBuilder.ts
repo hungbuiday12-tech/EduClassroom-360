@@ -279,6 +279,11 @@ function buildVariablesNote(
           '• Biện luận đầy đủ các trường hợp suy biến (hệ số bậc cao bằng $0$, trường hợp biên) và kiểm tra dấu bằng khi đánh giá cực trị.'
         );
       }
+    } else if (gradeText.includes('6') || gradeText.includes('7') || gradeText.includes('8')) {
+      lines.push('• Đọc kỹ đề bài xem bài cho đại lượng nào, hỏi đại lượng nào; gạch chân các từ khóa quan trọng (như "nhiều nhất", "chia đều", "tỉ lệ thuận/nghịch", "song song", "vuông tại...").');
+      if (formula && /[a-zA-Z]/.test(formula)) {
+        lines.push('• Thử thay một con số nhỏ thật dễ (ví dụ $x = 1, 2$) để hiểu ngay ý nghĩa công thức trước khi tính toán với số lớn hoặc phân số.');
+      }
     } else if (gradeText.includes('9')) {
       lines.push('• Nhớ đặt điều kiện có nghĩa trước khi giải (mẫu thức $\\ne 0$, biểu thức trong căn bậc hai $\\ge 0$, ẩn biểu diễn độ dài/số lượng $> 0$).');
       if (formula && /[a-zA-Z]/.test(formula)) {
@@ -294,6 +299,9 @@ function buildVariablesNote(
     if (isChuyen) {
       lines.push('• Quy đổi đồng nhất toàn bộ đại lượng về hệ SI; xác định rõ hệ quy chiếu (quán tính hay phi quán tính) và phương trình liên kết trước khi chiếu vectơ.');
       lines.push('• Kiểm tra thứ nguyên của biểu thức kết quả và xét các trường hợp giới hạn đặc biệt để tự kiểm chứng đáp án.');
+    } else if (gradeText.includes('6') || gradeText.includes('7') || gradeText.includes('8')) {
+      lines.push('• Bước đầu tiên khi làm bài Lí THCS: Tóm tắt đề bài ra nháp và đổi về đơn vị quen thuộc ($\\text{km/h} \\div 3{,}6 \\to \\text{m/s}$, $\\text{cm} \\div 100 \\to \\text{m}$, $\\text{g} \\div 1000 \\to \\text{kg}$, $\\text{phút} \\times 60 \\to \\text{s}$).');
+      lines.push('• Hình dung hiện tượng bằng ví dụ ngoài đời thật (đẩy cánh cửa, bập bênh, soi gương, thuyền nổi trên nước) rồi mới bấm máy tính.');
     } else {
       lines.push('• Đổi các số liệu đề bài về đơn vị chuẩn trước khi thay số (ví dụ: $\\text{cm} \\to \\text{m}$, $\\text{g} \\to \\text{kg}$, $\\text{phút/giờ} \\to \\text{s}$, $\\text{km/h} \\div 3{,}6 \\to \\text{m/s}$).');
       lines.push('• Chú ý dấu cộng/trừ theo chiều dương đã chọn: vật đi ngược chiều dương thì vận tốc mang dấu âm, vật tỏa nhiệt hoặc sinh công cần xét đúng quy ước.');
@@ -655,9 +663,29 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
           st.keyTakeaway
         );
 
+      const isStandardPhys = lesson.track !== 'chuyen';
+      const cleanSecTitle = stripLeadingNumber(st.stepTitle);
+      const quickIntuition =
+        st.quickIntuition ||
+        (isStandardPhys
+          ? `Hiểu đơn giản phần "${cleanSecTitle}": tập trung xem đại lượng nào thay đổi kéo theo đại lượng nào tăng/giảm, rồi kéo thanh trượt ở mô phỏng 2D/3D bên dưới để thấy tận mắt.`
+          : undefined);
+      const stepByStepNotes =
+        st.stepByStepNotes && st.stepByStepNotes.length > 0
+          ? st.stepByStepNotes
+          : isStandardPhys
+          ? [
+              `Bước 1 — Đọc & Đổi đơn vị: Liệt kê các số đề cho và đổi thống nhất về đơn vị chuẩn (m, kg, s, N, V, A).`,
+              `Bước 2 — Hình dung & Chọn công thức: Kéo thử mô phỏng 2D/3D để xem hiện tượng, chọn công thức ${primaryFormula ? `$${primaryFormula}$` : 'cốt lõi của phần này'}.`,
+              `Bước 3 — Tính & Kiểm tra: Thay số cẩn thận và kiểm tra xem đơn vị, độ lớn kết quả có hợp lý ngoài thực tế không.`
+            ]
+          : undefined;
+
       return enrichLectureStepWithConceptsAndAnnotations(
         {
           ...st,
+          quickIntuition,
+          stepByStepNotes,
           conceptSection,
           formulaSection: st.formulaSection || (primaryFormula ? {
             primaryFormula,
@@ -736,24 +764,39 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
     ].slice(0, 2);
 
     const sentences = sec.content.split('\n').map((s) => s.trim()).filter(Boolean);
+    const cleanHeading = stripLeadingNumber(sec.heading);
     const conceptSection =
       sentences.length > 0
-        ? `${sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join('\n')}\n\n• **Định hướng học phần này**: ${
+        ? `${sentences.join('\n')}\n\n• **Tóm gọn dễ hiểu (${lesson.grade})**: ${
             lesson.track === 'chuyen'
               ? `Khu Chuyên Lí · ${tierGuidance} (${lesson.grade}).`
-              : `${lesson.grade} · Chuẩn chương trình phổ thông (hiểu bản chất hiện tượng trước rồi mới thay số tính toán).`
+              : `Hãy hình dung hiện tượng "${cleanHeading}" bằng ví dụ gần gũi quanh em (trên mô phỏng 2D & 3D ngay dưới đây) trước khi nhớ công thức.`
           }`
         : sec.content;
 
     const deepDiveSection =
       lesson.track === 'chuyen'
         ? `${sec.content}\n\n**Phân tích Chuyên sâu & Phương pháp giải bài Chuyên**:\n• Xây dựng mô hình vật lí đầy đủ (chọn hệ quy chiếu, phân tích điều kiện biên/ràng buộc hình học hoặc nút mạch) trước khi lập phương trình.\n• Kiểm tra thứ nguyên công thức kết quả và xét trường hợp giới hạn đặc biệt để tự kiểm chứng.`
-        : `${sec.content}\n\n**Cách hiểu nhanh & Mẹo làm bài ${lesson.grade}**:\n• Tóm tắt các đại lượng đề bài đã cho và đổi ngay về đơn vị chuẩn ($\\text{m}$, $\\text{kg}$, $\\text{s}$, $\\text{V}$, $\\text{A}$, $\\Omega$) để không bị lệch kết quả.\n• Hình dung hiện tượng thực tế hoặc vẽ nhanh sơ đồ minh họa để xác định đúng chiều chuyển động / dấu của đại lượng rồi mới áp dụng công thức.`;
+        : `**Giải thích đơn giản & Cách làm bài ${lesson.grade} từng bước**:\n• **Hiểu bằng trực giác**: ${lesson.description}\n• **Mẹo nhớ đơn vị**: Luôn đổi về đơn vị chuẩn ($\\text{m}, \\text{kg}, \\text{s}, \\text{N}, \\text{V}, \\text{A}$) ngay dòng đầu tiên của bài giải.\n• **Tự kiểm chứng**: Bật mô phỏng 2D/3D ở bên dưới, kéo thử tham số tăng lên hoặc giảm đi để chắc chắn mình hiểu đúng chiều tăng – giảm.`;
 
     const keyTakeaway =
       lesson.track === 'chuyen'
-        ? `Nắm chắc điều kiện giới hạn và cách lập phương trình tổng quát cho mục "${stripLeadingNumber(sec.heading)}".`
-        : `Hiểu rõ ý nghĩa từng đại lượng và đổi đúng đơn vị khi áp dụng phần "${stripLeadingNumber(sec.heading)}".`;
+        ? `Nắm chắc điều kiện giới hạn và cách lập phương trình tổng quát cho mục "${cleanHeading}".`
+        : `Hiểu rõ ý nghĩa thực tế từng đại lượng, đổi đúng đơn vị rồi mới thay số vào phần "${cleanHeading}".`;
+
+    const quickIntuition =
+      lesson.track !== 'chuyen'
+        ? `Trong mục "${cleanHeading}", bạn chỉ cần nắm quy luật tăng/giảm cốt lõi${primaryFormula ? ` qua công thức $${primaryFormula}$` : ''} và thử thay đổi thông số trực tiếp ở khung thí nghiệm 2D/3D ngay dưới.`
+        : undefined;
+
+    const stepByStepNotes =
+      lesson.track !== 'chuyen'
+        ? [
+            `Bước 1 — Đọc đề & Tóm tắt: Viết rõ các số liệu đã cho và đổi về cùng hệ đơn vị chuẩn.`,
+            `Bước 2 — Nhìn mô phỏng & Chọn công thức: Đối chiếu hiện tượng trên thí nghiệm 2D/3D, viết công thức${primaryFormula ? ` $${primaryFormula}$` : ''}.`,
+            `Bước 3 — Thay số & Kết luận: Tính giá trị kèm đơn vị đúng, kiểm tra xem con số có hợp lí thực tế không.`
+          ]
+        : undefined;
 
     const q1 =
       takeNextPracticeMCQ(idx, 1) ||
@@ -789,6 +832,8 @@ export function buildPhysicsLectureSteps(lesson: PhysicsLesson): LectureStep[] {
     rawSteps.push({
       stepTitle: sec.heading,
       stepType: idx === 0 ? 'concept' : 'derivation',
+      quickIntuition,
+      stepByStepNotes,
       conceptSection,
       formulaSection: {
         primaryFormula,
@@ -915,9 +960,28 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
         st.deepDiveSection ||
         `${st.teacherExplanation}${st.keyTakeaway ? `\n\n• **Bí kíp nhớ nhanh**: ${st.keyTakeaway}` : ''}`;
 
+      const cleanStepName = stripLeadingNumber(st.stepTitle);
+      const quickIntuition =
+        st.quickIntuition ||
+        (!isChuyenMath
+          ? `Hiểu nhanh phần "${cleanStepName}": nhìn mô hình 2D/3D ngay bên dưới để thấy trực giác hình học hoặc đồ thị trước khi biến đổi phép tính.`
+          : undefined);
+      const stepByStepNotes =
+        st.stepByStepNotes && st.stepByStepNotes.length > 0
+          ? st.stepByStepNotes
+          : !isChuyenMath
+          ? [
+              `Bước 1 — Đọc kỹ & Đặt điều kiện: Xác định rõ đề cho gì, hỏi gì và ghi điều kiện xác định (mẫu $\\ne 0$, trong căn $\\ge 0$).`,
+              `Bước 2 — Liên hệ công thức & Đồ thị 2D/3D: Dùng${primaryFormula ? ` $${primaryFormula}$` : ' quy tắc trọng tâm'} kết hợp quan sát mô phỏng để biến đổi.`,
+              `Bước 3 — Kiểm tra lại đáp số: Thay thử kết quả ngược lại vào đề bài để chắc chắn đúng dấu và thỏa điều kiện.`
+            ]
+          : undefined;
+
       return enrichLectureStepWithConceptsAndAnnotations(
         {
           ...st,
+          quickIntuition,
+          stepByStepNotes,
           conceptSection,
           formulaSection: st.formulaSection || (primaryFormula ? {
             primaryFormula,
@@ -1029,7 +1093,7 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
 
     const conceptSection = isChuyenMath
       ? `${rawTheory}\n\n• **Định hướng ${mathTierLabel}**: Nắm vững giả thiết cần và đủ, cấu trúc chứng minh và điều kiện xảy ra dấu bằng trước khi biến đổi.`
-      : `${rawTheory}\n\n• **Trọng tâm ${lecture.grade}**: Hiểu rõ ý nghĩa của công thức và đặt đúng điều kiện xác định trước khi bắt tay vào tính toán.`;
+      : `${rawTheory}\n\n• **Hiểu đơn giản nhất (${lecture.grade})**: Không cần học vẹt công thức — hãy đọc kỹ ý nghĩa từng kí hiệu và thử kéo thanh trượt trên đồ thị 2D / hình khối 3D ngay dưới để thấy quy luật tự động hiện ra.`;
 
     const deepDiveSection = isChuyenMath
       ? [
@@ -1041,13 +1105,27 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
           .filter(Boolean)
           .join('\n')
       : [
-          `**Giải thích dễ hiểu & Mẹo làm bài thi THPT**:`,
-          mnemonic ? `• **Mẹo nhớ nhanh**: ${mnemonic}` : `• Vẽ nhanh hình minh họa hoặc thử một vài giá trị số cụ thể để hình dung quy luật trước khi giải tổng quát.`,
-          trap ? `• **Cẩn thận lỗi hay nhầm**: ${trap}` : `• Đừng quên kiểm tra điều kiện xác định (mẫu khác $0$, căn không âm) và đối chiếu nghiệm sau khi giải.`,
-          idx === 0 && lecture.description ? `• **Nội dung chính của bài**: ${lecture.description}` : ''
+          `**Giải thích chi tiết, dễ hiểu & Tránh bẫy (${lecture.grade})**:`,
+          idx === 0 && lecture.description ? `• **Bức tranh tổng quát**: ${lecture.description}` : '',
+          mnemonic ? `• **Mẹo nhớ cực nhanh**: ${mnemonic}` : `• Thử thay một vài giá trị số cụ thể dễ nhẩm (như $x = 0, 1, 2$) để kiểm tra quy luật trước khi làm bài tập.`,
+          trap ? `• **Bẫy rất dễ mất điểm**: ${trap}` : `• Luôn kiểm tra điều kiện xác định (mẫu khác $0$, căn không âm) và đối chiếu lại đề trước khi chốt đáp án.`
         ]
           .filter(Boolean)
           .join('\n');
+
+    const quickIntuition = !isChuyenMath
+      ? `Tóm gọn phần "${stripLeadingNumber(stepTitle)}": ${
+          mnemonic || extractFirstSentenceOutsideMath(rawTheory, 110) || lecture.description
+        }`
+      : undefined;
+
+    const stepByStepNotes = !isChuyenMath
+      ? [
+          `Bước 1 — Đọc rõ yêu cầu & Đặt điều kiện: Gạch chân giả thiết đề bài, kiểm tra điều kiện có nghĩa (nếu có mẫu thức, căn bậc hai hay logarit).`,
+          `Bước 2 — Chọn công thức & Thử trên 2D/3D: Áp dụng${primaryFormula ? ` $${primaryFormula}$` : ' quy tắc chính'} và đối chiếu trực tiếp trên mô phỏng 2D/3D ngay dưới đây.`,
+          `Bước 3 — Kiểm tra ngược đáp số: Thay thử lại kết quả vào đề bài ban đầu để loại nghiệm sai hoặc lỗi dấu.`
+        ]
+      : undefined;
 
     const keyTakeaway =
       mnemonic ||
@@ -1100,6 +1178,8 @@ export function buildMathLectureSteps(lecture: MathLecture): LectureStep[] {
     steps.push({
       stepTitle,
       stepType: idx === 0 ? 'concept' : idx === partCount - 1 ? 'example' : 'derivation',
+      quickIntuition,
+      stepByStepNotes,
       conceptSection,
       formulaSection: primaryFormula
         ? {

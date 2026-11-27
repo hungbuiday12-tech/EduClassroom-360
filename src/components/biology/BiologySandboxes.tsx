@@ -17,6 +17,15 @@ import {
   ZoomIn
 } from 'lucide-react';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { SandboxIntroGuideBanner } from '../common/SandboxIntroGuideBanner';
+import {
+  drawPixelSprite,
+  getMorphCreatureSprite,
+  getPlantRoleplaySprite,
+  getTerrariumHerbivoreSpec,
+  getTrophicTierSprite,
+  spriteSpecToSvgRects
+} from './pixelSpriteEngine';
 
 const CODON_TABLE: Record<string, string> = {
   AUG: 'Met (Mở đầu)',
@@ -220,6 +229,151 @@ const BIOME_WEBS: BiomeFoodWebConfig[] = [
     links: [[0, 1], [1, 2], [2, 3], [0, 4], [3, 4]]
   }
 ];
+
+const BIO_SANDBOX_GUIDES: Record<
+  'mendel' | 'codon' | 'hardy' | 'enzyme' | 'eco' | 'microscope',
+  {
+    titleVi: string;
+    titleEn: string;
+    introVi: string;
+    introEn: string;
+    stepsVi: string[];
+    stepsEn: string[];
+    tipVi: string;
+    tipEn: string;
+  }
+> = {
+  mendel: {
+    titleVi: 'Di Truyền Mendel, Hoán Vị Gen Morgan & Phả Hệ Người',
+    titleEn: 'Mendel Genetics, Morgan Linkage & Human Pedigree',
+    introVi:
+      'Thực hành lai 1–2 cặp tính trạng trên đậu Hà Lan với bảng Punnett tương tác và kiểm định χ², khảo sát hoán vị gen ruồi giấm Drosophila và giải bài toán xác suất phả hệ 3 thế hệ.',
+    introEn:
+      'Explore Mendel pea crosses with interactive Punnett matrices and χ² tests, Drosophila gene linkage, and 3-generation human pedigree probability.',
+    stepsVi: [
+      'Chọn đối tượng: Đậu Hà Lan, Ruồi giấm Drosophila hoặc Phả hệ Người.',
+      'Ở chế độ Đậu Hà Lan: chọn kiểu gen bố mẹ P₁ × P₂ rồi rê chuột vào từng ô bảng Punnett.',
+      'Bấm "Gieo cá thể F₁" để thực hiện thí nghiệm ngẫu nhiên và kiểm định χ².',
+      'Ở chế độ Ruồi giấm / Phả hệ: kéo tần số hoán vị f% hoặc bấm chọn từng thành viên I–III.',
+    ],
+    stepsEn: [
+      'Switch between Pea Plants, Drosophila Linkage, or Human Pedigrees.',
+      'Select P₁ × P₂ genotypes and hover or filter phenotypes across the Punnett matrix.',
+      'Run Monte Carlo sampling to test observed counts with Chi-Square (χ²).',
+      'Adjust recombination frequency f% or click pedigree nodes to solve probabilities.',
+    ],
+    tipVi: 'Nếu kết quả χ² nhỏ hơn ngưỡng α = 0,05, mẫu thực nghiệm phù hợp với giả thuyết phân li lý thuyết.',
+    tipEn: 'When χ² stays below the α=0.05 threshold, observed offspring fit Mendelian ratios.',
+  },
+  microscope: {
+    titleVi: 'Kính Hiển Vi Ảo (5 Mức Phóng Đại) & Phân Bào',
+    titleEn: 'Virtual Microscope (5 Zooms) & Cell Division',
+    introVi:
+      'Quan sát sinh vật từ cấp độ Cơ thể (1×) đến Cơ quan (40×), Mô (100×), Tế bào (400×) và Bào quan (1000×), đồng thời xem hoạt ảnh Nguyên phân và Giảm phân qua 5 kì.',
+    introEn:
+      'Zoom seamlessly from whole Organism (1×) down to Organelle (1000×) and animate Mitosis vs Meiosis across all division phases.',
+    stepsVi: [
+      'Chọn mẫu vật Thực vật hoặc Động vật rồi bấm 5 nút độ phóng đại từ 1× đến 1000×.',
+      'Ở mức 400×–1000×, nhấp trực tiếp lên Nhân, Ty thể, Lục lạp, Golgi để xem chức năng.',
+      'Bên phải: chuyển đổi giữa Nguyên phân (2n → 2n) và Giảm phân (2n → n).',
+      'Bấm từng kì (Trung gian → Cuối) hoặc Tạm dừng để đối chiếu số lượng NST.',
+    ],
+    stepsEn: [
+      'Choose Plant or Animal specimen and step through 1× to 1000× magnification.',
+      'Click organelles inside the 400×–1000× lens to inspect size and biological role.',
+      'Toggle between Mitosis (2n → 2n) and Meiosis (2n → n) on the right.',
+      'Select phases from Interphase to Telophase to verify chromosome counts.',
+    ],
+    tipVi: 'Ở Kì đầu I giảm phân có hiện tượng tiếp hợp và trao đổi chéo giữa các cặp NST tương đồng.',
+    tipEn: 'Crossing-over of homologous chromosomes occurs during Prophase I of Meiosis.',
+  },
+  codon: {
+    titleVi: 'Phiên Mã & Dịch Mã: DNA → mRNA → Chuỗi Polypeptit',
+    titleEn: 'Transcription & Translation: DNA → mRNA → Protein',
+    introVi:
+      'Nhập trình tự mạch khuôn DNA bất kì để mô phỏng Ribosome trượt dọc phân tử mRNA đọc từng bộ ba mã sao (Codon), ghép các axit amin và phát hiện tác động của đột biến điểm.',
+    introEn:
+      'Enter any DNA template strand to watch the ribosome decode mRNA codons into amino acids and inspect point mutation impacts.',
+    stepsVi: [
+      'Nhập chuỗi nucleotit A, T, G, C vào ô DNA mạch khuôn (3’ → 5’).',
+      'Thử bấm "Mẫu chuẩn" rồi đổi sang "Đột biến C→A" để thấy mã kết thúc sớm STOP.',
+      'Quan sát Ribosome di chuyển dịch mã trên khung hình động và tạm dừng bất kì lúc nào.',
+      'Theo dõi số liên kết Hydro (2A–T + 3G–C) và tỉ lệ % G–C bền nhiệt.',
+    ],
+    stepsEn: [
+      'Type an A/T/G/C template sequence or load Standard / Point Mutation presets.',
+      'Compare normal translation against premature STOP codon mutations.',
+      'Watch the animated ribosome translate each triplet codon in real time.',
+      'Inspect total hydrogen bonds and thermal GC% stability.',
+    ],
+    tipVi: 'Đột biến làm xuất hiện bộ ba kết thúc sớm (UAA, UAG, UGA) sẽ làm chuỗi polypeptit ngắn lại.',
+    tipEn: 'Nonsense mutations introducing UAA, UAG, or UGA truncate the polypeptide chain.',
+  },
+  hardy: {
+    titleVi: 'Cân Bằng Quần Thể Hardy–Weinberg & Tự Thụ Phấn',
+    titleEn: 'Hardy–Weinberg Equilibrium & Selfing Dynamics',
+    introVi:
+      'Quan sát quần thể 60 cá thể với 3 kiểu hình AA, Aa, aa di chuyển trong đồng cỏ và theo dõi tỉ lệ dị hợp tử giảm dần một nửa sau mỗi thế hệ tự thụ phấn liên tiếp.',
+    introEn:
+      'Visualize 60 pixel organisms across AA, Aa, and aa genotypes and track heterozygote decline over repeated selfing generations.',
+    stepsVi: [
+      'Kéo thanh Tần số alen trội p(A) để xem tỉ lệ p²AA : 2pqAa : q²aa thay đổi.',
+      'Kéo thanh "Số thế hệ tự thụ phấn (n)" từ 0 đến 6 thế hệ.',
+      'Quan sát mật độ 3 dạng cá thể trên bãi cỏ và đồ thị đường cong dị hợp tử bên phải.',
+      'Bấm "Xuất bảng phân li CSV" để lưu bảng số liệu qua 6 thế hệ.',
+    ],
+    stepsEn: [
+      'Adjust dominant allele frequency p(A) to vary p²AA : 2pqAa : q²aa ratios.',
+      'Slide consecutive self-fertilization generations n from 0 to 6.',
+      'Compare meadow population distribution with the genotype trend chart.',
+      'Export the 6-generation segregation table as CSV.',
+    ],
+    tipVi: 'Tự thụ phấn qua n thế hệ làm tỉ lệ dị hợp Aa = (2pq)/2ⁿ tiến về 0 nhưng tần số alen p, q không đổi.',
+    tipEn: 'Selfing halves heterozygotes each generation while keeping allele frequencies p and q constant.',
+  },
+  enzyme: {
+    titleVi: 'Động Học Enzyme Michaelis–Menten & Chất Ức Chế',
+    titleEn: 'Michaelis–Menten Enzyme Kinetics & Inhibitors',
+    introVi:
+      'Khám phá tốc độ phản ứng xúc tác sinh học phụ thuộc vào nồng độ cơ chất [S], hằng số Km và sự khác biệt giữa ức chế cạnh tranh (tăng Km) với không cạnh tranh (giảm Vmax).',
+    introEn:
+      'Simulate enzymatic reaction rates vs substrate [S] and compare competitive (higher Km) vs non-competitive (lower Vmax) inhibition.',
+    stepsVi: [
+      'Điều chỉnh Vmax, hằng số Km và nồng độ cơ chất [S].',
+      'Tăng tỉ lệ chất ức chế [I]/K_I để quan sát các phân tử hồng chặn tâm hoạt động.',
+      'So sánh 3 đường cong trên đồ thị Michaelis–Menten: Chuẩn, Cạnh tranh và Không cạnh tranh.',
+    ],
+    stepsEn: [
+      'Tune baseline Vmax, affinity constant Km, and substrate concentration [S].',
+      'Increase inhibitor ratio [I]/K_I to observe active-site competition.',
+      'Compare standard, competitive, and non-competitive curves simultaneously.',
+    ],
+    tipVi: 'Khi tăng mạnh [S], phản ứng bị ức chế cạnh tranh vẫn có thể tiến gần tới Vmax ban đầu.',
+    tipEn: 'High substrate [S] can overcome competitive inhibition, unlike non-competitive inhibition.',
+  },
+  eco: {
+    titleVi: 'Lưới Thức Ăn, Tháp Năng Lượng & Biến Đổi Khí Hậu',
+    titleEn: 'Food Webs, Energy Pyramids & Climate Impact',
+    introVi:
+      'Thử nghiệm cân bằng lưới thức ăn ở Rừng nhiệt đới, Rạn san hô và Thảo nguyên khi tăng/giảm mật độ từng loài, nâng nhiệt độ Trái Đất (+ΔT °C) hoặc gia tăng khai thác.',
+    introEn:
+      'Test ecosystem stability across Rainforest, Coral Reef, and Grassland webs under species shifts, warming ΔT, and harvesting pressure.',
+    stepsVi: [
+      'Chọn hệ sinh thái (Rạn san hô, Rừng mưa hoặc Thảo nguyên).',
+      'Bấm dấu − / + để thay đổi mật độ Sinh vật sản xuất, Ăn cỏ, Ăn thịt hoặc Phân giải.',
+      'Kéo thanh Nhiệt độ tăng thêm ΔT (°C) và % Khai thác để kiểm tra ngưỡng sụp đổ.',
+      'Quan sát Tháp năng lượng với quy luật ~10% truyền lên mỗi bậc dinh dưỡng.',
+    ],
+    stepsEn: [
+      'Select Rainforest, Coral Reef, or Grassland biome.',
+      'Add or remove species density across trophic roles using − / + controls.',
+      'Increase temperature anomaly ΔT (°C) and harvest % to test tipping points.',
+      'Inspect energy transfer efficiency (~10%/level) on the animated pyramid.',
+    ],
+    tipVi: 'San hô rất nhạy cảm với nhiệt độ: ΔT vượt 2,8°C dễ gây tẩy trắng và suy sụp toàn lưới thức ăn.',
+    tipEn: 'Coral reefs bleach rapidly above +2.8°C, triggering cascading collapse across consumers.',
+  },
+};
 
 export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false }) => {
   const { perfMode } = useBackgroundTheme();
@@ -827,33 +981,76 @@ export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false })
       const w = (canvas.width = canvas.clientWidth * (perfMode === 'ultra' ? 2 : 1.5));
       const h = (canvas.height = canvas.clientHeight * (perfMode === 'ultra' ? 2 : 1.5));
       const s = w / 640;
+      const animFrame = Math.floor(t * 5) % 2;
 
-      ctx.fillStyle = '#070d18';
+      // High-res sunlit sky + rolling meadow backdrop
+      const skyG = ctx.createLinearGradient(0, 0, 0, h);
+      skyG.addColorStop(0, '#082f49');
+      skyG.addColorStop(0.32, '#064e3b');
+      skyG.addColorStop(1, '#052e16');
+      ctx.fillStyle = skyG;
       ctx.fillRect(0, 0, w, h);
+
+      if (perfMode !== 'smooth') {
+        const sunG = ctx.createRadialGradient(w * 0.88, h * 0.14, 4 * s, w * 0.88, h * 0.14, 150 * s);
+        sunG.addColorStop(0, 'rgba(254, 240, 138, 0.35)');
+        sunG.addColorStop(1, 'rgba(254, 240, 138, 0)');
+        ctx.fillStyle = sunG;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // Soft horizon ridge
+      ctx.fillStyle = 'rgba(20, 83, 45, 0.55)';
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      for (let x = 0; x <= w; x += 24 * s) {
+        ctx.lineTo(x, h * 0.28 + Math.sin(x * 0.012) * 10 * s);
+      }
+      ctx.lineTo(w, h);
+      ctx.closePath();
+      ctx.fill();
 
       const cutAA = hwGenotypes.curAA;
       const cutAa = cutAA + hwGenotypes.curAa;
 
-      popDots.forEach((d, idx) => {
-        const px = ((d.x + t * d.vx + 10) % 1) * (w - 30 * s) + 15 * s;
-        const py = ((d.y + t * d.vy + 10) % 1) * (h - 36 * s) + 24 * s;
-        const color = d.slot < cutAA ? '#10b981' : d.slot < cutAa ? '#38bdf8' : '#fbbf24';
-        if (perfMode === 'ultra' && idx % 2 === 0) {
-          const glow = ctx.createRadialGradient(px, py, 0, px, py, 12 * s);
-          glow.addColorStop(0, `${color}88`);
+      const sortedDots = popDots
+        .map((d) => ({
+          d,
+          px: ((d.x + t * d.vx + 10) % 1) * (w - 40 * s) + 20 * s,
+          py: ((d.y + t * d.vy + 10) % 1) * (h - 46 * s) + 32 * s
+        }))
+        .sort((a, b) => a.py - b.py);
+
+      sortedDots.forEach(({ d, px, py }, idx) => {
+        const genoType = d.slot < cutAA ? 'AA' : d.slot < cutAa ? 'Aa' : 'aa';
+        const color = genoType === 'AA' ? '#10b981' : genoType === 'Aa' ? '#38bdf8' : '#fbbf24';
+        const darkColor = genoType === 'AA' ? '#047857' : genoType === 'Aa' ? '#0369a1' : '#b45309';
+
+        // Ground shadow
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.38)';
+        ctx.beginPath();
+        ctx.ellipse(px, py + 7 * s, 8 * s, 2.6 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (perfMode === 'ultra' && idx % 3 === 0) {
+          const glow = ctx.createRadialGradient(px, py, 0, px, py, 14 * s);
+          glow.addColorStop(0, `${color}66`);
           glow.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = glow;
           ctx.beginPath();
-          ctx.arc(px, py, 12 * s, 0, Math.PI * 2);
+          ctx.arc(px, py, 14 * s, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(px, py, 4.6 * s, 0, Math.PI * 2);
-        ctx.fill();
+
+        const spec = getMorphCreatureSprite(color, darkColor, null, genoType === 'AA', genoType === 'aa', animFrame);
+        drawPixelSprite(ctx, `hw_${genoType}_${animFrame}`, spec, px, py, Math.max(1.2, 1.35 * s), {
+          flipX: d.vx < 0
+        });
       });
 
-      ctx.fillStyle = '#cbd5e1';
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.72)';
+      ctx.fillRect(8 * s, 4 * s, w - 16 * s, 19 * s);
+      ctx.fillStyle = '#e2e8f0';
       ctx.font = `600 ${11 * s}px monospace`;
       ctx.fillText(
         `Quần thể 60 cá thể (F${selfingGen}): AA ${(hwGenotypes.curAA * 100).toFixed(0)}% · Aa ${(hwGenotypes.curAa * 100).toFixed(0)}% · aa ${(hwGenotypes.curaa * 100).toFixed(0)}%`,
@@ -1212,39 +1409,62 @@ export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false })
       const w = (canvas.width = canvas.clientWidth * (perfMode === 'ultra' ? 2 : 1.5));
       const h = (canvas.height = canvas.clientHeight * (perfMode === 'ultra' ? 2 : 1.5));
       const s = w / 640;
+      const animFrame = Math.floor(t * 4) % 2;
 
-      ctx.fillStyle = '#071411';
+      const bgG = ctx.createLinearGradient(0, 0, 0, h);
+      bgG.addColorStop(0, '#041218');
+      bgG.addColorStop(1, '#071a14');
+      ctx.fillStyle = bgG;
       ctx.fillRect(0, 0, w, h);
 
-      // 4 ascending energy tiers + heat loss sparks
+      if (perfMode !== 'smooth') {
+        const sunG = ctx.createRadialGradient(w * 0.5, h * 0.12, 8 * s, w * 0.5, h * 0.5, w * 0.55);
+        sunG.addColorStop(0, 'rgba(250, 204, 21, 0.14)');
+        sunG.addColorStop(0.6, 'rgba(16, 185, 129, 0.08)');
+        sunG.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = sunG;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // 4 ascending energy tiers + crisp pixel sprites + heat loss sparks
       const tiers = [
-        { label: 'Bậc 1 · Thực vật', w: 0.78, color: '#10b981' },
-        { label: 'Bậc 2 · Châu chấu', w: 0.58, color: '#14b8a6' },
-        { label: 'Bậc 3 · Rắn', w: 0.40, color: '#0ea5e9' },
-        { label: 'Bậc 4 · Đại bàng', w: 0.24, color: '#f59e0b' }
+        { label: 'Bậc 1 · Thực vật', w: 0.80, color: '#10b981' },
+        { label: 'Bậc 2 · Châu chấu', w: 0.62, color: '#14b8a6' },
+        { label: 'Bậc 3 · Động vật ăn thịt 1', w: 0.45, color: '#0ea5e9' },
+        { label: 'Bậc 4 · Đại bàng', w: 0.30, color: '#f59e0b' }
       ];
 
       tiers.forEach((tr, lv) => {
         const bw = w * tr.w;
         const bx = (w - bw) / 2;
-        const by = h - 42 * s - lv * 36 * s;
-        ctx.fillStyle = `${tr.color}cc`;
+        const by = h - 44 * s - lv * 37 * s;
+        const tierG = ctx.createLinearGradient(bx, by, bx + bw, by + 30 * s);
+        tierG.addColorStop(0, `${tr.color}dd`);
+        tierG.addColorStop(1, `${tr.color}99`);
+        ctx.fillStyle = tierG;
         ctx.beginPath();
-        ctx.roundRect(bx, by, bw, 28 * s, 6 * s);
+        ctx.roundRect(bx, by, bw, 30 * s, 7 * s);
         ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+        ctx.lineWidth = 1 * s;
+        ctx.stroke();
+
+        // Crisp Pixel Sprite representing this trophic tier
+        const spec = getTrophicTierSprite(lv, animFrame);
+        drawPixelSprite(ctx, `eco_tier_${lv}_${animFrame}`, spec, bx + 22 * s, by + 15 * s, Math.max(1.2, 1.55 * s));
 
         const energy = ePrimary * Math.pow(ecoEff / 100, lv);
         ctx.fillStyle = '#ffffff';
         ctx.font = `700 ${10.5 * s}px monospace`;
         ctx.textAlign = 'center';
-        ctx.fillText(`${tr.label}: ${energy.toFixed(1)} kcal`, w / 2, by + 18 * s);
+        ctx.fillText(`${tr.label}: ${energy.toFixed(1)} kcal`, w / 2 + 10 * s, by + 19 * s);
 
         // Heat dissipation particles escaping to sides
         const sparkCount = perfMode === 'ultra' ? 6 : 3;
         for (let sp = 0; sp < sparkCount; sp++) {
           const u = (t * 0.7 + sp / sparkCount + lv * 0.2) % 1;
           const dir = sp % 2 === 0 ? -1 : 1;
-          const sx = w / 2 + dir * (bw * 0.42 + u * 60 * s);
+          const sx = w / 2 + dir * (bw * 0.46 + u * 60 * s);
           const sy = by + 14 * s - u * 22 * s;
           ctx.fillStyle = `rgba(251, 146, 60, ${(1 - u) * 0.85})`;
           ctx.beginPath();
@@ -1326,6 +1546,20 @@ export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false })
           })}
         </div>
       </div>
+
+      {(() => {
+        const g = BIO_SANDBOX_GUIDES[tab];
+        return (
+          <SandboxIntroGuideBanner
+            subject="bio"
+            title={isEn ? g.titleEn : g.titleVi}
+            intro={isEn ? g.introEn : g.introVi}
+            steps={isEn ? g.stepsEn : g.stepsVi}
+            tip={isEn ? g.tipEn : g.tipVi}
+            isEn={isEn}
+          />
+        );
+      })()}
 
       {tab === 'mendel' && (
         <div className="space-y-5 text-xs">
@@ -2421,17 +2655,35 @@ export const BiologySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false })
                   </defs>
                   <circle cx="180" cy="110" r="100" fill="#020617" stroke="#14b8a6" strokeWidth="3" />
                   <g clipPath="url(#lens-clip)">
-                    {zoomIdx === 0 && (
-                      <g>
-                        <ellipse cx="180" cy="128" rx="46" ry="52" fill={cellSpecimen === 'plant' ? '#15803d' : '#be123c'} opacity="0.7" />
-                        <text x="180" y="114" textAnchor="middle" fill="#f8fafc" fontSize="13" fontWeight="bold">
-                          {cellSpecimen === 'plant' ? 'Cây xanh hoàn chỉnh' : 'Cơ thể Động vật'}
-                        </text>
-                        <text x="180" y="134" textAnchor="middle" fill="#94a3b8" fontSize="10">
-                          Hệ cơ quan phối hợp thống nhất
-                        </text>
-                      </g>
-                    )}
+                    {zoomIdx === 0 && (() => {
+                      const spec =
+                        cellSpecimen === 'plant'
+                          ? getPlantRoleplaySprite('bean', 3, { water: 80, pollinated: true })
+                          : getTerrariumHerbivoreSpec('rainforest', 0);
+                      const rects = spriteSpecToSvgRects(spec);
+                      const gw = spec.grid[0]?.length || 14;
+                      const gh = spec.grid.length || 12;
+                      return (
+                        <g>
+                          <radialGradient id="microLensGlow" cx="50%" cy="45%" r="50%">
+                            <stop offset="0%" stopColor={cellSpecimen === 'plant' ? '#10b981' : '#f59e0b'} stopOpacity="0.32" />
+                            <stop offset="100%" stopColor="#020617" stopOpacity="0" />
+                          </radialGradient>
+                          <circle cx="180" cy="110" r="88" fill="url(#microLensGlow)" />
+                          <g transform={`translate(132, 46) scale(${96 / Math.max(gw, gh)})`} shapeRendering="crispEdges">
+                            {rects.map((r, i) => (
+                              <rect key={i} x={r.x} y={r.y} width={1} height={1} fill={r.fill} />
+                            ))}
+                          </g>
+                          <text x="180" y="168" textAnchor="middle" fill="#f8fafc" fontSize="12" fontWeight="bold">
+                            {cellSpecimen === 'plant' ? 'Cơ thể Thực vật (1×)' : 'Cơ thể Động vật (1×)'}
+                          </text>
+                          <text x="180" y="185" textAnchor="middle" fill="#94a3b8" fontSize="9.5">
+                            Hệ cơ quan phối hợp thống nhất
+                          </text>
+                        </g>
+                      );
+                    })()}
                     {zoomIdx === 1 && (
                       <g>
                         <path d="M120 155 Q180 40 240 155 Q180 180 120 155 Z" fill={cellSpecimen === 'plant' ? '#16a34a' : '#e11d48'} opacity="0.75" />

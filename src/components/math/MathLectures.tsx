@@ -106,12 +106,23 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
   // Copy Formula State
   const [copiedFormula, setCopiedFormula] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (location.catalogGrade) {
+      setSelectedGrade(location.catalogGrade);
+      setSelectedChapter('all');
+      setSelectedCategory('all');
+    }
+    if (location.catalogTrack) {
+      setSelectedTrack(location.catalogTrack);
+    }
+  }, [location.catalogGrade, location.catalogTrack]);
+
   // Categories list for Không Chuyên (GDPT 2018)
   const categories = [
     { id: 'all', label: t('cat.all', 'Tất cả chuyên đề', 'All Topics') },
-    { id: 'Đại số', label: t('cat.alg', 'Đại số & Hàm số (9–10)', 'Algebra (9–10)') },
+    { id: 'Đại số', label: t('cat.alg', 'Đại số & Hàm số (6–10)', 'Algebra (6–10)') },
     { id: 'Giải tích', label: t('cat.calc', 'Giải tích (11–12)', 'Calculus (11–12)') },
-    { id: 'Hình học', label: t('cat.geo', 'Hình học (9–12)', 'Geometry (9–12)') },
+    { id: 'Hình học', label: t('cat.geo', 'Hình học (6–12)', 'Geometry (6–12)') },
     { id: 'Lượng giác & Mũ', label: t('cat.trig', 'Lượng giác, Mũ & Log', 'Trig, Exp & Log') },
     { id: 'Đại số & Xác suất', label: t('cat.prob', 'Thống kê, Tổ hợp & Xác suất', 'Statistics & Probability') }
   ];
@@ -120,6 +131,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
 
   const gradeCounts = useMemo(() => {
     const counts: Record<string, number> = {
+      'Lớp 6': 0,
+      'Lớp 7': 0,
+      'Lớp 8': 0,
       'Lớp 9': 0,
       'Lớp 10': 0,
       'Lớp 11': 0,
@@ -130,15 +144,21 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
       if ((lec.track || 'khong_chuyen') !== targetTrack) return;
       const g =
         lec.gradeGroup ||
-        (lec.grade.includes('Lớp 9')
-          ? 'Lớp 9'
-          : lec.grade.includes('Lớp 10')
-            ? 'Lớp 10'
-            : lec.grade.includes('Lớp 11')
-              ? 'Lớp 11'
-              : lec.grade.includes('Lớp 12')
-                ? 'Lớp 12'
-                : '');
+        (lec.grade.includes('Lớp 6')
+          ? 'Lớp 6'
+          : lec.grade.includes('Lớp 7')
+            ? 'Lớp 7'
+            : lec.grade.includes('Lớp 8')
+              ? 'Lớp 8'
+              : lec.grade.includes('Lớp 9')
+                ? 'Lớp 9'
+                : lec.grade.includes('Lớp 10')
+                  ? 'Lớp 10'
+                  : lec.grade.includes('Lớp 11')
+                    ? 'Lớp 11'
+                    : lec.grade.includes('Lớp 12')
+                      ? 'Lớp 12'
+                      : '');
       if (g && g in counts) counts[g] += 1;
     });
     return counts;
@@ -174,6 +194,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
   const filteredLectures = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const getGradeRank = (lec: MathLecture): number => {
+      if (lec.gradeGroup === 'Lớp 6' || lec.grade.includes('Lớp 6')) return 6;
+      if (lec.gradeGroup === 'Lớp 7' || lec.grade.includes('Lớp 7')) return 7;
+      if (lec.gradeGroup === 'Lớp 8' || lec.grade.includes('Lớp 8')) return 8;
       if (lec.gradeGroup === 'Lớp 9' || lec.grade.includes('Lớp 9')) return 9;
       if (lec.gradeGroup === 'Lớp 10' || lec.grade.includes('Lớp 10')) return 10;
       if (lec.gradeGroup === 'Lớp 11' || lec.grade.includes('Lớp 11')) return 11;
@@ -347,7 +370,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                 <div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <span className="font-bold text-blue-700 dark:text-sky-400 uppercase tracking-wider">
-                      Toán Học 9–12 &amp; Bồi Dưỡng Chuyên
+                      Toán Học 6–12 &amp; Bồi Dưỡng Chuyên (Mũi Nhọn Toán–Lý–Tin)
                     </span>
                     <span aria-hidden="true">·</span>
                     <span className="tabular-nums">{khongChuyenCount} bài GDPT 2018</span>
@@ -429,7 +452,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                       </div>
                       <div className="min-w-0 space-y-1">
                         <div className="text-sm sm:text-base font-extrabold leading-snug">
-                          Khu GDPT 2018 (Lớp 9–12)
+                          Khu GDPT 2018 (Lớp 6–12)
                         </div>
                         <div
                           className={`text-xs leading-relaxed ${
@@ -438,7 +461,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                               : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >
-                          Lớp 9 · Lớp 10 · Lớp 11 · Lớp 12 · {khongChuyenCount} bài chuẩn BGD
+                          THCS (6–9) · THPT (10–12) · {khongChuyenCount} bài chuẩn BGD
                         </div>
                       </div>
                     </div>
@@ -507,7 +530,7 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                               : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >
-                          Lớp 9–12 chuẩn SGK 2006 + Số phức · {gdpt2006Count} bài kèm 2D &amp; 3D
+                          Lớp 6–12 chuẩn SGK 2006 + Số phức · {gdpt2006Count} bài kèm 2D &amp; 3D
                         </div>
                       </div>
                     </div>
@@ -605,6 +628,9 @@ export const MathLectures: React.FC<MathLecturesProps> = ({ onNavigateTab }) => 
                     </span>
                     {[
                       { id: 'all', label: t('grade.all', `Tất cả (${standardTrackTotal})`, `All (${standardTrackTotal})`) },
+                      { id: 'Lớp 6', label: `${t('grade.6', 'Lớp 6', 'Grade 6')} (${gradeCounts['Lớp 6']})` },
+                      { id: 'Lớp 7', label: `${t('grade.7', 'Lớp 7', 'Grade 7')} (${gradeCounts['Lớp 7']})` },
+                      { id: 'Lớp 8', label: `${t('grade.8', 'Lớp 8', 'Grade 8')} (${gradeCounts['Lớp 8']})` },
                       { id: 'Lớp 9', label: `${t('grade.9', 'Lớp 9', 'Grade 9')} (${gradeCounts['Lớp 9']})` },
                       { id: 'Lớp 10', label: `${t('grade.10', 'Lớp 10', 'Grade 10')} (${gradeCounts['Lớp 10']})` },
                       { id: 'Lớp 11', label: `${t('grade.11', 'Lớp 11', 'Grade 11')} (${gradeCounts['Lớp 11']})` },

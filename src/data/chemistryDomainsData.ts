@@ -24,7 +24,7 @@ export interface ChemistryParamBound {
 export interface Chemistry2DSimSpec {
   id: ChemistrySimType;
   domainId: ChemistryDomainId;
-  grades: ('Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
+  grades: ('Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
   title: string;
   subtitle: string;
   formula: string;
@@ -41,7 +41,7 @@ export interface Chemistry2DSimSpec {
 export interface Chemistry3DSimSpec {
   id: Chemistry3DMode;
   domainId: ChemistryDomainId;
-  grades: ('Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
+  grades: ('Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
   title: string;
   subtitle: string;
   formula: string;
@@ -784,6 +784,88 @@ export const CHEMISTRY_2D_SIMS: Chemistry2DSimSpec[] = [
       { label: 'Lò cao luyện Gang lỏng (1600°C)', description: 'Than cốc cháy tạo CO khử quặng Hematit và đá vôi tạo xỉ CaSiO₃', params: { processMode: 1, blastTemp: 1600, oxygenBlast: 80 } },
       { label: 'Phản ứng Nhiệt nhôm (2200°C)', description: 'Sắt nóng chảy rực sáng dùng hàn đường ray xe lửa', params: { processMode: 2, blastTemp: 2200, oxygenBlast: 95 } }
     ]
+  },
+  {
+    id: 'states_of_matter_2d',
+    domainId: 'kinetics_thermo',
+    grades: ['Lớp 6', 'Lớp 8'],
+    title: 'Ba Thể Của Chất (Rắn – Lỏng – Khí), Chuyển Thể & Thành Phần Không Khí (21% O₂)',
+    subtitle: 'Điều chỉnh nhiệt độ từ -20°C đến 130°C để quan sát phân tử chuyển từ mạng rắn sang lỏng, sôi hóa hơi và thử tàn đóm với khí O₂',
+    formula: '\\text{Rắn } (<0^\\circ\\text{C}) \\rightleftharpoons \\text{Lỏng } (0-100^\\circ\\text{C}) \\rightleftharpoons \\text{Khí } (>100^\\circ\\text{C})',
+    linkedLessonId: 'chem-6-b1',
+    defaultParams: { tempC: 25, airMixMode: 0, pressureAtm: 1 },
+    paramBounds: {
+      tempC: { min: -25, max: 140, step: 5, unit: '°C', label: 'Nhiệt độ khối chất' },
+      airMixMode: { min: 0, max: 1, step: 1, unit: '', label: 'Chế độ (0:Ba thể Rắn-Lỏng-Khí / 1:Không khí 21% O₂)' },
+      pressureAtm: { min: 1, max: 3, step: 0.5, unit: 'bar', label: 'Áp suất nén xi-lanh' }
+    },
+    presets: [
+      { label: 'Thể rắn (−15°C · Nước đá)', description: 'Các hạt xếp khít trật tự và rung tại chỗ', params: { tempC: -15, airMixMode: 0, pressureAtm: 1 } },
+      { label: 'Thể lỏng (25°C · Nước lỏng)', description: 'Các phân tử trượt linh hoạt lên nhau', params: { tempC: 25, airMixMode: 0, pressureAtm: 1 } },
+      { label: 'Thể khí (120°C · Hơi nước)', description: 'Hạt bay tự do tốc độ cao khắp bình', params: { tempC: 120, airMixMode: 0, pressureAtm: 1 } },
+      { label: 'Biểu đồ Không khí 78% N₂ + 21% O₂', description: 'Khí O₂ duy trì sự cháy bùng que đóm', params: { tempC: 25, airMixMode: 1, pressureAtm: 1 } }
+    ]
+  },
+  {
+    id: 'mixture_separation_2d',
+    domainId: 'bonding_structure',
+    grades: ['Lớp 6', 'Lớp 7'],
+    title: 'Phân Loại Hỗn Hợp & 4 Phương Pháp Tách Chất (Lọc – Cô Cạn – Chiết – Nam Châm)',
+    subtitle: 'Trực quan hóa quá trình lọc cát trên phễu giấy, đun cô cạn thu muối, mở khóa phễu chiết dầu–nước và tách sắt bằng nam châm',
+    formula: '\\text{Lọc (rắn không tan)} \\cdot \\text{Cô cạn (rắn tan)} \\cdot \\text{Chiết (2 lớp lỏng)}',
+    linkedLessonId: 'chem-6-b2',
+    defaultParams: { methodId: 1, progressPct: 65, heatLevel: 50 },
+    paramBounds: {
+      methodId: { min: 1, max: 4, step: 1, unit: '', label: 'Phương pháp (1:Lọc 2:Cô cạn 3:Chiết dầu-nước 4:Nam châm Fe+S)' },
+      progressPct: { min: 0, max: 100, step: 5, unit: '%', label: 'Tiến trình tách chất' },
+      heatLevel: { min: 0, max: 100, step: 10, unit: '%', label: 'Cường độ đun / Từ lực' }
+    },
+    presets: [
+      { label: '1. Lọc nước lẫn cát qua phễu giấy', description: 'Cát giữ lại trên giấy lọc, nước trong chảy xuống bình', params: { methodId: 1, progressPct: 75, heatLevel: 50 } },
+      { label: '2. Cô cạn nước muối trên bát sứ', description: 'Hơi nước bay đi hết, còn lại tinh thể muối trắng', params: { methodId: 2, progressPct: 80, heatLevel: 85 } },
+      { label: '3. Phễu chiết tách Dầu ăn & Nước', description: 'Nước nặng hơn ở dưới chảy ra trước, dầu ăn nổi giữ lại', params: { methodId: 3, progressPct: 60, heatLevel: 40 } },
+      { label: '4. Nam châm tách bột Sắt (Fe) khỏi Lưu huỳnh (S)', description: 'Sắt bị nam châm hút sạch lên trên', params: { methodId: 4, progressPct: 75, heatLevel: 80 } }
+    ]
+  },
+  {
+    id: 'bohr_shells_2d',
+    domainId: 'atomic_periodic',
+    grades: ['Lớp 7', 'Lớp 8', 'Lớp 10'],
+    title: 'Mô Hình Nguyên Tử Bohr (2-8-8-2), Bảng Tuần Hoàn & Liên Kết Ion – Cộng Hóa Trị',
+    subtitle: 'Chọn nguyên tố Z = 1..20 quan sát số proton hạt nhân, xếp lớp vỏ electron và mô phỏng cho-nhận NaCl vs góp chung H₂O',
+    formula: 'Z = p = e \\quad|\\quad \\text{Lớp K(2) – L(8) – M(8) – N(2)} \\quad|\\quad x\\cdot a = y\\cdot b',
+    linkedLessonId: 'chem-7-b1',
+    defaultParams: { atomicZ: 11, bondDemoMode: 0, electronAnim: 1 },
+    paramBounds: {
+      atomicZ: { min: 1, max: 20, step: 1, unit: 'p', label: 'Số hiệu nguyên tử Z (1:H → 20:Ca)' },
+      bondDemoMode: { min: 0, max: 2, step: 1, unit: '', label: 'Chế độ (0:Vỏ Bohr 1:LK Ion NaCl 2:LK CHT H₂O)' },
+      electronAnim: { min: 0, max: 1, step: 1, unit: '', label: 'Quay electron (0:Dừng / 1:Chạy)' }
+    },
+    presets: [
+      { label: 'Sodium Na (Z=11 · 2-8-1)', description: 'Kim loại kiềm dễ nhường 1e lớp ngoài cùng', params: { atomicZ: 11, bondDemoMode: 0, electronAnim: 1 } },
+      { label: 'Liên kết Ion NaCl (Cho–nhận 1e)', description: 'Na nhường 1e cho Cl tạo Na⁺ hút Cl⁻', params: { atomicZ: 11, bondDemoMode: 1, electronAnim: 1 } },
+      { label: 'Liên kết Cộng hóa trị H₂O (Góp chung)', description: 'Oxy và 2 Hydro dùng chung 2 cặp electron bền vững', params: { atomicZ: 8, bondDemoMode: 2, electronAnim: 1 } }
+    ]
+  },
+  {
+    id: 'acid_base_oxide_2d',
+    domainId: 'equilibrium_acidbase',
+    grades: ['Lớp 8', 'Lớp 9', 'Lớp 11'],
+    title: 'Thang pH (0–14), Chất Chỉ Thị (Quỳ Tím – Phenolphthalein) & Acid–Base–Oxide–Muối',
+    subtitle: 'Nhúng giấy quỳ tím và nhỏ phenolphthalein vào từng mẫu HCl, Giấm, Nước tinh khiết, NaOH và quan sát phản ứng trung hòa',
+    formula: '\\text{pH} < 7\\text{ (Acid: Quỳ đỏ)} \\cdot \\text{pH} = 7\\text{ (Trung tính)} \\cdot \\text{pH} > 7\\text{ (Base: Quỳ xanh, Phenol hồng)}',
+    linkedLessonId: 'chem-8-b2',
+    defaultParams: { samplePh: 2.0, indicatorType: 1, addZnRibbon: 0 },
+    paramBounds: {
+      samplePh: { min: 1.0, max: 13.5, step: 0.5, unit: 'pH', label: 'Độ pH dung dịch mẫu' },
+      indicatorType: { min: 1, max: 3, step: 1, unit: '', label: 'Chỉ thị (1:Quỳ tím 2:Phenolphthalein 3:Bắp cải tím)' },
+      addZnRibbon: { min: 0, max: 1, step: 1, unit: '', label: 'Thả viên Kẽm Zn kiểm tra khí H₂ (0/1)' }
+    },
+    presets: [
+      { label: 'Acid HCl (pH = 1.5 · Quỳ ĐỎ)', description: 'Thả kẽm thấy bọt khí H₂ thoát ra mạnh', params: { samplePh: 1.5, indicatorType: 1, addZnRibbon: 1 } },
+      { label: 'Nước cất trung tính (pH = 7.0)', description: 'Quỳ giữ nguyên tím, phenolphthalein không màu', params: { samplePh: 7.0, indicatorType: 1, addZnRibbon: 0 } },
+      { label: 'Dung dịch Kiềm NaOH (pH = 12.5)', description: 'Quỳ hóa XANH, Phenolphthalein hóa HỒNG cánh sen', params: { samplePh: 12.5, indicatorType: 2, addZnRibbon: 0 } }
+    ]
   }
 ];
 
@@ -1065,6 +1147,57 @@ export const CHEMISTRY_3D_SIMS: Chemistry3DSimSpec[] = [
     linkedLessonId: 'chem-10-20',
     presets: [
       { label: 'So sánh 4 ống nghiệm nhận biết', description: 'Quan sát trực quan độ sâu màu kết tủa bạc halogenua', settings: { speed: 1, showLabels: true } }
+    ]
+  },
+  {
+    id: 'matter_states_3d',
+    domainId: 'kinetics_thermo',
+    grades: ['Lớp 6', 'Lớp 8'],
+    title: 'Ba Thể Rắn – Lỏng – Khí & Quá Trình Chuyển Thể 3D',
+    subtitle: 'Quan sát trực tiếp các phân tử trong hộp thủy tinh thay đổi trật tự từ mạng tinh thể rắn sang lỏng chảy và khí bay tán loạn theo nhiệt độ',
+    formula: 'T < T_{\\text{nc}} \\text{ (Rắn)} \\longrightarrow T_{\\text{nc}} < T < T_{\\text{sôi}} \\text{ (Lỏng)} \\longrightarrow T > T_{\\text{sôi}} \\text{ (Khí)}',
+    linkedLessonId: 'chem-6-b1',
+    presets: [
+      { label: 'Thể rắn (Đóng băng)', description: 'Các hạt xếp khít dao động quanh vị trí cân bằng', settings: { speed: 0.7, temperature: -10 } },
+      { label: 'Thể khí (Đun sôi 120°C)', description: 'Các phân tử bứt khỏi liên kết bay khắp bình', settings: { speed: 1.5, temperature: 120 } }
+    ]
+  },
+  {
+    id: 'separation_lab_3d',
+    domainId: 'bonding_structure',
+    grades: ['Lớp 6', 'Lớp 7'],
+    title: 'Bàn Thí Nghiệm Tách Chất 3D (Phễu Lọc – Bát Cô Cạn – Phễu Chiết – Nam Châm)',
+    subtitle: '4 bộ dụng cụ thủy tinh thực tế trên bàn lab 3D tách hỗn hợp không đồng nhất và dung dịch muối',
+    formula: '\\text{Lọc} \\mid \\text{Cô cạn} \\mid \\text{Chiết} \\mid \\text{Từ tính}',
+    linkedLessonId: 'chem-6-b2',
+    presets: [
+      { label: 'Phễu lọc & Bát cô cạn', description: 'Giữ cát trên giấy lọc, bay hơi thu muối trắng', settings: { speed: 1, showLabels: true } }
+    ]
+  },
+  {
+    id: 'ionic_covalent_3d',
+    domainId: 'bonding_structure',
+    grades: ['Lớp 7', 'Lớp 8', 'Lớp 10'],
+    title: 'Liên Kết Ion (Cho–Nhận Na⁺Cl⁻) vs Cộng Hóa Trị (Góp Chung H₂O) 3D',
+    subtitle: 'Chuyển đổi giữa cơ chế Na nhường hẳn 1 electron cho Cl và hai nguyên tử H góp chung electron với Oxygen',
+    formula: '\\text{Na} \\xrightarrow{-1e} \\text{Na}^+ + \\text{Cl}^- \\quad | \\quad \\text{H}:\\ddot{\\text{O}}:\\text{H}',
+    linkedLessonId: 'chem-7-b2',
+    presets: [
+      { label: 'Liên kết Ion (NaCl)', description: 'Hạt electron dịch chuyển sang Cl tạo cặp ion hút nhau', settings: { speed: 1, showLabels: true } },
+      { label: 'Liên kết Cộng hóa trị (H₂O)', description: 'Cặp electron dùng chung quay quanh cả O và H', settings: { speed: 1.1, showLabels: true } }
+    ]
+  },
+  {
+    id: 'indicator_bench_3d',
+    domainId: 'equilibrium_acidbase',
+    grades: ['Lớp 8', 'Lớp 9', 'Lớp 11'],
+    title: 'Giá Cốc Thí Nghiệm pH 0–14, Quỳ Tím & Sủi Khí H₂ (Acid–Base–Muối) 3D',
+    subtitle: 'Nhúng giấy quỳ tím vào cốc dung dịch pH tùy chỉnh, đổi màu dung dịch và thả hạt kẽm vào cốc acid sinh bọt khí H₂ bay lên',
+    formula: '\\text{Zn} + 2\\text{HCl} \\to \\text{ZnCl}_2 + \\text{H}_2\\uparrow \\quad|\\quad \\text{Acid} + \\text{Base} \\to \\text{Muối} + \\text{H}_2\\text{O}',
+    linkedLessonId: 'chem-8-b2',
+    presets: [
+      { label: 'Cốc Acid pH = 1.5 + Zn', description: 'Quỳ hóa đỏ rực và bọt H₂ sủi lên liên tục', settings: { speed: 1.2, showLabels: true } },
+      { label: 'Cốc Kiềm NaOH pH = 12.5', description: 'Quỳ hóa xanh thẫm, Phenolphthalein hồng', settings: { speed: 1, showLabels: true } }
     ]
   }
 ];

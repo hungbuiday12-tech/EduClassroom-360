@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Batch2Physics3DModeId } from '../../data/physicsExtraSimsBatch2Data';
 import type { Extra3DSceneContext, Extra3DStateGetter } from './physics3DExtraScenes';
 import { createTroikaLabel } from '../../lib/three3DEnhancements';
+import { buildMiddleSchool3DScene } from './physics3DMiddleSchoolScenes';
 
 function orientSeg(
   mesh: THREE.Mesh,
@@ -2066,6 +2067,6 @@ export function buildBatch2Extra3DScene(
     }
 
     default:
-      return null;
+      return buildMiddleSchool3DScene(mode, group, getParams, getElapsed, ctx);
   }
 }

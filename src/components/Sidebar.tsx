@@ -340,8 +340,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         },
         {
           id: 'roadmap',
-          labelVi: 'Lộ trình học 9–12',
-          labelEn: 'Study Roadmap',
+          labelVi: 'Lộ trình học 6–12',
+          labelEn: 'Study Roadmap 6–12',
           icon: (
             <span className="icon-anim-branch">
               <GitBranch className="w-5 h-5 shrink-0" />
@@ -512,7 +512,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   Synapse
                 </span>
                 <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mt-0.5 truncate">
-                  {isEn ? 'STEM Academy 9–12' : 'Học viện STEM 9–12'}
+                  {isEn ? 'STEM Academy 6–12' : 'Học viện STEM 6–12'}
                 </span>
               </div>
             )}

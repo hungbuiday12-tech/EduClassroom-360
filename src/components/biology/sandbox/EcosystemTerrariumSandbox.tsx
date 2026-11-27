@@ -12,6 +12,13 @@ import {
   Thermometer,
 } from 'lucide-react';
 import { useBackgroundTheme } from '../../../context/BackgroundContext';
+import {
+  drawPixelSprite,
+  getTerrariumCarnivoreSpec,
+  getTerrariumDecomposerSpec,
+  getTerrariumHerbivoreSpec,
+  getTerrariumPlantSpec,
+} from '../pixelSpriteEngine';
 
 type BiomeId = 'pond' | 'rainforest' | 'desert';
 type SpeciesKind = 'plant' | 'herbivore' | 'carnivore' | 'decomposer';
@@ -356,99 +363,265 @@ export const EcosystemTerrariumSandbox: React.FC<{ isEn?: boolean }> = ({ isEn =
             const W = rect.width;
             const H = rect.height;
             const bSpec = BIOMES[s.biome];
+            const t = now * 0.001;
+            const lightFactor = Math.max(0.18, s.light / 100);
+            const groundY = H * 0.78;
+            const animFrame = Math.floor(t * 5) % 2;
 
-            // Biome Sky / Water Gradient
+            // 1. Multi-stop Atmospheric Sky / Underwater Depth Gradient
             const grad = ctx.createLinearGradient(0, 0, 0, H);
-            grad.addColorStop(0, bSpec.bgTop);
-            grad.addColorStop(1, bSpec.bgBot);
+            if (s.biome === 'pond') {
+              grad.addColorStop(0, '#0c4a6e');
+              grad.addColorStop(0.18, '#0284c7');
+              grad.addColorStop(0.55, '#075985');
+              grad.addColorStop(1, '#082f49');
+            } else if (s.biome === 'desert') {
+              grad.addColorStop(0, '#431407');
+              grad.addColorStop(0.35, '#9a3412');
+              grad.addColorStop(0.76, '#ea580c');
+              grad.addColorStop(1, '#292524');
+            } else {
+              grad.addColorStop(0, '#022c22');
+              grad.addColorStop(0.45, '#065f46');
+              grad.addColorStop(0.78, '#064e3b');
+              grad.addColorStop(1, '#052e16');
+            }
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, W, H);
 
-            // Sunlight shafts
-            const sunAlpha = (s.light / 100) * 0.16;
-            ctx.fillStyle = `rgba(253, 224, 71, ${sunAlpha.toFixed(3)})`;
-            for (let k = 0; k < 4; k++) {
+            // Dimming overlay when light is low + warm glow when light is high
+            if (lightFactor < 0.8) {
+              ctx.fillStyle = `rgba(2, 6, 23, ${(0.65 * (1 - lightFactor)).toFixed(3)})`;
+              ctx.fillRect(0, 0, W, H);
+            }
+
+            // 2. Glowing Sun Corona & Volumetric God-Rays
+            const sunX = W * 0.84;
+            const sunY = H * 0.14;
+            const sunCorona = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 150 * lightFactor + 30);
+            sunCorona.addColorStop(0, `rgba(254, 249, 195, ${(0.85 * lightFactor).toFixed(2)})`);
+            sunCorona.addColorStop(0.22, `rgba(253, 224, 71, ${(0.45 * lightFactor).toFixed(2)})`);
+            sunCorona.addColorStop(1, 'rgba(253, 224, 71, 0)');
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = sunCorona;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, 150 * lightFactor + 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Volumetric rays
+            const rayCount = s.perfMode === 'smooth' ? 2 : 5;
+            for (let k = 0; k < rayCount; k++) {
+              const sway = Math.sin(t * 0.55 + k * 1.4) * 18;
+              const rx0 = W * (0.12 + k * 0.19) + sway;
+              const rayGrad = ctx.createLinearGradient(sunX, 0, rx0, groundY);
+              rayGrad.addColorStop(0, `rgba(254, 240, 138, ${(0.18 * lightFactor).toFixed(3)})`);
+              rayGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+              ctx.fillStyle = rayGrad;
               ctx.beginPath();
-              ctx.moveTo(W * (0.15 + k * 0.22), 0);
-              ctx.lineTo(W * (0.26 + k * 0.22), 0);
-              ctx.lineTo(W * (0.14 + k * 0.22), H * 0.78);
-              ctx.lineTo(W * (0.04 + k * 0.22), H * 0.78);
+              ctx.moveTo(sunX - 18, 0);
+              ctx.lineTo(sunX + 26, 0);
+              ctx.lineTo(rx0 + 64, groundY);
+              ctx.lineTo(rx0 - 24, groundY);
+              ctx.closePath();
+              ctx.fill();
+            }
+            ctx.restore();
+
+            // 3. Smooth Parallax Background Hills / Dunes / Water Caustics
+            if (s.biome === 'pond') {
+              // Shimmering water surface wave near top
+              ctx.save();
+              const surfGrad = ctx.createLinearGradient(0, 0, 0, H * 0.16);
+              surfGrad.addColorStop(0, 'rgba(186, 230, 253, 0.35)');
+              surfGrad.addColorStop(1, 'rgba(14, 165, 233, 0)');
+              ctx.fillStyle = surfGrad;
+              ctx.beginPath();
+              ctx.moveTo(0, 0);
+              for (let x = 0; x <= W; x += 20) {
+                const wy = H * 0.08 + Math.sin(x * 0.025 + t * 2.1) * 5;
+                ctx.lineTo(x, wy);
+              }
+              ctx.lineTo(W, H * 0.16);
+              ctx.lineTo(0, H * 0.16);
+              ctx.closePath();
+              ctx.fill();
+
+              // Underwater caustic floor ribbons
+              if (s.perfMode !== 'smooth') {
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.strokeStyle = `rgba(125, 211, 252, ${(0.18 * lightFactor).toFixed(3)})`;
+                ctx.lineWidth = 2;
+                for (let c = 0; c < 4; c++) {
+                  ctx.beginPath();
+                  for (let x = 0; x <= W; x += 28) {
+                    const cy = groundY + 12 + c * 9 + Math.sin(x * 0.04 + t * 2.5 + c) * 4;
+                    if (x === 0) ctx.moveTo(x, cy);
+                    else ctx.lineTo(x, cy);
+                  }
+                  ctx.stroke();
+                }
+              }
+              ctx.restore();
+            } else {
+              // Distant mist & undulating ridge silhouettes
+              ctx.fillStyle = s.biome === 'desert' ? 'rgba(120, 53, 15, 0.45)' : 'rgba(6, 78, 59, 0.55)';
+              ctx.beginPath();
+              ctx.moveTo(0, groundY);
+              for (let x = 0; x <= W; x += 24) {
+                const hill = Math.sin(x * 0.008 + 1.1) * 28 + Math.cos(x * 0.017) * 14;
+                ctx.lineTo(x, groundY - 46 + hill);
+              }
+              ctx.lineTo(W, groundY);
               ctx.closePath();
               ctx.fill();
             }
 
-            // Rain streaks
-            if (s.rain > 25 && !s.perfMode) {
-              const drops = Math.round((s.rain / 100) * 45);
-              ctx.strokeStyle = 'rgba(186, 230, 253, 0.35)';
-              ctx.lineWidth = 1;
+            // 4. Atmospheric Floating Motes (Pollen / Bubbles / Heat Dust)
+            const moteCount = s.perfMode === 'ultra' ? 28 : s.perfMode === 'balanced' ? 16 : 8;
+            ctx.save();
+            for (let m = 0; m < moteCount; m++) {
+              const mx = ((m * 113 + t * (s.biome === 'pond' ? 8 : 14) + Math.sin(t + m) * 14) % W + W) % W;
+              const my =
+                s.biome === 'pond'
+                  ? groundY - ((t * 22 + m * 37) % (groundY * 0.85))
+                  : ((m * 79 + Math.sin(t * 0.9 + m) * 18) % (groundY * 0.88));
+              const alpha = 0.25 + 0.35 * Math.abs(Math.sin(t * 2 + m));
+              ctx.fillStyle =
+                s.biome === 'pond'
+                  ? `rgba(224, 242, 254, ${alpha.toFixed(2)})`
+                  : s.biome === 'desert'
+                  ? `rgba(253, 186, 116, ${alpha.toFixed(2)})`
+                  : `rgba(167, 243, 208, ${alpha.toFixed(2)})`;
+              ctx.beginPath();
+              ctx.arc(mx, my, s.biome === 'pond' ? 2.6 : 2.1, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+
+            // 5. High-Res Soil / Sand / Lakebed Substrate Gradient
+            const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
+            if (s.biome === 'pond') {
+              groundGrad.addColorStop(0, '#134e4a');
+              groundGrad.addColorStop(1, '#042f2e');
+            } else if (s.biome === 'desert') {
+              groundGrad.addColorStop(0, '#b45309');
+              groundGrad.addColorStop(1, '#451a03');
+            } else {
+              groundGrad.addColorStop(0, '#452b16');
+              groundGrad.addColorStop(1, '#1c1108');
+            }
+            ctx.fillStyle = groundGrad;
+            ctx.fillRect(0, groundY, W, H - groundY);
+
+            // Top rim highlight on ground
+            const rimGrad = ctx.createLinearGradient(0, groundY - 2, 0, groundY + 6);
+            rimGrad.addColorStop(0, 'rgba(255,255,255,0.22)');
+            rimGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = rimGrad;
+            ctx.fillRect(0, groundY, W, 6);
+
+            // 6. Rain Streaks + Surface Splash Ripples (fixed perfMode check!)
+            if (s.rain > 25 && s.perfMode !== 'smooth') {
+              const drops = Math.round((s.rain / 100) * (s.perfMode === 'ultra' ? 60 : 34));
+              ctx.strokeStyle = 'rgba(186, 230, 253, 0.42)';
+              ctx.lineWidth = 1.2;
               for (let r = 0; r < drops; r++) {
-                const rx = ((r * 97 + now * 0.08) % W);
-                const ry = ((r * 61 + now * 0.45) % (H * 0.8));
+                const rx = (r * 97 + now * 0.09) % W;
+                const ry = (r * 61 + now * 0.52) % groundY;
                 ctx.beginPath();
                 ctx.moveTo(rx, ry);
-                ctx.lineTo(rx - 4, ry + 12);
+                ctx.lineTo(rx - 5, ry + 14);
                 ctx.stroke();
+
+                if (ry > groundY - 18 && r % 4 === 0) {
+                  ctx.strokeStyle = 'rgba(224, 242, 254, 0.32)';
+                  ctx.beginPath();
+                  ctx.ellipse(rx - 3, groundY + 2, 6, 2, 0, 0, Math.PI * 2);
+                  ctx.stroke();
+                  ctx.strokeStyle = 'rgba(186, 230, 253, 0.42)';
+                }
               }
             }
 
-            // Substrate / Ground layer
-            ctx.fillStyle = bSpec.groundColor;
-            ctx.fillRect(0, H * 0.78, W, H * 0.22);
-            ctx.fillStyle = 'rgba(255,255,255,0.06)';
-            ctx.fillRect(0, H * 0.78, W, 2);
-
-            // Organisms
-            const list = crittersRef.current;
+            // 7. Main Organisms Rendered in Crisp Pixel Art (sorted back-to-front by Y)
+            const list = [...crittersRef.current].sort((a, b) => a.y - b.y);
             for (let i = 0; i < list.length; i++) {
               const c = list[i];
               const px = c.x * W;
               const py = c.y * H;
+
+              // Smooth contact ambient-occlusion shadow under organism
+              ctx.fillStyle = 'rgba(2, 6, 23, 0.34)';
+              ctx.beginPath();
+              ctx.ellipse(px, py + (c.kind === 'plant' ? 4 : 11), c.kind === 'carnivore' ? 14 : 10, 3.5, 0, 0, Math.PI * 2);
+              ctx.fill();
+
               if (c.kind === 'plant') {
-                ctx.strokeStyle = bSpec.plantColor;
-                ctx.lineWidth = 2.4;
-                const sway = Math.sin(now * 0.002 + c.id) * 4;
-                ctx.beginPath();
-                ctx.moveTo(px, py + 12);
-                ctx.quadraticCurveTo(px + sway, py - 6, px + sway * 1.3, py - 16);
-                ctx.stroke();
-                ctx.fillStyle = bSpec.plantColor;
-                ctx.beginPath();
-                ctx.arc(px + sway * 1.1, py - 16, 4.5, 0, Math.PI * 2);
-                ctx.fill();
+                const variant = c.id % 2;
+                const sway = Math.sin(t * 2.2 + c.id) * 0.05;
+                drawPixelSprite(
+                  ctx,
+                  `terr_plant_${s.biome}_${variant}`,
+                  getTerrariumPlantSpec(s.biome, variant),
+                  px,
+                  py + 4,
+                  2.2,
+                  { anchorBottom: true, rotationRad: sway }
+                );
               } else if (c.kind === 'herbivore') {
-                ctx.fillStyle = bSpec.herbColor;
-                ctx.beginPath();
-                ctx.ellipse(px, py, c.size * 1.25, c.size * 0.85, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#0f172a';
-                ctx.beginPath();
-                ctx.arc(px + (c.vx >= 0 ? 3 : -3), py - 1.5, 1.5, 0, Math.PI * 2);
-                ctx.fill();
+                drawPixelSprite(
+                  ctx,
+                  `terr_herb_${s.biome}_${animFrame}`,
+                  getTerrariumHerbivoreSpec(s.biome, animFrame),
+                  px,
+                  py,
+                  2.1,
+                  { flipX: c.vx < 0 }
+                );
               } else if (c.kind === 'carnivore') {
-                ctx.fillStyle = bSpec.carnColor;
-                ctx.beginPath();
-                const dir = c.vx >= 0 ? 1 : -1;
-                ctx.moveTo(px + dir * 10, py);
-                ctx.lineTo(px - dir * 8, py - 6);
-                ctx.lineTo(px - dir * 5, py);
-                ctx.lineTo(px - dir * 8, py + 6);
-                ctx.closePath();
-                ctx.fill();
+                drawPixelSprite(
+                  ctx,
+                  `terr_carn_${s.biome}_${animFrame}`,
+                  getTerrariumCarnivoreSpec(s.biome, animFrame),
+                  px,
+                  py,
+                  2.3,
+                  { flipX: c.vx < 0 }
+                );
               } else {
-                ctx.fillStyle = bSpec.decompColor;
-                ctx.beginPath();
-                ctx.arc(px, py, c.size, 0, Math.PI * 2);
-                ctx.fill();
+                // Soft bioluminescent aura for decomposers + pixel mushroom/snail/scarab
+                if (s.perfMode !== 'smooth') {
+                  const decGlow = ctx.createRadialGradient(px, py, 2, px, py, 16);
+                  decGlow.addColorStop(0, 'rgba(192, 132, 252, 0.35)');
+                  decGlow.addColorStop(1, 'rgba(192, 132, 252, 0)');
+                  ctx.fillStyle = decGlow;
+                  ctx.beginPath();
+                  ctx.arc(px, py, 16, 0, Math.PI * 2);
+                  ctx.fill();
+                }
+                drawPixelSprite(
+                  ctx,
+                  `terr_decomp_${s.biome}`,
+                  getTerrariumDecomposerSpec(s.biome),
+                  px,
+                  py,
+                  1.9
+                );
               }
             }
 
-            // Year overlay badge
-            ctx.fillStyle = 'rgba(2, 6, 23, 0.72)';
-            ctx.fillRect(12, 12, 178, 30);
+            // Year overlay HUD
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.76)';
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(12, 12, 194, 30, 8);
+            ctx.fill();
+            ctx.stroke();
             ctx.fillStyle = '#f8fafc';
             ctx.font = 'bold 12px monospace';
-            ctx.fillText(`Năm ảo: ${Math.floor(yearRef.current)} năm`, 22, 31);
+            ctx.fillText(`Năm ảo: ${Math.floor(yearRef.current)} năm`, 24, 31);
             ctx.restore();
           }
         }

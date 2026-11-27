@@ -742,6 +742,271 @@ function drawMath2DSim(
       ];
     }
 
+    case 'number_arithmetic_2d': {
+      ctx.fillStyle = '#070b18';
+      ctx.fillRect(0, 0, w, h);
+      const a = Math.max(2, Math.round(params.numA ?? 12));
+      const b = Math.max(2, Math.round(params.numB ?? 8));
+      const shift = Math.round(params.intShift ?? -3);
+      const gcd = (x: number, y: number): number => (y === 0 ? x : gcd(y, x % y));
+      const d = gcd(a, b);
+      const lcm = (a * b) / d;
+
+      // Top section: Integer number line with animated jump arc
+      const lineY = h * 0.22;
+      const startX = 28;
+      const endX = w - 28;
+      const stepPx = (endX - startX) / 14;
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(startX, lineY);
+      ctx.lineTo(endX, lineY);
+      ctx.stroke();
+
+      for (let i = -7; i <= 7; i++) {
+        const px = startX + (i + 7) * stepPx;
+        ctx.strokeStyle = i === 0 ? '#fbbf24' : '#94a3b8';
+        ctx.lineWidth = i === 0 ? 2.5 : 1.2;
+        ctx.beginPath();
+        ctx.moveTo(px, lineY - 5);
+        ctx.lineTo(px, lineY + 5);
+        ctx.stroke();
+        ctx.fillStyle = i === 0 ? '#fbbf24' : '#94a3b8';
+        ctx.font = '10px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(i), px, lineY + 18);
+      }
+
+      const originPx = startX + 7 * stepPx;
+      const endPos = Math.max(-7, Math.min(7, shift));
+      const destPx = startX + (endPos + 7) * stepPx;
+      const pulse = 0.5 + 0.5 * Math.sin(t * 2.5);
+      ctx.strokeStyle = shift >= 0 ? '#34d399' : '#f43f5e';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(originPx, lineY - 6);
+      ctx.quadraticCurveTo((originPx + destPx) / 2, lineY - 38 - pulse * 6, destPx, lineY - 6);
+      ctx.stroke();
+      ctx.fillStyle = shift >= 0 ? '#34d399' : '#f43f5e';
+      ctx.beginPath();
+      ctx.arc(destPx, lineY, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 11px ui-sans-serif, sans-serif';
+      ctx.fillText(`Trục số: 0 + (${shift}) = ${shift}`, 22, 18);
+
+      // Bottom section: Rectangular grid a x b tiled by d x d squares (GCD visual proof)
+      const boxMaxW = w - 60;
+      const boxMaxH = h * 0.54;
+      const cell = Math.min(boxMaxW / a, boxMaxH / b);
+      const ox = (w - a * cell) * 0.5;
+      const oy = h * 0.37;
+
+      const cols = a / d;
+      const rows = b / d;
+      for (let r = 0; r < rows; r++) {
+        for (let cIdx = 0; cIdx < cols; cIdx++) {
+          const sx = ox + cIdx * d * cell;
+          const sy = oy + r * d * cell;
+          ctx.fillStyle = (r + cIdx) % 2 === 0 ? 'rgba(56, 189, 248, 0.28)' : 'rgba(99, 102, 241, 0.34)';
+          ctx.fillRect(sx + 1, sy + 1, d * cell - 2, d * cell - 2);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.6;
+          ctx.strokeRect(sx + 1, sy + 1, d * cell - 2, d * cell - 2);
+        }
+      }
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '10.5px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Chia khít ${a} × ${b} thành ${cols * rows} ô vuông cạnh ƯCLN = ${d}`, w / 2, h - 10);
+      ctx.textAlign = 'left';
+
+      return [
+        { label: `ƯCLN(${a}, ${b})`, value: String(d) },
+        { label: `BCNN(${a}, ${b})`, value: String(lcm) },
+        { label: `Số ô vuông cạnh ${d}`, value: String(cols * rows), unit: 'ô' }
+      ];
+    }
+
+    case 'fractions_ratio_2d': {
+      ctx.fillStyle = '#070b18';
+      ctx.fillRect(0, 0, w, h);
+      const p = Math.max(1, Math.round(params.numerP ?? 3));
+      const q = Math.max(2, Math.round(params.denomQ ?? 4));
+      const k = Math.max(1, Math.round(params.scaleK ?? 2));
+      const pct = (p / q) * 100;
+
+      // Left: Fraction Circle
+      const circleX = w * 0.27;
+      const circleY = h * 0.54;
+      const radius = Math.min(w * 0.18, h * 0.34);
+      for (let i = 0; i < q; i++) {
+        const a1 = -Math.PI / 2 + (i * Math.PI * 2) / q;
+        const a2 = -Math.PI / 2 + ((i + 1) * Math.PI * 2) / q;
+        ctx.beginPath();
+        ctx.moveTo(circleX, circleY);
+        ctx.arc(circleX, circleY, radius, a1, a2);
+        ctx.closePath();
+        ctx.fillStyle = i < Math.min(p, q) ? 'rgba(16, 185, 129, 0.72)' : 'rgba(51, 65, 85, 0.55)';
+        ctx.fill();
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 12px ui-sans-serif, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Phân số ${p}/${q} = ${pct.toFixed(1)}%`, circleX, 24);
+
+      // Right: Equivalent fraction bar (p*k)/(q*k)
+      const barX = w * 0.52;
+      const barW = w * 0.42;
+      const barY1 = h * 0.33;
+      const barY2 = h * 0.58;
+      const barH = 34;
+
+      const drawBar = (y: number, num: number, den: number, col: string, label: string) => {
+        const maxCells = Math.max(den, num);
+        const cw = barW / maxCells;
+        for (let i = 0; i < maxCells; i++) {
+          ctx.fillStyle = i < num ? col : 'rgba(51, 65, 85, 0.45)';
+          ctx.fillRect(barX + i * cw + 1, y, Math.max(2, cw - 2), barH);
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(barX + i * cw + 1, y, Math.max(2, cw - 2), barH);
+        }
+        ctx.fillStyle = '#e2e8f0';
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.fillText(label, barX, y - 8);
+      };
+
+      drawBar(barY1, p, q, '#10b981', `Gốc: ${p}/${q}`);
+      drawBar(barY2, p * k, q * k, '#38bdf8', `Quy đồng ×${k}: ${p * k}/${q * k} (Tỉ lệ thức bằng nhau)`);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px ui-monospace, monospace';
+      ctx.fillText(`Kiểm chứng nhân chéo: ${p}×${q * k} = ${p * q * k} = ${q}×${p * k}`, barX, h - 18);
+
+      return [
+        { label: 'Giá trị thập phân', value: (p / q).toFixed(3) },
+        { label: 'Tỉ số phần trăm', value: pct.toFixed(1), unit: '%' },
+        { label: `Phân số nhân ×${k}`, value: `${p * k}/${q * k}` }
+      ];
+    }
+
+    case 'statistics_chart_2d': {
+      ctx.fillStyle = '#070b18';
+      ctx.fillRect(0, 0, w, h);
+      const nTrials = Math.max(10, Math.round(params.nTrials ?? 40));
+      const truePct = Math.max(5, Math.min(95, params.trueProbPct ?? 50));
+      const chartMode = Math.round(params.chartMode ?? 1);
+
+      // Deterministic pseudo-random trial simulation converging with nTrials
+      let hits = 0;
+      const stepPts: number[] = [];
+      for (let i = 1; i <= nTrials; i++) {
+        const hash = Math.abs(Math.sin(i * 12.9898 + truePct * 0.37) * 43758.5453) % 1;
+        if (hash * 100 < truePct) hits++;
+        stepPts.push((hits / i) * 100);
+      }
+      const empiricalPct = (hits / nTrials) * 100;
+      const animPulse = 0.96 + 0.04 * Math.sin(t * 3);
+
+      if (chartMode === 2) {
+        // Pie chart + convergence sparkline
+        const pieX = w * 0.28;
+        const pieY = h * 0.54;
+        const r = Math.min(w * 0.19, h * 0.35);
+        const angSplit = -Math.PI / 2 + (empiricalPct / 100) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(pieX, pieY);
+        ctx.arc(pieX, pieY, r, -Math.PI / 2, angSplit);
+        ctx.closePath();
+        ctx.fillStyle = '#10b981';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(pieX, pieY);
+        ctx.arc(pieX, pieY, r, angSplit, Math.PI * 1.5);
+        ctx.closePath();
+        ctx.fillStyle = '#3b82f6';
+        ctx.fill();
+
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 11.5px ui-sans-serif, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Quạt tròn: ${hits}/${nTrials} (${empiricalPct.toFixed(1)}%)`, pieX, 24);
+      } else {
+        // Grouped bar chart: Thành công vs Không thành công
+        const baseY = h * 0.82;
+        const maxBarH = h * 0.52;
+        const barW = 48;
+        const h1 = ((empiricalPct / 100) * maxBarH) * animPulse;
+        const h2 = (((100 - empiricalPct) / 100) * maxBarH);
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(w * 0.14, baseY - h1, barW, h1);
+        ctx.fillStyle = '#3b82f6';
+        ctx.fillRect(w * 0.28, baseY - h2, barW, h2);
+
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Đúng (${hits})`, w * 0.14 + barW / 2, baseY + 16);
+        ctx.fillText(`Khác (${nTrials - hits})`, w * 0.28 + barW / 2, baseY + 16);
+        ctx.fillText(`Cột tần suất thực nghiệm (n=${nTrials})`, w * 0.25, 24);
+      }
+
+      // Right side: Law of Large Numbers convergence line chart
+      const gx = w * 0.52;
+      const gw = w * 0.42;
+      const gyTop = h * 0.2;
+      const gh = h * 0.62;
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(gx, gyTop);
+      ctx.lineTo(gx, gyTop + gh);
+      ctx.lineTo(gx + gw, gyTop + gh);
+      ctx.stroke();
+
+      // Theoretical line
+      const theoY = gyTop + gh - (truePct / 100) * gh;
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.moveTo(gx, theoY);
+      ctx.lineTo(gx + gw, theoY);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      stepPts.forEach((pctVal, idx) => {
+        const px = gx + (idx / Math.max(1, stepPts.length - 1)) * gw;
+        const py = gyTop + gh - (pctVal / 100) * gh;
+        if (idx === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '10.5px ui-monospace, monospace';
+      ctx.fillText(`Lý thuyết P = ${truePct}%`, gx + 6, 24);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText(`Hội tụ P_n theo số phép thử n`, gx + 6, h - 12);
+
+      return [
+        { label: `Số lần xuất hiện (k/${nTrials})`, value: String(hits), unit: 'lần' },
+        { label: 'Xác suất thực nghiệm', value: empiricalPct.toFixed(1), unit: '%' },
+        { label: 'Sai lệch |P_n − P|', value: Math.abs(empiricalPct - truePct).toFixed(1), unit: '%' }
+      ];
+    }
+
     default: {
       // probability_normal_2d
       const cyP = h * 0.78;

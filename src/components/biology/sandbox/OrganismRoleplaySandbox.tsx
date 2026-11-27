@@ -18,6 +18,13 @@ import {
   Zap,
 } from 'lucide-react';
 import { useBackgroundTheme } from '../../../context/BackgroundContext';
+import {
+  drawPixelSprite,
+  getAnimalRoleplaySprite,
+  getPlantRoleplaySprite,
+  getRoleplayFoodSprite,
+  getRoleplayPredatorSprite,
+} from '../pixelSpriteEngine';
 
 type RoleDomain = 'plant' | 'animal';
 type PlantSpeciesId = 'bean' | 'cactus' | 'mangrove';
@@ -653,182 +660,254 @@ export const OrganismRoleplaySandbox: React.FC<{ isEn?: boolean }> = () => {
             const W = rect.width;
             const H = rect.height;
             const t = now * 0.001;
+            const animFrame = Math.floor(t * 5) % 2;
 
-            // Sky / Atmosphere
+            // 1. Multi-stop Sky / Atmospheric Depth
             const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
             if (s.xrayMode) {
               skyGrad.addColorStop(0, '#020617');
-              skyGrad.addColorStop(1, '#082f49');
+              skyGrad.addColorStop(0.55, '#082f49');
+              skyGrad.addColorStop(1, '#04121e');
             } else if (!s.isDaytime && s.domain === 'plant') {
-              skyGrad.addColorStop(0, '#0f172a');
+              skyGrad.addColorStop(0, '#020617');
+              skyGrad.addColorStop(0.6, '#0f172a');
               skyGrad.addColorStop(1, '#1e293b');
             } else if (s.speciesId === 'cactus') {
-              skyGrad.addColorStop(0, '#78350f');
-              skyGrad.addColorStop(1, '#d97706');
+              skyGrad.addColorStop(0, '#451a03');
+              skyGrad.addColorStop(0.45, '#b45309');
+              skyGrad.addColorStop(1, '#f59e0b');
             } else if (s.speciesId === 'polar_bear') {
-              skyGrad.addColorStop(0, '#0c4a6e');
-              skyGrad.addColorStop(1, '#bae6fd');
+              skyGrad.addColorStop(0, '#082f49');
+              skyGrad.addColorStop(0.45, '#0284c7');
+              skyGrad.addColorStop(1, '#e0f2fe');
             } else {
-              skyGrad.addColorStop(0, '#0369a1');
-              skyGrad.addColorStop(1, '#0f172a');
+              skyGrad.addColorStop(0, '#0c4a6e');
+              skyGrad.addColorStop(0.5, '#0284c7');
+              skyGrad.addColorStop(1, '#082f49');
             }
             ctx.fillStyle = skyGrad;
             ctx.fillRect(0, 0, W, H);
 
-            // Sun / Moon
-            if (s.domain === 'plant' && !s.xrayMode) {
-              ctx.fillStyle = s.isDaytime ? '#fde047' : '#e2e8f0';
-              ctx.beginPath();
-              ctx.arc(W * 0.85, H * 0.16, 24, 0, Math.PI * 2);
-              ctx.fill();
+            // 2. Sun / Moon Corona, Volumetric Beams, or Arctic Aurora
+            if (!s.xrayMode) {
+              if (s.speciesId === 'polar_bear') {
+                // Smooth shimmering northern aurora ribbon
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                const aurGrad = ctx.createLinearGradient(0, 20, W, H * 0.38);
+                aurGrad.addColorStop(0, 'rgba(52, 211, 153, 0)');
+                aurGrad.addColorStop(0.45, 'rgba(52, 211, 153, 0.24)');
+                aurGrad.addColorStop(0.75, 'rgba(56, 189, 248, 0.20)');
+                aurGrad.addColorStop(1, 'rgba(167, 139, 250, 0)');
+                ctx.fillStyle = aurGrad;
+                ctx.beginPath();
+                ctx.moveTo(0, H * 0.14);
+                for (let x = 0; x <= W; x += 24) {
+                  ctx.lineTo(x, H * 0.18 + Math.sin(x * 0.015 + t * 1.1) * 18);
+                }
+                ctx.lineTo(W, H * 0.34);
+                ctx.lineTo(0, H * 0.34);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+              } else {
+                const orbX = W * 0.84;
+                const orbY = H * 0.16;
+                const isSun = s.domain !== 'plant' || s.isDaytime;
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                const corona = ctx.createRadialGradient(orbX, orbY, 6, orbX, orbY, isSun ? 120 : 75);
+                corona.addColorStop(0, isSun ? 'rgba(254, 249, 195, 0.9)' : 'rgba(226, 232, 240, 0.75)');
+                corona.addColorStop(0.3, isSun ? 'rgba(253, 224, 71, 0.35)' : 'rgba(148, 163, 184, 0.22)');
+                corona.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = corona;
+                ctx.beginPath();
+                ctx.arc(orbX, orbY, isSun ? 120 : 75, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (isSun) {
+                  for (let r = 0; r < 3; r++) {
+                    const rx = W * (0.18 + r * 0.24) + Math.sin(t * 0.5 + r) * 14;
+                    const rGrad = ctx.createLinearGradient(orbX, 0, rx, H * 0.72);
+                    rGrad.addColorStop(0, 'rgba(254, 240, 138, 0.14)');
+                    rGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+                    ctx.fillStyle = rGrad;
+                    ctx.beginPath();
+                    ctx.moveTo(orbX - 16, 0);
+                    ctx.lineTo(orbX + 18, 0);
+                    ctx.lineTo(rx + 46, H * 0.74);
+                    ctx.lineTo(rx - 20, H * 0.74);
+                    ctx.closePath();
+                    ctx.fill();
+                  }
+                }
+                ctx.restore();
+
+                ctx.fillStyle = isSun ? '#fef08a' : '#e2e8f0';
+                ctx.beginPath();
+                ctx.arc(orbX, orbY, isSun ? 20 : 16, 0, Math.PI * 2);
+                ctx.fill();
+              }
             }
 
-            // Habitat Ground or Water line
-            const surfaceY = H * 0.48;
+            // 3. Habitat Water / Parallax Terrain & Atmospheric Particles
+            const surfaceY = H * 0.46;
+            const groundY = H * 0.72;
             if (s.domain === 'animal' && (s.speciesId === 'frog' || s.speciesId === 'salmon')) {
-              ctx.fillStyle = s.xrayMode ? 'rgba(14, 116, 144, 0.25)' : 'rgba(14, 165, 233, 0.34)';
+              const waterGrad = ctx.createLinearGradient(0, surfaceY, 0, H);
+              waterGrad.addColorStop(0, s.xrayMode ? 'rgba(14, 116, 144, 0.26)' : 'rgba(14, 165, 233, 0.42)');
+              waterGrad.addColorStop(1, s.xrayMode ? 'rgba(2, 6, 23, 0.6)' : 'rgba(8, 47, 73, 0.85)');
+              ctx.fillStyle = waterGrad;
               ctx.fillRect(0, surfaceY, W, H - surfaceY);
-              ctx.strokeStyle = '#38bdf8';
-              ctx.lineWidth = 2;
+
+              // Specular water wave crest
+              ctx.strokeStyle = 'rgba(186, 230, 253, 0.8)';
+              ctx.lineWidth = 2.4;
               ctx.beginPath();
-              for (let x = 0; x <= W; x += 16) {
-                const wy = surfaceY + Math.sin(x * 0.03 + t * 2) * 3;
+              for (let x = 0; x <= W; x += 14) {
+                const wy = surfaceY + Math.sin(x * 0.03 + t * 2.2) * 3.5;
                 if (x === 0) ctx.moveTo(x, wy);
                 else ctx.lineTo(x, wy);
               }
               ctx.stroke();
+
+              // Underwater caustic rays & rising bubbles
+              ctx.save();
+              ctx.globalCompositeOperation = 'lighter';
+              for (let b = 0; b < 14; b++) {
+                const bx = ((b * 79 + Math.sin(t + b) * 12) % W + W) % W;
+                const by = H - ((t * 28 + b * 43) % (H - surfaceY - 8));
+                ctx.fillStyle = 'rgba(186, 230, 253, 0.35)';
+                ctx.beginPath();
+                ctx.arc(bx, by, 2.2 + (b % 3), 0, Math.PI * 2);
+                ctx.fill();
+              }
+              ctx.restore();
             } else {
-              const groundY = H * 0.72;
+              // Distant mountain/dune silhouette
               ctx.fillStyle =
                 s.speciesId === 'polar_bear'
-                  ? '#e2e8f0'
+                  ? 'rgba(186, 230, 253, 0.3)'
                   : s.speciesId === 'cactus'
-                  ? '#92400e'
-                  : s.speciesId === 'mangrove'
-                  ? '#292524'
-                  : '#3f2e1d';
+                  ? 'rgba(120, 53, 15, 0.45)'
+                  : 'rgba(15, 23, 42, 0.32)';
+              ctx.beginPath();
+              ctx.moveTo(0, groundY);
+              for (let x = 0; x <= W; x += 24) {
+                ctx.lineTo(x, groundY - 34 + Math.sin(x * 0.012) * 18);
+              }
+              ctx.lineTo(W, groundY);
+              ctx.closePath();
+              ctx.fill();
+
+              const groundGrad = ctx.createLinearGradient(0, groundY, 0, H);
+              if (s.speciesId === 'polar_bear') {
+                groundGrad.addColorStop(0, '#f1f5f9');
+                groundGrad.addColorStop(1, '#94a3b8');
+              } else if (s.speciesId === 'cactus') {
+                groundGrad.addColorStop(0, '#b45309');
+                groundGrad.addColorStop(1, '#451a03');
+              } else if (s.speciesId === 'mangrove') {
+                groundGrad.addColorStop(0, '#1c1917');
+                groundGrad.addColorStop(1, '#0c0a09');
+              } else {
+                groundGrad.addColorStop(0, '#452b16');
+                groundGrad.addColorStop(1, '#1c1108');
+              }
+              ctx.fillStyle = groundGrad;
               ctx.fillRect(0, groundY, W, H - groundY);
+
+              // Snowflakes or fireflies
+              const moteCount = 18;
+              for (let m = 0; m < moteCount; m++) {
+                const mx = ((m * 97 + t * 14) % W + W) % W;
+                const my = ((m * 53 + t * (s.speciesId === 'polar_bear' ? 24 : 6)) % groundY);
+                ctx.fillStyle =
+                  s.speciesId === 'polar_bear'
+                    ? 'rgba(255, 255, 255, 0.6)'
+                    : !s.isDaytime
+                    ? 'rgba(163, 230, 53, 0.6)'
+                    : 'rgba(254, 240, 138, 0.35)';
+                ctx.beginPath();
+                ctx.arc(mx, my, 2, 0, Math.PI * 2);
+                ctx.fill();
+              }
             }
 
             if (s.domain === 'plant') {
-              const cx = W * 0.42;
-              const groundY = H * 0.72;
-              const growScale = 0.4 + s.stageIdx * 0.22 + (s.stageProgress / 100) * 0.15;
-              const stemH = (120 * growScale * (100 - s.rootAlloc * 0.45)) / 80;
-              const rootDepth = (75 * growScale * (40 + s.rootAlloc * 0.8)) / 90;
+              const cx = W * 0.40;
+              const growScale = 1 + s.stageIdx * 0.45 + (s.stageProgress / 100) * 0.25;
+              const rootDepth = (62 * (0.6 + growScale * 0.35) * (40 + s.rootAlloc * 0.8)) / 90;
 
-              // Roots underground
+              // Underground Soil Strata & Glowing Root Channels
               ctx.strokeStyle = s.xrayMode ? '#38bdf8' : '#d6d3d1';
-              ctx.lineWidth = s.xrayMode ? 3.5 : 2.5;
+              ctx.lineWidth = s.xrayMode ? 3.2 : 2.2;
               for (let r = -2; r <= 2; r++) {
                 ctx.beginPath();
-                ctx.moveTo(cx, groundY);
+                ctx.moveTo(cx, groundY + 2);
                 ctx.quadraticCurveTo(cx + r * 18, groundY + rootDepth * 0.5, cx + r * 28, groundY + rootDepth);
                 ctx.stroke();
               }
 
-              // Mangrove prop roots & pneumatophores
-              if (s.speciesId === 'mangrove' && (s.morphAdapted || s.stageIdx >= 1)) {
-                ctx.strokeStyle = '#a8a29e';
-                ctx.lineWidth = 4;
-                [-38, -20, 20, 38].forEach((off) => {
-                  ctx.beginPath();
-                  ctx.moveTo(cx, groundY - 26);
-                  ctx.lineTo(cx + off, groundY + 12);
-                  ctx.stroke();
-                });
-                // Breathing roots sticking up
-                ctx.strokeStyle = '#34d399';
-                ctx.lineWidth = 3;
-                [-56, -44, 48, 62].forEach((off) => {
-                  ctx.beginPath();
-                  ctx.moveTo(cx + off, groundY + 12);
-                  ctx.lineTo(cx + off, groundY - 22);
-                  ctx.stroke();
-                });
-              }
-
-              // Stem (phototropism curve toward sun on right when bean)
-              const leanX = s.speciesId === 'bean' && s.isDaytime ? 22 : 0;
-              ctx.strokeStyle = s.speciesId === 'cactus' ? '#15803d' : '#22c55e';
-              ctx.lineWidth = s.speciesId === 'cactus' ? 28 : 8;
-              ctx.lineCap = 'round';
+              // Soft shadow under plant
+              ctx.fillStyle = 'rgba(2, 6, 23, 0.38)';
               ctx.beginPath();
-              ctx.moveTo(cx, groundY);
-              ctx.quadraticCurveTo(cx + leanX * 0.4, groundY - stemH * 0.5, cx + leanX, groundY - stemH);
-              ctx.stroke();
+              ctx.ellipse(cx, groundY + 3, 28, 6, 0, 0, Math.PI * 2);
+              ctx.fill();
 
-              // Leaves or Cactus Spines
-              if (s.stageIdx >= 1 && s.speciesId !== 'cactus') {
-                ctx.fillStyle = s.water < 25 ? '#eab308' : '#22c55e';
-                [-1, 1].forEach((side) => {
-                  ctx.beginPath();
-                  ctx.ellipse(
-                    cx + leanX * 0.6 + side * 28,
-                    groundY - stemH * 0.65,
-                    22,
-                    11,
-                    side * 0.4,
-                    0,
-                    Math.PI * 2
-                  );
-                  ctx.fill();
-                });
-              } else if (s.speciesId === 'cactus' && (s.morphAdapted || s.stageIdx >= 2)) {
-                ctx.strokeStyle = '#fef08a';
-                ctx.lineWidth = 1.5;
-                for (let y = 18; y < stemH; y += 16) {
-                  ctx.beginPath();
-                  ctx.moveTo(cx - 14, groundY - y);
-                  ctx.lineTo(cx - 24, groundY - y - 5);
-                  ctx.moveTo(cx + 14, groundY - y);
-                  ctx.lineTo(cx + 24, groundY - y - 5);
-                  ctx.stroke();
+              // Crisp Pixel-Art Plant (anchored to ground, subtle phototropism tilt toward sun)
+              const leanRad = s.speciesId === 'bean' && s.isDaytime ? 0.14 : Math.sin(t * 1.4) * 0.025;
+              const plantSpec = getPlantRoleplaySprite(s.speciesId as 'bean' | 'cactus' | 'mangrove', s.stageIdx, {
+                water: s.water,
+                pollinated: s.pollinated,
+              });
+              const pScale = 6.2 + s.stageIdx * 1.9 + (s.stageProgress / 100) * 0.9;
+              drawPixelSprite(
+                ctx,
+                `role_plant_${s.speciesId}_${s.stageIdx}_${s.water < 25 ? 'dry' : 'wet'}_${s.pollinated ? 'pol' : 'raw'}`,
+                plantSpec,
+                cx,
+                groundY + 6,
+                pScale,
+                {
+                  anchorBottom: true,
+                  rotationRad: leanRad,
+                  xrayGlowColor: s.xrayMode ? '#38bdf8' : undefined,
                 }
-              }
+              );
 
-              // Flower in stage 3
-              if (s.stageIdx === 3) {
-                ctx.fillStyle = s.pollinated ? '#f59e0b' : '#f472b6';
-                for (let k = 0; k < 5; k++) {
-                  const a = (k / 5) * Math.PI * 2 + t * 0.4;
-                  ctx.beginPath();
-                  ctx.arc(cx + leanX + Math.cos(a) * 11, groundY - stemH - 6 + Math.sin(a) * 11, 7, 0, Math.PI * 2);
-                  ctx.fill();
-                }
-                ctx.fillStyle = '#fde047';
-                ctx.beginPath();
-                ctx.arc(cx + leanX, groundY - stemH - 6, 6, 0, Math.PI * 2);
-                ctx.fill();
-              }
-
-              // X-RAY Biological Cutaway Overlay (Stomata Zoom + Vascular Xylem/Phloem Flow)
+              // X-RAY Biological Cutaway Overlay (Stomata Zoom + Vascular Xylem Flow)
               if (s.xrayMode) {
-                // Animated Xylem Water upward flow
-                for (let i = 0; i < 8; i++) {
-                  const f = (t * 0.7 + i / 8) % 1;
-                  ctx.fillStyle = '#38bdf8';
+                const stemTopY = groundY - pScale * plantSpec.grid.length * 0.82;
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                for (let i = 0; i < 9; i++) {
+                  const f = (t * 0.75 + i / 9) % 1;
+                  const pxFlow = cx + Math.sin(leanRad) * (groundY - stemTopY) * f;
+                  const pyFlow = groundY + rootDepth * (1 - f) - (groundY - stemTopY) * f;
+                  ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
                   ctx.beginPath();
-                  ctx.arc(cx + leanX * f, groundY + rootDepth * (1 - f) - stemH * f, 3.5, 0, Math.PI * 2);
+                  ctx.arc(pxFlow, pyFlow, 3.8, 0, Math.PI * 2);
                   ctx.fill();
                 }
+                ctx.restore();
 
-                // Zoomed Leaf Stomata Cross-Section Box on Right
-                const bx = W * 0.6;
+                const bx = W * 0.58;
                 const by = H * 0.14;
-                const bw = Math.min(260, W * 0.36);
+                const bw = Math.min(265, W * 0.38);
                 const bh = 165;
-                ctx.fillStyle = 'rgba(2, 6, 23, 0.9)';
+                ctx.fillStyle = 'rgba(2, 6, 23, 0.92)';
                 ctx.strokeStyle = s.xrayStomataZoom ? '#f59e0b' : '#38bdf8';
                 ctx.lineWidth = 2;
-                ctx.fillRect(bx, by, bw, bh);
-                ctx.strokeRect(bx, by, bw, bh);
+                ctx.beginPath();
+                ctx.roundRect(bx, by, bw, bh, 10);
+                ctx.fill();
+                ctx.stroke();
 
                 ctx.fillStyle = '#e2e8f0';
                 ctx.font = 'bold 11px sans-serif';
-                ctx.fillText('X-RAY: LỖ KHÍ KHỔNG & MẠCH DẪN', bx + 12, by + 20);
+                ctx.fillText('X-RAY: LỖ KHÍ KHỔNG & MẠCH DẪN', bx + 12, by + 22);
 
-                // Two Guard cells
                 const gap = s.stomataOpen ? 16 : 3;
                 ctx.fillStyle = '#16a34a';
                 ctx.beginPath();
@@ -837,7 +916,6 @@ export const OrganismRoleplaySandbox: React.FC<{ isEn?: boolean }> = () => {
                 ctx.fill();
 
                 if (s.stomataOpen) {
-                  // Escaping H2O vapor particles
                   const steamRate = s.isDaytime ? 8 : 3;
                   for (let p = 0; p < steamRate; p++) {
                     const ph = (t * 1.4 + p / steamRate) % 1;
@@ -858,86 +936,111 @@ export const OrganismRoleplaySandbox: React.FC<{ isEn?: boolean }> = () => {
                 }
               }
             } else {
-              // ANIMAL ROLEPLAY RENDERING
-              // Food & Predator targets
+              // ANIMAL ROLEPLAY RENDERING — Crisp Pixel Animals + High-Res Lighting/X-Ray
+              const foodSpec = getRoleplayFoodSprite(s.speciesId);
+              const predSpec = getRoleplayPredatorSprite(s.speciesId, animFrame);
+
               targetsRef.current.forEach((tg) => {
                 const tx = tg.x * W;
                 const ty = tg.y * H;
                 if (tg.kind === 'food') {
-                  ctx.fillStyle = '#4ade80';
+                  // Soft emerald beacon glow around pixel food
+                  const fGlow = ctx.createRadialGradient(tx, ty, 2, tx, ty, 18);
+                  fGlow.addColorStop(0, 'rgba(74, 222, 128, 0.45)');
+                  fGlow.addColorStop(1, 'rgba(74, 222, 128, 0)');
+                  ctx.fillStyle = fGlow;
                   ctx.beginPath();
-                  ctx.arc(tx, ty, 6, 0, Math.PI * 2);
+                  ctx.arc(tx, ty, 18, 0, Math.PI * 2);
                   ctx.fill();
+                  drawPixelSprite(ctx, `role_food_${s.speciesId}`, foodSpec, tx, ty, 2.4, {
+                    flipX: tg.vx < 0,
+                  });
                 } else {
-                  ctx.fillStyle = '#fb7185';
+                  const pGlow = ctx.createRadialGradient(tx, ty, 2, tx, ty, 24);
+                  pGlow.addColorStop(0, 'rgba(244, 63, 94, 0.35)');
+                  pGlow.addColorStop(1, 'rgba(244, 63, 94, 0)');
+                  ctx.fillStyle = pGlow;
                   ctx.beginPath();
-                  ctx.moveTo(tx + 12, ty);
-                  ctx.lineTo(tx - 10, ty - 7);
-                  ctx.lineTo(tx - 10, ty + 7);
-                  ctx.closePath();
+                  ctx.arc(tx, ty, 24, 0, Math.PI * 2);
                   ctx.fill();
+                  drawPixelSprite(ctx, `role_pred_${s.speciesId}_${animFrame}`, predSpec, tx, ty, 2.8, {
+                    flipX: tg.vx < 0,
+                  });
                 }
               });
 
               const px = s.playerPos.x * W;
               const py = s.playerPos.y * H;
-              const radius = 16 + s.stageIdx * 4;
+              const facingLeft = playerTargetRef.current.x < s.playerPos.x - 0.005;
+              const animalSpec = getAnimalRoleplaySprite(
+                s.speciesId as 'frog' | 'butterfly' | 'salmon' | 'polar_bear',
+                s.stageIdx,
+                animFrame
+              );
+              const pxScale = 3.2 + s.stageIdx * 0.55;
 
-              ctx.save();
-              ctx.globalAlpha = s.hidingCamo ? 0.45 : 1;
-              ctx.fillStyle =
-                s.speciesId === 'polar_bear'
-                  ? '#f8fafc'
-                  : s.speciesId === 'salmon'
-                  ? '#f97316'
-                  : s.speciesId === 'butterfly'
-                  ? '#facc15'
-                  : '#22c55e';
-              ctx.strokeStyle = s.xrayMode ? '#38bdf8' : '#0f172a';
-              ctx.lineWidth = 2.5;
+              // Soft contact shadow or aura around player animal
+              ctx.fillStyle = 'rgba(2, 6, 23, 0.36)';
               ctx.beginPath();
-              ctx.ellipse(px, py, radius * 1.25, radius * 0.85, 0, 0, Math.PI * 2);
+              ctx.ellipse(px, py + 18, 22 + s.stageIdx * 3, 6, 0, 0, Math.PI * 2);
               ctx.fill();
-              ctx.stroke();
 
-              // Tadpole / Salmon tail
-              if (s.speciesId === 'salmon' || (s.speciesId === 'frog' && (s.stageIdx === 1 || s.stageIdx === 2))) {
-                const wag = Math.sin(t * 8) * 6;
-                ctx.strokeStyle = '#86efac';
-                ctx.lineWidth = 4;
+              if (s.xrayMode) {
+                const xAura = ctx.createRadialGradient(px, py, 4, px, py, 44);
+                xAura.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+                xAura.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                ctx.fillStyle = xAura;
                 ctx.beginPath();
-                ctx.moveTo(px - radius, py);
-                ctx.lineTo(px - radius - 18, py + wag);
-                ctx.stroke();
+                ctx.arc(px, py, 44, 0, Math.PI * 2);
+                ctx.fill();
               }
-              ctx.restore();
+
+              drawPixelSprite(
+                ctx,
+                `role_anim_${s.speciesId}_${s.stageIdx}_${animFrame}`,
+                animalSpec,
+                px,
+                py,
+                pxScale,
+                {
+                  flipX: facingLeft,
+                  alpha: s.hidingCamo ? 0.45 : 1,
+                  xrayGlowColor: s.xrayMode ? '#38bdf8' : undefined,
+                }
+              );
 
               // X-RAY INTERNAL ANATOMY OVERLAY FOR ANIMAL
               if (s.xrayMode) {
-                // Pulsing Heart
-                const beat = 1 + Math.sin(t * 7) * 0.25;
-                ctx.fillStyle = '#e11d48';
+                const beat = 1 + Math.sin(t * 7) * 0.28;
+                ctx.save();
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.fillStyle = '#fb7185';
                 ctx.beginPath();
-                ctx.arc(px + 4, py, 5 * beat, 0, Math.PI * 2);
+                ctx.arc(px + (facingLeft ? -4 : 4), py, 4.5 * beat, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Respiratory Organ Cutaway (Gills vs Lungs!)
                 if (s.speciesId === 'frog' && s.stageIdx >= 2) {
-                  ctx.fillStyle = 'rgba(56, 189, 248, 0.75)';
+                  ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
                   ctx.beginPath();
-                  ctx.ellipse(px - 4, py - 5, 6, 4, 0, 0, Math.PI * 2);
+                  ctx.ellipse(px + (facingLeft ? 5 : -5), py - 4, 6.5, 4, 0, 0, Math.PI * 2);
                   ctx.fill();
+                  ctx.restore();
                   ctx.fillStyle = '#e0f2fe';
-                  ctx.font = 'bold 10px monospace';
+                  ctx.font = 'bold 10.5px monospace';
                   ctx.fillText(
                     s.stageIdx === 2 ? 'X-RAY: Mang tiêu biến → Phổi mở' : 'X-RAY: Phổi + Thở qua da ẩm',
-                    px - 58,
-                    py - radius - 10
+                    Math.max(12, px - 74),
+                    Math.max(18, py - 34)
                   );
                 } else {
-                  ctx.fillStyle = '#38bdf8';
-                  ctx.font = 'bold 10px monospace';
-                  ctx.fillText(`X-RAY: ATP ${s.atp}% | O₂ ${s.oxygen}%`, px - 52, py - radius - 10);
+                  ctx.restore();
+                  ctx.fillStyle = '#7dd3fc';
+                  ctx.font = 'bold 10.5px monospace';
+                  ctx.fillText(
+                    `X-RAY: ATP ${s.atp}% | O₂ ${s.oxygen}%`,
+                    Math.max(12, px - 64),
+                    Math.max(18, py - 34)
+                  );
                 }
               }
             }
@@ -1209,7 +1312,7 @@ export const OrganismRoleplaySandbox: React.FC<{ isEn?: boolean }> = () => {
           ) : (
             <div className="space-y-2.5 text-xs">
               <div className="rounded-lg bg-slate-100 dark:bg-slate-800/70 p-2.5 text-slate-700 dark:text-slate-300">
-                Nhấp trực tiếp vào màn hình mô phỏng để di chuyển, ăn điểm xanh (+ATP) và tránh tam giác đỏ (Thiên địch).
+                Nhấp trực tiếp vào màn hình mô phỏng để di chuyển, tìm thức ăn (+ATP) và né tránh thiên địch.
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button

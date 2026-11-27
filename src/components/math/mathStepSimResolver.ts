@@ -12,7 +12,10 @@ export type Math2DSimKind =
   | 'triangle_pythagoras_2d'
   | 'conic_sections_2d'
   | 'vectors_2d'
-  | 'probability_normal_2d';
+  | 'probability_normal_2d'
+  | 'number_arithmetic_2d'
+  | 'fractions_ratio_2d'
+  | 'statistics_chart_2d';
 
 export interface Math2DParamSpec {
   key: string;
@@ -93,6 +96,14 @@ const MODE_3D_LABELS: Record<Math3DMode, { title: string; subtitle: string }> = 
   geometric_transform_3d: {
     title: 'Phép Biến Hình & Tọa Độ Không Gian 3D',
     subtitle: 'Trực quan hóa phép tịnh tiến, phép quay và phép vị tự tỉ số k trên khối đa diện 3D.'
+  },
+  arithmetic_prism_3d: {
+    title: 'Khối Lập Phương ƯCLN / BCNN & Phân Tích Thừa Số 3D',
+    subtitle: 'Xếp khít hình hộp a × b × c bằng khối lập phương cạnh d = ƯCLN và mô hình hóa tỉ số thể tích 3D.'
+  },
+  solid_prism_nets_3d: {
+    title: 'Hình Hộp, Lăng Trụ Đứng & Khai Triển Hình Chóp 3D',
+    subtitle: 'Kéo thanh gập/mở khai triển từ lưới 2D thành hình hộp chữ nhật, lăng trụ tam giác hoặc hình chóp đều 3D.'
   }
 };
 
@@ -110,21 +121,25 @@ export function resolveMathStepSim(
   let mode3d: Math3DMode = lesson.sim3dMode || 'oxyz_vector';
   if (/mat cau|duong tron giao tuyen|khoang cach tam/.test(combined)) {
     mode3d = 'sphere_plane';
-  } else if (/chop|lang tru|thiet dien|the tich khoi|hinh hoc khong gian|tu dien/.test(combined)) {
+  } else if (/hinh hop|lang tru|khai trien|trai phang|dien tich xung quanh|hinh chop.*deu|chop tam giac|chop tu giac/.test(combined)) {
+    mode3d = 'solid_prism_nets_3d';
+  } else if (/chop|thiet dien|the tich khoi|hinh hoc khong gian|tu dien/.test(combined)) {
     mode3d = 'pyramid_section';
   } else if (/tich phan|nguyen ham|riemann|dien tich hinh phang/.test(combined)) {
     mode3d = /tron xoay|the tich vat the/.test(combined) ? 'revolution_solid' : 'integral_disks_3d';
   } else if (/conic|elip|hypebol|parabol trong mat phang/.test(combined) && !/bac 2|tam thuc/.test(combined)) {
     mode3d = 'conic_sections_3d';
-  } else if (/duong thang.*mat phang|phuong trinh mat phang|oxyz/.test(combined)) {
+  } else if (/ucln|bcnn|nguyen to|chia het|tap hop|so nguyen|truc so|phan so|thap phan|ti so|ti le thuc|phan tram|luy thua so tu nhien|so huu ti/.test(combined)) {
+    mode3d = 'arithmetic_prism_3d';
+  } else if (/duong thang.*mat phang|phuong trinh mat phang|oxyz|bac nhat/.test(combined)) {
     mode3d = /vecto|tich co huong/.test(combined) ? 'oxyz_vector' : 'line_plane_oxyz';
-  } else if (/dao ham|tiep tuyen|cuc tri|don dieu|khao sat/.test(combined)) {
+  } else if (/dao ham|tiep tuyen|cuc tri|don dieu|khao sat|hang dang thuc|da thuc/.test(combined)) {
     mode3d = 'tangent_surface_3d';
-  } else if (/xac suat|thong ke|to hop|phan phoi|nhi thuc/.test(combined)) {
+  } else if (/xac suat|thong ke|bieu do|tung dong xu|xuc xac|to hop|phan phoi|nhi thuc/.test(combined)) {
     mode3d = 'probability_bell_3d';
   } else if (/duong tron|goc noi tiep|tu giac noi tiep|cung|day/.test(combined)) {
     mode3d = 'circle_theorems_3d';
-  } else if (/bien hinh|tinh tien|vi tu|phep quay|doi xung/.test(combined)) {
+  } else if (/bien hinh|tinh tien|vi tu|phep quay|doi xung|tam giac|tu giac|thales|pytago|pythagore/.test(combined)) {
     mode3d = 'geometric_transform_3d';
   }
 
@@ -133,6 +148,7 @@ export function resolveMathStepSim(
   if (mode3d === 'integral_disks_3d') allowedSet.add('revolution_solid');
   if (mode3d === 'oxyz_vector') allowedSet.add('line_plane_oxyz');
   if (mode3d === 'circle_theorems_3d') allowedSet.add('sphere_plane');
+  if (mode3d === 'solid_prism_nets_3d') allowedSet.add('pyramid_section');
   const allowed3dModes = Array.from(allowedSet);
 
   const m3 = MODE_3D_LABELS[mode3d];
@@ -148,15 +164,21 @@ export function resolveMathStepSim(
     sim2dKind = 'cubic_extrema_2d';
   } else if (/luong giac|sin|cos|tan|cot|cung luong giac/.test(combined)) {
     sim2dKind = 'trig_unit_circle_2d';
-  } else if (/ham so mu|logarit|luy thua|e\^x/.test(combined)) {
+  } else if (/ham so mu|logarit|e\^x/.test(combined) && !/so tu nhien|so huu ti/.test(combined)) {
     sim2dKind = 'exp_log_2d';
   } else if (/conic|elip|hypebol|tieu diem|tam sai/.test(combined)) {
     sim2dKind = 'conic_sections_2d';
-  } else if (/xac suat|thong ke|to hop|chinh hop|hoan vi|trung binh|phuong sai|do lech/.test(combined)) {
+  } else if (/ucln|bcnn|nguyen to|chia het|tap hop|so tu nhien|so nguyen|truc so|luy thua voi so mu tu nhien/.test(combined)) {
+    sim2dKind = 'number_arithmetic_2d';
+  } else if (/phan so|thap phan|ti so|ti le thuc|phan tram|so huu ti|ti le thuan|ti le nghich/.test(combined)) {
+    sim2dKind = 'fractions_ratio_2d';
+  } else if (/bieu do|thong ke|tan so|xac suat thuc nghiem|tung dong xu|xuc xac|xac suat co dien/.test(combined)) {
+    sim2dKind = 'statistics_chart_2d';
+  } else if (/xac suat|to hop|chinh hop|hoan vi|trung binh|phuong sai|do lech/.test(combined)) {
     sim2dKind = 'probability_normal_2d';
   } else if (/duong tron|goc noi tiep|tu giac noi tiep|tiep tuyen.*duong tron|cung tron/.test(combined)) {
     sim2dKind = 'circle_theorems_2d';
-  } else if (/pythagoras|pytago|tam giac|he thuc luong|duong cao|duong trung tuyen|hinh chop|mat cau/.test(combined)) {
+  } else if (/pythagoras|pytago|pythagore|tam giac|tu giac|thales|tal[eé]t|hinh thang|binh hanh|hinh thoi|trung diem|he thuc luong|duong cao|duong trung tuyen|hinh chop|lang tru|hinh hop|mat cau/.test(combined)) {
     sim2dKind = 'triangle_pythagoras_2d';
   } else if (/vecto|toa do|oxyz|so phuc|bieu dien hinh hoc|tich vo huong|tich co huong/.test(combined)) {
     sim2dKind = 'vectors_2d';
@@ -398,6 +420,75 @@ export function resolveMathStepSim(
           { label: 'Quy tắc ±1σ (68,3%)', params: { mu: 0, sigma: 1.0, zBand: 1.0 } },
           { label: 'Quy tắc ±2σ (95,4%)', params: { mu: 0, sigma: 1.0, zBand: 2.0 } },
           { label: 'Phân tán rộng (σ = 1,6)', params: { mu: 0, sigma: 1.6, zBand: 1.5 } }
+        ],
+        mode3d,
+        allowed3dModes,
+        title3d: m3.title,
+        subtitle3d: m3.subtitle
+      };
+
+    case 'number_arithmetic_2d':
+      return {
+        sim2dKind,
+        title2d: 'Số Học & Trục Số Nguyên · Chia Ô Vuông ƯCLN / BCNN',
+        subtitle2d: 'Chỉnh hai số a, b để chia hình chữ nhật a × b thành các ô vuông lớn nhất d = ƯCLN(a,b) và kiểm tra phép cộng trên trục số.',
+        formula2d: '\\text{ƯCLN}(a,b) \\cdot \\text{BCNN}(a,b) = a \\cdot b,\\quad a + (-a) = 0',
+        defaultParams: { numA: 12, numB: 8, intShift: -3 },
+        paramDefs: [
+          { key: 'numA', label: 'Số nguyên dương a', unit: '', min: 4, max: 24, step: 1 },
+          { key: 'numB', label: 'Số nguyên dương b', unit: '', min: 4, max: 20, step: 1 },
+          { key: 'intShift', label: 'Bước nhảy trục số Δ', unit: '', min: -6, max: 6, step: 1 }
+        ],
+        presets: [
+          { label: 'ƯCLN(12, 8) = 4', params: { numA: 12, numB: 8, intShift: -3 } },
+          { label: 'Nguyên tố cùng nhau (9, 8)', params: { numA: 9, numB: 8, intShift: 4 } },
+          { label: 'ƯCLN(18, 12) = 6', params: { numA: 18, numB: 12, intShift: -5 } }
+        ],
+        mode3d,
+        allowed3dModes,
+        title3d: m3.title,
+        subtitle3d: m3.subtitle
+      };
+
+    case 'fractions_ratio_2d':
+      return {
+        sim2dKind,
+        title2d: 'Phân Số · Tỉ Lệ Thức & Đại Lượng Tỉ Lệ Thuận / Nghịch',
+        subtitle2d: 'Kéo tử số p, mẫu số q và hệ số k để thấy trực quan phân số bằng nhau, phần trăm và quy tắc tam suất.',
+        formula2d: '\\frac{a}{b} = \\frac{c}{d} \\iff a\\cdot d = b\\cdot c,\\quad y = kx,\\; x\\cdot y = k',
+        defaultParams: { numerP: 3, denomQ: 4, scaleK: 2 },
+        paramDefs: [
+          { key: 'numerP', label: 'Tử số / Phần tô màu p', unit: '', min: 1, max: 12, step: 1 },
+          { key: 'denomQ', label: 'Mẫu số / Tổng phần q', unit: '', min: 2, max: 12, step: 1 },
+          { key: 'scaleK', label: 'Hệ số nhân / tỉ lệ k', unit: '', min: 1, max: 4, step: 1 }
+        ],
+        presets: [
+          { label: 'Phân số 3/4 (75%)', params: { numerP: 3, denomQ: 4, scaleK: 2 } },
+          { label: 'Phân số 2/5 (40%)', params: { numerP: 2, denomQ: 5, scaleK: 3 } },
+          { label: 'Hỗn số 7/4 (175%)', params: { numerP: 7, denomQ: 4, scaleK: 2 } }
+        ],
+        mode3d,
+        allowed3dModes,
+        title3d: m3.title,
+        subtitle3d: m3.subtitle
+      };
+
+    case 'statistics_chart_2d':
+      return {
+        sim2dKind,
+        title2d: 'Biểu Đồ Thống Kê & Tần Suất Xác Suất Thực Nghiệm',
+        subtitle2d: 'Tăng số phép thử n (tung đồng xu / gieo xúc xắc) để thấy tần suất thực nghiệm hội tụ về xác suất lý thuyết.',
+        formula2d: 'P_n(A) = \\frac{k}{n} \\xrightarrow{n\\to\\infty} P(A)',
+        defaultParams: { nTrials: 40, trueProbPct: 50, chartMode: 1 },
+        paramDefs: [
+          { key: 'nTrials', label: 'Số phép thử n', unit: 'lần', min: 10, max: 200, step: 10 },
+          { key: 'trueProbPct', label: 'Xác suất lý thuyết', unit: '%', min: 15, max: 85, step: 5 },
+          { key: 'chartMode', label: 'Loại (1: Cột, 2: Quạt tròn)', unit: '', min: 1, max: 2, step: 1 }
+        ],
+        presets: [
+          { label: 'Tung đồng xu (50%)', params: { nTrials: 60, trueProbPct: 50, chartMode: 1 } },
+          { label: 'Ra mặt 6 chấm (≈17%)', params: { nTrials: 120, trueProbPct: 17, chartMode: 1 } },
+          { label: 'Biểu đồ hình quạt tròn', params: { nTrials: 80, trueProbPct: 35, chartMode: 2 } }
         ],
         mode3d,
         allowed3dModes,

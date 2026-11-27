@@ -1,5 +1,6 @@
 import { ChemistrySimType } from '../../types';
 import { PerformanceMode } from '../../context/BackgroundContext';
+import { renderMiddleSchool2DChemSim } from './chemistry2DMiddleSchoolRenderer';
 
 export interface ChemSimTelemetry {
   metrics: { label: string; value: number | string; unit?: string }[];
@@ -2236,10 +2237,7 @@ export function renderChemistry2DSim(
     }
 
     default: {
-      return {
-        metrics: [{ label: 'Sim ID', value: simType }],
-        statusNote: 'Chế độ mô phỏng Hóa học 2D sẵn sàng.'
-      };
+      return renderMiddleSchool2DChemSim(ctx, w, h, simType, params, t, dark, perfMode);
     }
   }
 }

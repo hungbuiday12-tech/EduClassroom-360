@@ -17,6 +17,7 @@ import {
   Trophy
 } from 'lucide-react';
 import { MathFormula } from '../common/MathRenderer';
+import { SandboxIntroGuideBanner } from '../common/SandboxIntroGuideBanner';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
 
 function triggerDownloadText(filename: string, content: string, mime = 'text/csv;charset=utf-8;') {
@@ -469,6 +470,151 @@ const CHAIN_PUZZLES: ReactionChainPuzzle[] = [
     ]
   }
 ];
+
+const CHEM_SANDBOX_GUIDES: Record<
+  'periodic' | 'stoich' | 'titration' | 'vsepr' | 'qualitative' | 'redox',
+  {
+    titleVi: string;
+    titleEn: string;
+    introVi: string;
+    introEn: string;
+    stepsVi: string[];
+    stepsEn: string[];
+    tipVi: string;
+    tipEn: string;
+  }
+> = {
+  periodic: {
+    titleVi: 'Bảng Tuần Hoàn Tương Tác (Z = 1..36)',
+    titleEn: 'Interactive Periodic Table (Z = 1..36)',
+    introVi:
+      'Tra cứu cấu hình electron, phân lớp s/p/d, độ âm điện Pauling, bán kính nguyên tử và quy luật biến thiên tuần hoàn từ Hydrogen (Z=1) đến Krypton (Z=36).',
+    introEn:
+      'Inspect electron configurations, s/p/d blocks, Pauling electronegativity, atomic radius, and periodic trends from Z=1 to Z=36.',
+    stepsVi: [
+      'Nhấp chọn một ô nguyên tố bất kì (Z = 1 đến 36) trên bảng tuần hoàn.',
+      'Đọc thẻ chi tiết bên phải: cấu hình electron, nguyên tử khối và số oxi hóa.',
+      'Theo dõi đồ thị biến thiên Độ âm điện (xanh ngọc) & Bán kính (vàng) bên dưới.',
+      'Bấm "Xuất CSV Z=1..36" nếu muốn lưu dữ liệu nguyên tố để ôn tập.',
+    ],
+    stepsEn: [
+      'Click any element tile (Z=1 to 36) in the periodic table.',
+      'Inspect electron configuration, atomic mass, and oxidation states on the right.',
+      'Compare electronegativity and atomic radius trends along the chart below.',
+      'Export the full CSV table for offline study.',
+    ],
+    tipVi: 'Trong một chu kì từ trái sang phải, bán kính nguyên tử giảm dần còn độ âm điện tăng dần.',
+    tipEn: 'Across a period left-to-right, atomic radius decreases while electronegativity rises.',
+  },
+  stoich: {
+    titleVi: 'Tính Toán Mol, Chất Hết / Chất Dư & Hiệu Suất',
+    titleEn: 'Stoichiometry, Limiting Reagent & Yield',
+    introVi:
+      'Thực hành bài toán hóa học định lượng theo phương trình: xác định chất hết trước, lượng chất dư còn lại, thể tích khí ở ĐKC (24,79 L/mol) và ảnh hưởng của hiệu suất phản ứng H%.',
+    introEn:
+      'Compute limiting reagents, leftover excess moles, STP gas volumes (24.79 L/mol), and percent yield across classic reactions.',
+    stepsVi: [
+      'Chọn một phương trình phản ứng mẫu trong danh sách.',
+      'Kéo thanh trượt số mol ban đầu của hai chất tham gia và hiệu suất H (%).',
+      'Quan sát cốc phản ứng minh họa chuyển đổi lượng chất theo thời gian thực.',
+      'Đọc ngay chất hết trước, số mol dư và thể tích khí thu được ở ĐKC.',
+    ],
+    stepsEn: [
+      'Choose a sample chemical reaction equation.',
+      'Drag sliders for initial moles of reactants and reaction yield (%).',
+      'Watch the stoichiometric balance canvas update in real time.',
+      'Read limiting reagent, excess moles remaining, and gas volume.',
+    ],
+    tipVi: 'Số mol sản phẩm luôn tính theo chất có tỉ lệ (n_ban_đầu / hệ_số) nhỏ hơn.',
+    tipEn: 'Product yield is governed by the reactant with the smaller (moles / coefficient) ratio.',
+  },
+  titration: {
+    titleVi: 'Chuẩn Độ Axit – Bazơ & Đường Cong pH',
+    titleEn: 'Acid-Base Burette Titration & pH Curve',
+    introVi:
+      'Mô phỏng bình chuẩn độ với Buret nhỏ từng giọt NaOH vào dung dịch HCl hoặc CH₃COOH có chất chỉ thị Phenolphthalein, giúp nhận diện chính xác điểm tương đương và bước nhảy pH.',
+    introEn:
+      'Simulate dropwise NaOH titration of strong (HCl) or weak (CH₃COOH) acids with Phenolphthalein indicator and live pH curve plotting.',
+    stepsVi: [
+      'Chọn dung dịch cần chuẩn độ (Acid mạnh HCl hoặc Acid yếu CH₃COOH).',
+      'Thiết lập nồng độ Cₐ, C_b rồi kéo thanh thể tích hoặc bấm "+0,5 mL nhỏ giọt".',
+      'Quan sát bình nón đổi từ không màu sang hồng nhạt tại vùng pH 8,2–10.',
+      'Bấm "Nhảy tới điểm tương đương" để so sánh bước nhảy pH của acid mạnh vs yếu.',
+    ],
+    stepsEn: [
+      'Select strong acid HCl or weak acid CH₃COOH.',
+      'Set concentrations Cₐ and C_b, then drip NaOH via "+0.5 mL" or the volume slider.',
+      'Watch the Erlenmeyer flask shift from colorless to pale pink at pH 8.2–10.',
+      'Jump to equivalence point to compare strong vs weak acid titration curves.',
+    ],
+    tipVi: 'Chuẩn độ acid yếu CH₃COOH bằng NaOH tạo vùng đệm trước điểm tương đương nên pH_eq > 7.',
+    tipEn: 'Weak acid titration forms a buffer region and reaches equivalence at pH > 7.',
+  },
+  vsepr: {
+    titleVi: 'Mô Hình Hình Học Phân Tử VSEPR 3D',
+    titleEn: '3D VSEPR Molecular Geometry Explorer',
+    introVi:
+      'Khám phá lý thuyết đẩy giữa các cặp electron lớp vỏ hóa trị (VSEPR): lý giải vì sao CO₂ thẳng (180°), CH₄ tứ diện (109,5°), NH₃ chóp tam giác (107°) và H₂O chữ V (104,5°).',
+    introEn:
+      'Explore VSEPR electron-pair repulsion explaining linear, tetrahedral, trigonal pyramidal, and bent geometries in 3D.',
+    stepsVi: [
+      'Chọn một phân tử tiêu biểu ở cột bên trái (CO₂, BF₃, CH₄, NH₃, H₂O, SF₆).',
+      'Quan sát mô hình 3D xoay liên tục hiển thị cặp liên kết và cặp electron tự do (E).',
+      'Đối chiếu trạng thái lai hóa (sp, sp², sp³, sp³d²), góc liên kết và tính phân cực.',
+    ],
+    stepsEn: [
+      'Pick a molecule preset (CO₂, BF₃, CH₄, NH₃, H₂O, SF₆) from the left panel.',
+      'Inspect the rotating 3D structure showing bonding pairs and lone pairs (E).',
+      'Compare hybridization states, bond angles, and net dipole polarity.',
+    ],
+    tipVi: 'Cặp electron tự do (E) chiếm không gian lớn hơn nên ép góc liên kết nhỏ lại.',
+    tipEn: 'Lone pairs exert greater repulsion, compressing adjacent bonding angles.',
+  },
+  qualitative: {
+    titleVi: 'Nhận Biết Ion, Thử Ngọn Lửa & Chuỗi Phản Ứng',
+    titleEn: 'Ion Tests, Flame Spectroscopy & Reaction Chains',
+    introVi:
+      'Thực hành phân tích định tính vô cơ qua 3 chế độ: nhỏ thuốc thử nhận biết ion/lọ mất nhãn, đốt muối thử màu ngọn lửa quang phổ vạch và giải trò chơi chuỗi chuyển hóa.',
+    introEn:
+      'Practice qualitative inorganic analysis across ion precipitation/gas tests, flame spectroscopy, and multi-step reaction chains.',
+    stepsVi: [
+      'Chọn một trong 3 chế độ: Nhận biết Ion & Lọ mất nhãn, Thử Ngọn lửa hoặc Chuỗi PƯ.',
+      'Ở chế độ Ion: nhỏ AgNO₃, BaCl₂, NaOH, NH₃... để xem kết tủa màu hoặc khí thoát ra.',
+      'Bật "Thử thách Lọ Mất Nhãn" để tự nhỏ thuốc thử và suy luận ion bí ẩn.',
+      'Ở chế độ Chuỗi PƯ: chọn đúng tác nhân cho từng mũi tên chuyển hóa.',
+    ],
+    stepsEn: [
+      'Switch between Ion/Mystery Bottle, Flame Test, or Reaction Chain Game.',
+      'Drop reagents (AgNO₃, BaCl₂, NaOH, NH₃) to inspect characteristic precipitates and gases.',
+      'Try Mystery Bottle mode to deduce the unknown ion from observations.',
+      'In Reaction Chains, pick the right reagent/condition for each conversion step.',
+    ],
+    tipVi: 'Kết tủa Cu(OH)₂ xanh lam tan trong NH₃ dư tạo phức xanh thẫm [Cu(NH₃)₄](OH)₂.',
+    tipEn: 'Blue Cu(OH)₂ precipitate dissolves in excess NH₃ forming a deep-blue complex.',
+  },
+  redox: {
+    titleVi: 'Cân Bằng Oxi Hóa–Khử & 3 Định Luật Bảo Toàn',
+    titleEn: 'Redox Balancer & Conservation Laws Solver',
+    introVi:
+      'Thành thạo phương pháp thăng bằng electron qua 4 bước trực quan và giải nhanh bài toán kim loại tác dụng HNO₃ / H₂SO₄ đặc bằng Bảo toàn Electron, Nguyên tố và Khối lượng.',
+    introEn:
+      'Master 4-step electron-balance redox equations and solve metal-acid problems using Electron, Element, and Mass Conservation.',
+    stepsVi: [
+      'Bên trái: chọn một phương trình OXH–Khử rồi bấm "Bước tiếp" để xem 4 bước cân bằng.',
+      'Bên phải: chọn kim loại (Cu, Fe, Al, Mg), kéo khối lượng m(g) và chọn loại axit oxi hóa.',
+      'Quan sát hệ thống giải đồng thời số mol e trao đổi, lượng axit phản ứng và khối lượng muối.',
+      'Kiểm chứng tổng khối lượng chất tham gia luôn bằng tổng khối lượng sản phẩm (BTKL).',
+    ],
+    stepsEn: [
+      'Left panel: select a redox equation and step through all 4 electron-balancing stages.',
+      'Right panel: choose a metal (Cu, Fe, Al, Mg), mass (g), and oxidizing acid.',
+      'Track electrons transferred, acid consumed, and anhydrous salt mass.',
+      'Verify total reactant mass equals total product mass via Mass Conservation.',
+    ],
+    tipVi: 'Luôn ghi nhớ ∑nₑ(nhường) = ∑nₑ(nhận) trước khi lập phương trình bảo toàn nguyên tố N hoặc S.',
+    tipEn: 'Always equate total electrons lost and gained before applying N or S element conservation.',
+  },
+};
 
 export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false }) => {
   const { perfMode } = useBackgroundTheme();
@@ -1083,6 +1229,20 @@ export const ChemistrySandboxes: React.FC<{ isEn?: boolean }> = ({ isEn = false 
           })}
         </div>
       </div>
+
+      {(() => {
+        const g = CHEM_SANDBOX_GUIDES[activeTab];
+        return (
+          <SandboxIntroGuideBanner
+            subject="chem"
+            title={isEn ? g.titleEn : g.titleVi}
+            intro={isEn ? g.introEn : g.introVi}
+            steps={isEn ? g.stepsEn : g.stepsVi}
+            tip={isEn ? g.tipEn : g.tipVi}
+            isEn={isEn}
+          />
+        );
+      })()}
 
       {/* TAB 1: INTERACTIVE PERIODIC TABLE Z=1..36 */}
       {activeTab === 'periodic' && (

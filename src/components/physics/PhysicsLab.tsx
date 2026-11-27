@@ -257,12 +257,30 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
     setSelectedChapter('all');
   }, [selectedTrack, selectedGrade, selectedTier]);
 
+  useEffect(() => {
+    if (location.catalogGrade) {
+      setSelectedGrade(location.catalogGrade);
+      setSelectedChapter('all');
+    }
+    if (location.catalogTrack) {
+      setSelectedTrack(location.catalogTrack);
+    }
+  }, [location.catalogGrade, location.catalogTrack]);
+
   const isStandardTrack = selectedTrack === 'khong_chuyen' || selectedTrack === 'gdpt_2006';
 
   const availableChapters = useMemo(() => {
     if (isStandardTrack && selectedGrade === 'all') return [];
     const set = new Set<string>();
-    const gradeOrder: Record<string, number> = { 'Lớp 9': 9, 'Lớp 10': 10, 'Lớp 11': 11, 'Lớp 12': 12 };
+    const gradeOrder: Record<string, number> = {
+      'Lớp 6': 6,
+      'Lớp 7': 7,
+      'Lớp 8': 8,
+      'Lớp 9': 9,
+      'Lớp 10': 10,
+      'Lớp 11': 11,
+      'Lớp 12': 12
+    };
     const sorted = [...PHYSICS_LESSONS].sort((a, b) => {
       const gDiff = (gradeOrder[a.grade] ?? 99) - (gradeOrder[b.grade] ?? 99);
       if (gDiff !== 0) return gDiff;
@@ -279,7 +297,15 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
 
   // Filtered lessons by track + grade/tier + chapter
   const filteredLessons = useMemo(() => {
-    const gradeOrder: Record<string, number> = { 'Lớp 9': 9, 'Lớp 10': 10, 'Lớp 11': 11, 'Lớp 12': 12 };
+    const gradeOrder: Record<string, number> = {
+      'Lớp 6': 6,
+      'Lớp 7': 7,
+      'Lớp 8': 8,
+      'Lớp 9': 9,
+      'Lớp 10': 10,
+      'Lớp 11': 11,
+      'Lớp 12': 12
+    };
     return PHYSICS_LESSONS.filter((l) => {
       if (l.track !== selectedTrack) return false;
       if (isStandardTrack) {
@@ -721,7 +747,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     </button>
                   )}
                   <span className="font-bold text-blue-700 dark:text-sky-400 uppercase tracking-wider">
-                    Vật Lí 9 – 12 &amp; Bồi Dưỡng Chuyên
+                    Vật Lí 6 – 12 &amp; Bồi Dưỡng Chuyên (Mũi Nhọn Toán–Lý–Tin)
                   </span>
                   <span aria-hidden="true">·</span>
                   <span>Giảng bài từng bước · Thí nghiệm 2D/3D tương tác</span>
@@ -769,7 +795,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
                   <Layers className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
-                  <span>Trang Mô Phỏng Vật Lí Tách Riêng Theo {PHYSICS_DOMAINS.length} Lĩnh Vực (Lớp 9 – 12 · Tương Tác 2D/3D)</span>
+                  <span>Trang Mô Phỏng Vật Lí Tách Riêng Theo {PHYSICS_DOMAINS.length} Lĩnh Vực (Lớp 6 – 12 · Tương Tác 2D/3D)</span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {PHYSICS_DOMAINS.map((d) => d.shortName).join(' · ')} — kèm Quang học Raytracing, Bản cát Chladni &amp; animation Vật lí riêng
@@ -825,7 +851,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                     </div>
                     <div className="min-w-0 space-y-1">
                       <div className="text-sm sm:text-base font-extrabold leading-snug">
-                        Khu GDPT 2018 (Lớp 9–12)
+                        Khu GDPT 2018 (Lớp 6–12)
                       </div>
                       <div
                         className={`text-xs leading-relaxed ${
@@ -834,7 +860,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                             : 'text-slate-500 dark:text-slate-400'
                         }`}
                       >
-                        KHTN 9 &amp; Vật lí 10–11–12 chuẩn Thông tư 32 · {PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học
+                        KHTN 6–9 &amp; Vật lí 10–12 chuẩn Thông tư 32 · {PHYSICS_LESSONS.filter((l) => l.track === 'khong_chuyen').length} bài học
                       </div>
                     </div>
                   </div>
@@ -900,7 +926,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
                             : 'text-slate-500 dark:text-slate-400'
                         }`}
                       >
-                        Vật lí 9–12 chuẩn SGK 2006 · {PHYSICS_LESSONS.filter((l) => l.track === 'gdpt_2006').length} bài kèm 2D &amp; 3D
+                        Vật lí 6–12 chuẩn SGK 2006 · {PHYSICS_LESSONS.filter((l) => l.track === 'gdpt_2006').length} bài kèm 2D &amp; 3D
                       </div>
                     </div>
                   </div>
@@ -991,7 +1017,7 @@ export const PhysicsLab: React.FC<PhysicsLabProps> = ({ onScoreEarned, onBack })
               {isStandardTrack ? (
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-xs font-semibold text-slate-500 mr-1">Khối lớp:</span>
-                  {['all', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((grade) => {
+                  {['all', 'Lớp 6', 'Lớp 7', 'Lớp 8', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'].map((grade) => {
                     const count =
                       grade === 'all'
                         ? PHYSICS_LESSONS.filter((l) => l.track === selectedTrack).length

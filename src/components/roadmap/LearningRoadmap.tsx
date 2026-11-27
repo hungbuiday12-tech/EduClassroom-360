@@ -73,7 +73,7 @@ type CurriculumTrackFilter = 'khong_chuyen' | 'gdpt_2006' | 'chuyen';
 type TreeViewMode = 'matrix' | 'linear';
 
 interface StudentPlanProfile {
-  grade: 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
+  grade: 'Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12';
   goal: StudyGoalId;
   focusSubjects: Array<'math' | 'physics' | 'chemistry' | 'biology' | 'cs'>;
   hoursPerWeek: number;
@@ -89,7 +89,7 @@ const LOCAL_CHECKED_SESSIONS_KEY = 'synapse_roadmap_checked_sessions_v1';
 const LOCAL_TREE_VIEW_KEY = 'synapse_roadmap_tree_view_v1';
 
 const DEFAULT_PROFILE: StudentPlanProfile = {
-  grade: 'Lớp 10',
+  grade: 'Lớp 9',
   goal: 'foundation',
   focusSubjects: ['math', 'physics', 'chemistry', 'biology', 'cs'],
   hoursPerWeek: 10,
@@ -100,13 +100,16 @@ const WEEK_DAYS_VI = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Th
 const WEEK_DAYS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const GRADE_ORDER: Record<string, number> = {
-  'Lớp 9': 1,
-  'Cơ bản': 1,
-  'Lớp 10': 2,
-  'Trung cấp': 2,
-  'Lớp 11': 3,
-  'Lớp 12': 4,
-  'Nâng cao / HSG': 4
+  'Lớp 6': 1,
+  'Lớp 7': 2,
+  'Lớp 8': 3,
+  'Lớp 9': 4,
+  'Cơ bản': 4,
+  'Lớp 10': 5,
+  'Trung cấp': 5,
+  'Lớp 11': 6,
+  'Lớp 12': 7,
+  'Nâng cao / HSG': 7
 };
 
 export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
@@ -547,9 +550,9 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
         if (nodeGradeNum === targetGradeNum) priority += 35;
         else if (nodeGradeNum < targetGradeNum && !isDone) priority += 22; // patch foundation first
 
-        if (planProfile.goal === 'entrance_10' && nodeGradeNum === 1) priority += 35;
-        if (planProfile.goal === 'thpt_qg' && nodeGradeNum >= 3) priority += 32;
-        if (planProfile.goal === 'olympiad' && (node.subject === 'cs' || nodeGradeNum >= 3)) priority += 28;
+        if (planProfile.goal === 'entrance_10' && nodeGradeNum === 4) priority += 35;
+        if (planProfile.goal === 'thpt_qg' && nodeGradeNum >= 6) priority += 32;
+        if (planProfile.goal === 'olympiad' && (node.subject === 'cs' || nodeGradeNum >= 6)) priority += 28;
 
         priority += (weakSubjectBoost[node.subject] || 0) * 10;
         priority -= node.order * 1.5;
@@ -904,8 +907,8 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
 
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
               {isEn
-                ? 'Smart Study Planner & Procedural Learning Roadmap (Grades 9–12)'
-                : 'Lộ Trình Học Thông Minh & Sơ Đồ Qui Trình (Lớp 9 – 12)'}
+                ? 'Smart Study Planner & Vertical Learning Roadmap (Grades 6–12)'
+                : 'Lộ Trình Liên Thông 6 → 12 & Sơ Đồ Qui Trình Học Tập'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
               {isEn
@@ -1099,8 +1102,8 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
               <SlidersHorizontal className="w-3 h-3 text-sky-600 dark:text-sky-400" />
               <span>{isEn ? 'Current Grade' : 'Khối lớp hiện tại'}</span>
             </label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {(['Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((g) => (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+              {(['Lớp 6', 'Lớp 7', 'Lớp 8', 'Lớp 9', 'Lớp 10', 'Lớp 11', 'Lớp 12'] as const).map((g) => (
                 <button
                   key={g}
                   onClick={() => setPlanProfile((p) => ({ ...p, grade: g }))}
@@ -2038,10 +2041,10 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-indigo-500 icon-anim-list" />
-                <span>{isEn ? '02. Grades 9–12 Curriculum Skill Matrix' : '02. Bản Đồ Lộ Trình Học Tập Lớp 9 – 12'}</span>
+                <span>{isEn ? '02. Grades 6–12 Vertical Curriculum Matrix' : '02. Bản Đồ Liên Thông Kiến Thức Lớp 6 – 12'}</span>
               </h2>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                {ROADMAP_NODES.length} chặng kiến thức chuẩn liên thông Lớp 9 → 12 · Chuyển linh hoạt giữa GDPT 2018, 2006 và Chuyên/HSG
+                {ROADMAP_NODES.length} chặng kiến thức liên thông Lớp 6 → 12 (Tin học tách riêng 5 lộ trình) · Chuyển giữa GDPT 2018, 2006 &amp; Chuyên/HSG
               </p>
             </div>
 
@@ -2107,7 +2110,7 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                 }`}
               >
                 <Grid3x3 className="w-3 h-3" />
-                <span>Ma trận 9→12</span>
+                <span>Ma trận 6→12</span>
               </button>
               <button
                 type="button"
@@ -2185,8 +2188,11 @@ export const LearningRoadmap: React.FC<LearningRoadmapProps> = ({
                           { key: '3', label: 'Nâng cao / HSG', match: (g: string) => g === 'Nâng cao / HSG' }
                         ]
                       : [
+                          { key: 'Lớp 6', label: 'Lớp 6 (Khởi đầu)', match: (g: string) => g === 'Lớp 6' },
+                          { key: 'Lớp 7', label: 'Lớp 7 (Nền tảng)', match: (g: string) => g === 'Lớp 7' },
+                          { key: 'Lớp 8', label: 'Lớp 8 (Mở rộng)', match: (g: string) => g === 'Lớp 8' },
                           { key: 'Lớp 9', label: 'Lớp 9 (TS 10)', match: (g: string) => g === 'Lớp 9' },
-                          { key: 'Lớp 10', label: 'Lớp 10 (Nền)', match: (g: string) => g === 'Lớp 10' },
+                          { key: 'Lớp 10', label: 'Lớp 10 (THPT)', match: (g: string) => g === 'Lớp 10' },
                           { key: 'Lớp 11', label: 'Lớp 11 (Bứt phá)', match: (g: string) => g === 'Lớp 11' },
                           { key: 'Lớp 12', label: 'Lớp 12 (THPT QG)', match: (g: string) => g === 'Lớp 12' }
                         ];

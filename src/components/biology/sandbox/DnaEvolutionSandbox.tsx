@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Dna, Play, RefreshCw, ShieldAlert, Sparkles } from 'lucide-react';
+import { getMorphCreatureSprite, spriteSpecToSvgRects } from '../pixelSpriteEngine';
 
 type Base = 'A' | 'T' | 'G' | 'C';
 type EnvId = 'ice_age' | 'desert_heat' | 'dark_forest' | 'storm_island';
@@ -279,37 +280,69 @@ export const DnaEvolutionSandbox: React.FC<{ isEn?: boolean }> = () => {
         {/* Right: Phenotype Preview & Natural Selection Simulator */}
         <div className="lg:col-span-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 text-slate-100 p-4 space-y-4">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 flex items-center gap-4">
-            {/* Procedural Organism Preview SVG */}
-            <svg viewBox="0 0 110 90" className="w-28 h-24 shrink-0 rounded-lg bg-slate-950 border border-slate-800">
-              {/* Wings */}
-              {designedTraits.wingType === 'large' && (
-                <>
-                  <ellipse cx="32" cy="40" rx="22" ry="11" transform="rotate(-22 32 40)" fill="#38bdf8" opacity="0.65" />
-                  <ellipse cx="78" cy="40" rx="22" ry="11" transform="rotate(22 78 40)" fill="#38bdf8" opacity="0.65" />
-                </>
-              )}
-              {designedTraits.wingType === 'agile' && (
-                <>
-                  <ellipse cx="38" cy="44" rx="14" ry="7" transform="rotate(-18 38 44)" fill="#2dd4bf" opacity="0.7" />
-                  <ellipse cx="72" cy="44" rx="14" ry="7" transform="rotate(18 72 44)" fill="#2dd4bf" opacity="0.7" />
-                </>
-              )}
-              {/* Body */}
-              <ellipse
-                cx="55"
-                cy="48"
-                rx={designedTraits.thermoType === 'cold' ? 21 : 16}
-                ry={designedTraits.thermoType === 'cold' ? 23 : 19}
-                fill={designedTraits.furHex}
-                stroke="#94a3b8"
-                strokeWidth="1.5"
-              />
-              {/* Eyes */}
-              <circle cx="49" cy="40" r="2.6" fill="#0f172a" />
-              <circle cx="61" cy="40" r="2.6" fill="#0f172a" />
-              <circle cx="50" cy="39" r="0.9" fill="#ffffff" />
-              <circle cx="62" cy="39" r="0.9" fill="#ffffff" />
-            </svg>
+            {/* Crisp Pixel-Art Creature over High-Res Atmospheric Habitat Backdrop */}
+            {(() => {
+              const furDark =
+                designedTraits.furType === 'white'
+                  ? '#94a3b8'
+                  : designedTraits.furType === 'sand'
+                  ? '#b45309'
+                  : designedTraits.furType === 'green'
+                  ? '#15803d'
+                  : '#090d16';
+              const wingCol =
+                designedTraits.wingType === 'large'
+                  ? '#38bdf8'
+                  : designedTraits.wingType === 'agile'
+                  ? '#2dd4bf'
+                  : null;
+              const spec = getMorphCreatureSprite(
+                designedTraits.furHex,
+                furDark,
+                wingCol,
+                designedTraits.thermoType === 'cold',
+                designedTraits.thermoType === 'heat',
+                0
+              );
+              const rects = spriteSpecToSvgRects(spec);
+              const gridW = spec.grid[0]?.length || 14;
+              const gridH = spec.grid.length || 8;
+              const envBg =
+                envId === 'ice_age'
+                  ? 'from-sky-900 via-cyan-950 to-slate-950'
+                  : envId === 'desert_heat'
+                  ? 'from-amber-800 via-orange-950 to-stone-950'
+                  : envId === 'dark_forest'
+                  ? 'from-emerald-950 via-slate-900 to-slate-950'
+                  : 'from-indigo-950 via-slate-900 to-cyan-950';
+              const glowCol =
+                envId === 'ice_age'
+                  ? '#38bdf8'
+                  : envId === 'desert_heat'
+                  ? '#fbbf24'
+                  : envId === 'dark_forest'
+                  ? '#34d399'
+                  : '#818cf8';
+              return (
+                <div className={`relative w-32 h-24 shrink-0 rounded-lg bg-gradient-to-b ${envBg} border border-slate-700/80 overflow-hidden flex items-center justify-center`}>
+                  <div
+                    className="absolute inset-0 opacity-45 pointer-events-none"
+                    style={{
+                      background: `radial-gradient(circle at 50% 42%, ${glowCol}44 0%, transparent 68%)`,
+                    }}
+                  />
+                  <svg
+                    viewBox={`0 0 ${gridW} ${gridH}`}
+                    shapeRendering="crispEdges"
+                    className="w-24 h-20 relative z-10 drop-shadow-[0_4px_8px_rgba(0,0,0,0.65)]"
+                  >
+                    {rects.map((r, i) => (
+                      <rect key={i} x={r.x} y={r.y} width={1} height={1} fill={r.fill} />
+                    ))}
+                  </svg>
+                </div>
+              );
+            })()}
 
             <div className="space-y-1 text-xs">
               <div className="text-[11px] font-mono text-teal-400 uppercase">Kiểu hình sinh vật thiết kế</div>

@@ -24,7 +24,7 @@ export interface BiologyParamBound {
 export interface Biology2DSimSpec {
   id: BiologySimType;
   domainId: BiologyDomainId;
-  grades: ('Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
+  grades: ('Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
   title: string;
   subtitle: string;
   formula: string;
@@ -41,7 +41,7 @@ export interface Biology2DSimSpec {
 export interface Biology3DSimSpec {
   id: Biology3DMode;
   domainId: BiologyDomainId;
-  grades: ('Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
+  grades: ('Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
   title: string;
   subtitle: string;
   formula: string;
@@ -696,6 +696,85 @@ export const BIOLOGY_2D_SIMS: Biology2DSimSpec[] = [
       { label: 'Gen lặn NST thường (Bố mẹ lành sinh con bệnh)', description: 'Dấu hiệu nhận biết kinh điển: bố mẹ bình thường sinh con gái bị bệnh', params: { inheritanceMode: 1, marriageType: 1, carrierProbPct: 67 } },
       { label: 'Bệnh máu khó đông liên kết NST X', description: 'Di truyền chéo từ ông ngoại qua mẹ sang cháu trai', params: { inheritanceMode: 3, marriageType: 2, carrierProbPct: 50 } }
     ]
+  },
+  {
+    id: 'microscope_cell_compare_2d',
+    domainId: 'cell_membrane',
+    grades: ['Lớp 6', 'Lớp 10'],
+    title: 'Kính Hiển Vi Quang Học & So Sánh Tế Bào Nhân Sơ – Thực Vật – Động Vật',
+    subtitle: 'Xoay mâm vật kính (4×, 10×, 40×), vặn ốc vi cấp lấy nét mẫu vật và đối chiếu cấu trúc vi khuẩn – tế bào hành tây – tế bào niêm mạc',
+    formula: '\\text{Độ phóng đại} = \\text{Thị kính} \\times \\text{Vật kính} \\quad|\\quad \\text{Tế bào} \\to \\text{Mô} \\to \\text{Cơ quan}',
+    linkedLessonId: 'bio-6-b1',
+    defaultParams: { cellMode: 2, objectiveX: 40, focusOffset: 0 },
+    paramBounds: {
+      cellMode: { min: 1, max: 3, step: 1, unit: '', label: 'Mẫu soi (1:Vi khuẩn Nhân sơ 2:Tế bào Thực vật 3:Tế bào Động vật)' },
+      objectiveX: { min: 10, max: 100, step: 10, unit: '×', label: 'Vật kính (thị kính 10×)' },
+      focusOffset: { min: -5, max: 5, step: 1, unit: 'vạch', label: 'Ốc vi cấp chỉnh nét (0 = nét nhất)' }
+    },
+    presets: [
+      { label: 'Soi Tế bào Thực vật 400× (Nét chuẩn)', description: 'Thấy rõ thành xenlulozơ lục giác và lục lạp xanh', params: { cellMode: 2, objectiveX: 40, focusOffset: 0 } },
+      { label: 'Vi khuẩn Nhân sơ (Không có nhân thật)', description: 'Chỉ có vùng nhân và thành tế bào đơn giản', params: { cellMode: 1, objectiveX: 100, focusOffset: 0 } }
+    ]
+  },
+  {
+    id: 'plant_organs_flowering_2d',
+    domainId: 'physiology_organism',
+    grades: ['Lớp 6', 'Lớp 7'],
+    title: 'Cơ Quan Thực Vật (Rễ – Thân – Lá) & Hoa – Thụ Phấn – Kết Quả Tạo Hạt',
+    subtitle: 'Quan sát lông hút rễ hút nước, ống mạch gỗ/rây ở thân, quá trình hạt phấn rơi đầu nhụy nảy ống phấn thụ tinh biến bầu nhụy thành quả',
+    formula: '\\text{Bầu nhụy} \\xrightarrow{\\text{Thụ tinh}} \\text{Quả} \\quad|\\quad \\text{Noãn} \\xrightarrow{\\text{Thụ tinh}} \\text{Hạt}',
+    linkedLessonId: 'bio-2006-6-1',
+    defaultParams: { stageId: 1, waterLevel: 70, pollinationPct: 65 },
+    paramBounds: {
+      stageId: { min: 1, max: 3, step: 1, unit: '', label: 'Cơ quan (1:Rễ-Thân-Lá 2:Hoa thụ phấn-thụ tinh 3:Quả & Hạt nảy mầm)' },
+      waterLevel: { min: 10, max: 100, step: 10, unit: '%', label: 'Độ ẩm đất / Nhựa cây' },
+      pollinationPct: { min: 0, max: 100, step: 5, unit: '%', label: 'Tiến trình thụ phấn – tạo quả' }
+    },
+    presets: [
+      { label: '1. Lông hút rễ & Mạch dẫn thân cây', description: 'Nước đi lên theo mạch gỗ, đường đi xuống theo mạch rây', params: { stageId: 1, waterLevel: 80, pollinationPct: 40 } },
+      { label: '2. Hoa lưỡng tính thụ phấn & Thụ tinh', description: 'Ống phấn mọc dài xuống bầu nhụy gặp noãn', params: { stageId: 2, waterLevel: 70, pollinationPct: 80 } },
+      { label: '3. Hình thành Quả thịt & Nảy mầm', description: 'Đủ nước + O₂ + nhiệt độ ấm hạt sẽ nảy mầm', params: { stageId: 3, waterLevel: 85, pollinationPct: 100 } }
+    ]
+  },
+  {
+    id: 'vertebrate_taxonomy_2d',
+    domainId: 'evolution_population',
+    grades: ['Lớp 6', 'Lớp 7'],
+    title: 'Phân Loại 5 Giới, Khóa Lưỡng Phân & Tiến Hóa Tim (Cá 2 Ngăn → Ếch 3 Ngăn → Chim/Thú 4 Ngăn)',
+    subtitle: 'Đối chiếu 5 lớp Động vật có xương sống và sơ đồ tuần hoàn máu pha vs máu không pha từ Cá đến Thú',
+    formula: '\\text{Cá (2 ngăn)} \\to \\text{Lưỡng cư/Bò sát (3 ngăn)} \\to \\text{Chim & Thú (4 ngăn)}',
+    linkedLessonId: 'bio-2006-7-1',
+    defaultParams: { animalClass: 2, viewMode: 1, oxygenDemand: 60 },
+    paramBounds: {
+      animalClass: { min: 1, max: 4, step: 1, unit: '', label: 'Nhóm (1:Cá 2:Ếch/Lưỡng cư 3:Thằn lằn/Bò sát 4:Chim & Thú)' },
+      viewMode: { min: 1, max: 2, step: 1, unit: '', label: 'Hiển thị (1:Tiến hóa Tim & Tuần hoàn 2:Khóa lưỡng phân 5 Giới)' },
+      oxygenDemand: { min: 20, max: 100, step: 10, unit: '%', label: 'Nhịp hoạt động chuyển hóa' }
+    },
+    presets: [
+      { label: 'Cá chép (Tim 2 ngăn · Biến nhiệt)', description: '1 vòng tuần hoàn, máu chảy qua mang nhận O₂', params: { animalClass: 1, viewMode: 1, oxygenDemand: 40 } },
+      { label: 'Ếch đồng (Tim 3 ngăn · Máu pha)', description: '2 vòng tuần hoàn, tâm thất chung nên máu bị pha', params: { animalClass: 2, viewMode: 1, oxygenDemand: 55 } },
+      { label: 'Chim & Thú (Tim 4 ngăn · Hằng nhiệt)', description: 'Vách ngăn hoàn chỉnh tách riêng máu đỏ tươi & đỏ thẫm', params: { animalClass: 4, viewMode: 1, oxygenDemand: 85 } }
+    ]
+  },
+  {
+    id: 'digestion_enzymes_2d',
+    domainId: 'physiology_organism',
+    grades: ['Lớp 8'],
+    title: 'Hệ Tiêu Hóa Người & Enzym (Miệng – Dạ Dày – Ruột Non) & Cơ Quan Thụ Cảm',
+    subtitle: 'Theo dõi đường đi thức ăn qua ống tiêu hóa: Amylase biến tinh bột thành đường, Pepsin (pH 2) cắt Protein và vi nhung mao ruột hấp thụ',
+    formula: '\\text{Tinh bột} \\xrightarrow{\\text{Amylase}} \\text{Đường đôi} \\quad|\\quad \\text{Protein} \\xrightarrow{\\text{Pepsin + HCl}} \\text{Peptit}',
+    linkedLessonId: 'bio-8-b1',
+    defaultParams: { organZone: 2, mealFat: 45, chewingTime: 65 },
+    paramBounds: {
+      organZone: { min: 1, max: 3, step: 1, unit: '', label: 'Chặng tiêu hóa (1:Khoang miệng 2:Dạ dày HCl 3:Ruột non hấp thụ)' },
+      mealFat: { min: 10, max: 100, step: 10, unit: '%', label: 'Hàm lượng Lipid/Protein bữa ăn' },
+      chewingTime: { min: 10, max: 100, step: 10, unit: '%', label: 'Mức nhai kĩ / Hoạt độ Enzym' }
+    },
+    presets: [
+      { label: '1. Khoang miệng (Amylase · pH ≈ 7)', description: 'Nhai kĩ biến tinh bột cơm thành đường maltose vị ngọt', params: { organZone: 1, mealFat: 30, chewingTime: 85 } },
+      { label: '2. Dạ dày (Acid HCl pH 2 + Pepsin)', description: 'Co bóp nhào trộn và phân giải sơ bộ chuỗi Protein', params: { organZone: 2, mealFat: 55, chewingTime: 70 } },
+      { label: '3. Ruột non (Dịch mật + Tụy · Lông ruột)', description: 'Tiêu hóa triệt để và hấp thụ dinh dưỡng vào máu', params: { organZone: 3, mealFat: 45, chewingTime: 80 } }
+    ]
   }
 ];
 
@@ -720,5 +799,8 @@ export const BIOLOGY_3D_SIMS: Biology3DSimSpec[] = [
   { id: 'population_genetics_3d', domainId: 'evolution_population', grades: ['Lớp 9', 'Lớp 12'], title: 'Quần Thể Tiến Hóa, Hardy–Weinberg & Chọn Lọc Tự Nhiên 3D', subtitle: 'Đàn sinh vật mang kiểu gen AA/Aa/aa di chuyển dưới áp lực chọn lọc và hiệu ứng thắt cổ chai', formula: 'p^2 + 2pq + q^2 = 1', linkedLessonId: 'bio-12-5' },
   { id: 'endocrine_pancreas_3d', domainId: 'physiology_organism', grades: ['Lớp 11'], title: 'Tuyến Tụy (Đảo Langerhans) – Thụ Thể Insulin & Điều Hòa Đường Huyết 3D', subtitle: 'Tế bào β tụy tiết hạt Insulin gắn thụ thể màng kích hoạt kênh GLUT4 hấp thu Glucose', formula: '\\text{Insulin } \\to \\text{Kênh GLUT4 mở } \\to \\text{Glucose máu}\\downarrow', linkedLessonId: 'bio-11-16' },
   { id: 'biotech_pcr_crispr_3d', domainId: 'genetics_molecular', grades: ['Lớp 9', 'Lớp 12'], title: 'Máy Luân Nhiệt PCR, Điện Di Gel UV & Phức Hợp CRISPR–Cas9 3D', subtitle: 'Khay điện di gel phát quang UV các băng DNA theo kích thước bp và đầu cắt Cas9–sgRNA chỉnh sửa đoạn gen', formula: 'N_n = N_0 \\cdot 2^n \\quad | \\quad \\text{Cas9 + sgRNA} \\to \\text{Cắt DSB tại PAM}', linkedLessonId: 'bio-12-13' },
-  { id: 'gene_linkage_3d', domainId: 'genetics_molecular', grades: ['Lớp 12'], title: 'Cặp NST Tương Đồng Tiếp Hợp & Hoán Vị Gen Chiasmata Morgan 3D', subtitle: 'Hai crômatit khác nguồn gốc trao đổi chéo đoạn DNA tại điểm bắt chéo tạo giao tử hoán vị AB, ab, Ab, aB', formula: 'f_{\\text{hoán vị}} = \\frac{\\text{Giao tử tái tổ hợp}}{\\text{Tổng giao tử}} \\le 50\\%', linkedLessonId: 'bio-12-4' }
+  { id: 'gene_linkage_3d', domainId: 'genetics_molecular', grades: ['Lớp 12'], title: 'Cặp NST Tương Đồng Tiếp Hợp & Hoán Vị Gen Chiasmata Morgan 3D', subtitle: 'Hai crômatit khác nguồn gốc trao đổi chéo đoạn DNA tại điểm bắt chéo tạo giao tử hoán vị AB, ab, Ab, aB', formula: 'f_{\\text{hoán vị}} = \\frac{\\text{Giao tử tái tổ hợp}}{\\text{Tổng giao tử}} \\le 50\\%', linkedLessonId: 'bio-12-4' },
+  { id: 'plant_flower_seed_3d', domainId: 'physiology_organism', grades: ['Lớp 6', 'Lớp 7'], title: 'Cấu Tạo Hoa Lưỡng Tính, Thụ Tinh & Tạo Quả – Hạt 3D', subtitle: 'Tách lớp Đài hoa, Tràng cánh hoa, Nhị (bao phấn) và Nhụy (bầu chứa noãn) cùng hạt phấn nảy ống phấn thụ tinh', formula: '\\text{Bầu nhụy} \\to \\text{Quả} \\quad|\\quad \\text{Noãn} \\to \\text{Hạt}', linkedLessonId: 'bio-2006-6-1' },
+  { id: 'comparative_hearts_3d', domainId: 'evolution_population', grades: ['Lớp 7', 'Lớp 8'], title: 'Tiến Hóa Tim Động Vật Có Xương Sống (2 → 3 → 4 Ngăn) 3D', subtitle: 'Đặt cạnh nhau để so sánh Tim Cá 2 ngăn, Tim Lưỡng cư 3 ngăn (máu pha) và Tim Chim/Thú 4 ngăn hoàn chỉnh', formula: '\\text{2 ngăn (Cá)} \\to \\text{3 ngăn (Ếch)} \\to \\text{4 ngăn (Chim, Thú)}', linkedLessonId: 'bio-2006-7-1' },
+  { id: 'digestive_tract_3d', domainId: 'physiology_organism', grades: ['Lớp 8'], title: 'Ống Tiêu Hóa Người (Thực Quản – Dạ Dày – Ruột Non & Lông Ruột) 3D', subtitle: 'Quan sát thức ăn đi qua dạ dày co bóp tiết HCl/Pepsin xuống tá tràng nhận dịch mật và hấp thụ ở vi nhung mao ruột non', formula: '\\text{Tinh bột} \\to \\text{Glucozơ} \\quad|\\quad \\text{Protein} \\to \\text{Axit amin}', linkedLessonId: 'bio-8-b1' }
 ];

@@ -28,7 +28,12 @@ export type Batch2PhysicsSim2DId =
   | 'phase_change_heating'
   | 'distance_displacement_rel'
   | 'power_plant_generator'
-  | 'fresnel_phasor_2d';
+  | 'fresnel_phasor_2d'
+  | 'measurement_tools_2d'
+  | 'thermal_expansion_2d'
+  | 'plane_mirror_2d'
+  | 'simple_machines_2d'
+  | 'fluid_pressure_2d';
 
 export type Batch2Physics3DModeId =
   | 'atwood_pulley_3d'
@@ -56,7 +61,12 @@ export type Batch2Physics3DModeId =
   | 'electrolysis_3d'
   | 'eye_optics_3d'
   | 'em_wave_3d'
-  | 'power_plant_3d';
+  | 'power_plant_3d'
+  | 'measurement_bench_3d'
+  | 'thermal_expansion_3d'
+  | 'plane_mirror_3d'
+  | 'lever_pulley_3d'
+  | 'hydraulic_press_3d';
 
 export const BATCH2_PHYSICS_2D_SIMS: Record<Batch2PhysicsSim2DId, Physics2DSimSpec> = {
   // MECHANICS (+4)
@@ -595,6 +605,105 @@ export const BATCH2_PHYSICS_2D_SIMS: Record<Batch2PhysicsSim2DId, Physics2DSimSp
       { label: 'Cùng pha (Δφ = 0°)', description: 'Biên độ cực đại A_max = A₁ + A₂', params: { amp1: 4, amp2: 4, deltaPhiDeg: 0, freqHz: 1.0 } },
       { label: 'Ngược pha (Δφ = 180°)', description: 'Biên độ cực tiểu A_min = |A₁ − A₂|', params: { amp1: 6, amp2: 4, deltaPhiDeg: 180, freqHz: 1.0 } }
     ]
+  },
+  measurement_tools_2d: {
+    id: 'measurement_tools_2d',
+    domainId: 'mechanics',
+    grades: ['Lớp 6', 'Lớp 7', 'Lớp 8'],
+    title: 'Dụng Cụ Đo Thực Hành: Thước Kẻ, Bình Chia Độ, Lực Kế & Nhiệt Kế',
+    subtitle: 'Chọn dụng cụ đo thật, điều chỉnh vật mẫu, kiểm tra sai số nhìn lệch (Parallax) và đọc đúng GHĐ – ĐCNN',
+    formula: 'V_{\\text{vật}} = V_2 - V_1 \\quad|\\quad P = 10 \\cdot m \\quad|\\quad t(^\\circ\\text{F}) = 1{,}8\\,t(^\\circ\\text{C}) + 32',
+    linkedLessonId: 'phys-6-b1',
+    defaultParams: { toolMode: 1, sampleVal: 12.5, eyeTiltDeg: 0 },
+    paramBounds: {
+      toolMode: { min: 1, max: 4, step: 1, unit: '', label: 'Dụng cụ (1:Thước 2:Bình chia độ 3:Lực kế 4:Nhiệt kế)' },
+      sampleVal: { min: 2, max: 50, step: 0.5, unit: 'đơn vị', label: 'Giá trị vật cần đo' },
+      eyeTiltDeg: { min: -25, max: 25, step: 5, unit: '°', label: 'Góc đặt mắt nhìn lệch' }
+    },
+    presets: [
+      { label: 'Đo độ dài (Nhìn vuông góc 0°)', description: 'Đọc chuẩn xác không mắc sai số thị sai', params: { toolMode: 1, sampleVal: 14.5, eyeTiltDeg: 0 } },
+      { label: 'Bình chia độ đo đá (V₂ − V₁)', description: 'Thả chìm hòn sỏi vào bình nước đang ở 25 mL', params: { toolMode: 2, sampleVal: 18, eyeTiltDeg: 0 } },
+      { label: 'Lực kế lò xo đo trọng lượng', description: 'Treo vật 2.5 kg chịu lực hút Trái Đất 25 N', params: { toolMode: 3, sampleVal: 25, eyeTiltDeg: 0 } },
+      { label: 'Nhiệt kế chất lỏng (°C ↔ °F)', description: 'Theo dõi mực rượu dâng theo nhiệt độ', params: { toolMode: 4, sampleVal: 37, eyeTiltDeg: 0 } }
+    ]
+  },
+  thermal_expansion_2d: {
+    id: 'thermal_expansion_2d',
+    domainId: 'thermal_nuclear',
+    grades: ['Lớp 6', 'Lớp 8'],
+    title: 'Sự Nở Vì Nhiệt Của Rắn – Lỏng – Khí, Băng Kép & Khe Hở Đường Ray',
+    subtitle: 'So sánh tốc độ nở nhiệt Rắn < Lỏng < Khí, băng kép uốn cong đóng ngắt bàn là và nhiệt kế hoạt động nhờ sự nở nhiệt',
+    formula: '\\Delta l = l_0 \\cdot \\alpha \\cdot \\Delta t \\quad|\\quad \\text{Nở nhiều: Khí > Lỏng > Rắn}',
+    linkedLessonId: 'phys-2006-6-4',
+    defaultParams: { tempC: 65, matterMode: 1, bimetallic: 1 },
+    paramBounds: {
+      tempC: { min: 0, max: 140, step: 5, unit: '°C', label: 'Nhiệt độ đun nóng' },
+      matterMode: { min: 1, max: 3, step: 1, unit: '', label: 'Thể (1:Băng kép Rắn 2:Lỏng ống mao dẫn 3:Bong bóng Khí)' },
+      bimetallic: { min: 0, max: 1, step: 1, unit: '', label: 'Bật đèn cồn gia nhiệt (0/1)' }
+    },
+    presets: [
+      { label: 'Băng kép Đồng – Thép uốn cong', description: 'Đồng nở nhiều hơn thép làm băng kép cong về phía thép', params: { tempC: 95, matterMode: 1, bimetallic: 1 } },
+      { label: 'So sánh cả 3 thể cùng lúc', description: 'Thấy rõ bọt khí nở mạnh nhất rồi tới lỏng, rắn', params: { tempC: 85, matterMode: 3, bimetallic: 1 } }
+    ]
+  },
+  plane_mirror_2d: {
+    id: 'plane_mirror_2d',
+    domainId: 'optics_quantum',
+    grades: ['Lớp 7', 'Lớp 9'],
+    title: 'Truyền Thẳng Ánh Sáng, Phản Xạ Gương Phẳng (i\' = i) & Ảnh Ảo Đối Xứng',
+    subtitle: 'Chiếu tia tới lên gương phẳng hoặc dịch chuyển vật thật AB trước gương để vẽ ảnh ảo A\'B\' đối xứng',
+    formula: 'i\' = i \\quad|\\quad d_{\\text{ảnh}} = d_{\\text{vật}}, \\; A\'B\' = AB',
+    linkedLessonId: 'phys-7-b3',
+    defaultParams: { incidenceDeg: 40, objDistCm: 35, mirrorAngleDeg: 0 },
+    paramBounds: {
+      incidenceDeg: { min: 10, max: 75, step: 5, unit: '°', label: 'Góc tới i' },
+      objDistCm: { min: 15, max: 60, step: 5, unit: 'cm', label: 'Khoảng cách vật đến gương' },
+      mirrorAngleDeg: { min: -25, max: 25, step: 5, unit: '°', label: 'Góc nghiêng gương' }
+    },
+    presets: [
+      { label: 'Phản xạ chuẩn i = 40° ⇒ i\' = 40°', description: 'Tia phản xạ đối xứng tia tới qua pháp tuyến N', params: { incidenceDeg: 40, objDistCm: 35, mirrorAngleDeg: 0 } },
+      { label: 'Vật lại gần gương (d = 20 cm)', description: 'Ảnh ảo tiến lại gần gương đúng bằng d', params: { incidenceDeg: 55, objDistCm: 20, mirrorAngleDeg: 0 } }
+    ]
+  },
+  simple_machines_2d: {
+    id: 'simple_machines_2d',
+    domainId: 'mechanics',
+    grades: ['Lớp 6', 'Lớp 8', 'Lớp 10'],
+    title: 'Ba Máy Cơ Đơn Giản & Moment Lực: Đòn Bẩy – Ròng Rọc – Mặt Phẳng Nghiêng',
+    subtitle: 'Thí nghiệm trực tiếp quy tắc đòn bẩy F₁·d₁ = F₂·d₂, ròng rọc động lợi 2 lần lực và mặt phẳng nghiêng lợi lực không lợi công',
+    formula: 'F_1 \\cdot d_1 = F_2 \\cdot d_2 \\quad|\\quad F_{\\text{RR động}} = \\frac{P}{2} \\quad|\\quad F_{\\text{MPN}} = P \\cdot \\frac{h}{l}',
+    linkedLessonId: 'phys-8-b2',
+    defaultParams: { machineType: 1, loadWeightN: 60, armRatio: 2.0 },
+    paramBounds: {
+      machineType: { min: 1, max: 3, step: 1, unit: '', label: 'Máy cơ (1:Đòn bẩy 2:Ròng rọc động 3:Mặt phẳng nghiêng)' },
+      loadWeightN: { min: 20, max: 120, step: 10, unit: 'N', label: 'Trọng lượng vật cần nâng P' },
+      armRatio: { min: 1.0, max: 4.0, step: 0.25, unit: '×', label: 'Tỉ số cánh tay đòn / l:h' }
+    },
+    presets: [
+      { label: 'Đòn bẩy lợi 2 lần lực (d₁ = 2d₂)', description: 'Dùng lực 30 N nâng vật nặng 60 N', params: { machineType: 1, loadWeightN: 60, armRatio: 2.0 } },
+      { label: 'Hệ thống Ròng rọc động (F = P/2)', description: 'Giảm một nửa lực kéo, thiệt hai lần đường đi', params: { machineType: 2, loadWeightN: 80, armRatio: 2.0 } },
+      { label: 'Mặt phẳng nghiêng thoai thoải (l = 3h)', description: 'Kéo vật lên cao nhẹ hơn gấp 3 lần', params: { machineType: 3, loadWeightN: 90, armRatio: 3.0 } }
+    ]
+  },
+  fluid_pressure_2d: {
+    id: 'fluid_pressure_2d',
+    domainId: 'mechanics',
+    grades: ['Lớp 8'],
+    title: 'Áp Suất Rắn (p = F/S), Áp Suất Lỏng (p = d·h), Bình Thông Nhau & Máy Ép Thủy Lực',
+    subtitle: 'Quan sát tia nước phun mạnh ở đáy sâu, mực nước cân bằng trong bình thông nhau và khuếch đại lực Pascal F₂/F₁ = S₂/S₁',
+    formula: 'p = \\frac{F}{S} \\quad|\\quad p = d \\cdot h \\quad|\\quad \\frac{F_2}{F_1} = \\frac{S_2}{S_1}',
+    linkedLessonId: 'phys-8-b1',
+    defaultParams: { labMode: 1, depthM: 3.5, areaRatio: 6 },
+    paramBounds: {
+      labMode: { min: 1, max: 3, step: 1, unit: '', label: 'Chế độ (1:Áp suất lỏng p=dh 2:Máy ép thủy lực 3:Áp suất rắn F/S)' },
+      depthM: { min: 0.5, max: 6.0, step: 0.5, unit: 'm', label: 'Độ sâu cột nước h / Lực ấn F₁' },
+      areaRatio: { min: 2, max: 12, step: 1, unit: '×', label: 'Tỉ số tiết diện S₂/S₁' }
+    },
+    presets: [
+      { label: 'Bình khoan 3 lỗ độ sâu h', description: 'Lỗ càng sâu, áp suất p = d·h càng lớn nên tia phun càng xa', params: { labMode: 1, depthM: 4.5, areaRatio: 6 } },
+      { label: 'Máy ép thủy lực Pascal (S₂/S₁ = 8)', description: 'Ấn tay nhẹ 50 N nâng được ô tô 400 N', params: { labMode: 2, depthM: 5.0, areaRatio: 8 } },
+      { label: 'Áp suất chân đứng vs mũi đinh', description: 'Giảm diện tích S làm áp suất tăng vọt', params: { labMode: 3, depthM: 4.0, areaRatio: 6 } }
+    ]
   }
 };
 
@@ -947,6 +1056,71 @@ export const BATCH2_PHYSICS_3D_SIMS: Record<Batch2Physics3DModeId, Physics3DSimS
       { label: 'Tổ máy Thủy điện 80%', description: 'Dòng nước áp lực cao quay tuabin – rôto rực sáng', settings: { speed: 1.2, amplitude: 1.3 } },
       { label: 'Tổ máy Nhiệt điện hơi quá nhiệt', description: 'Luồng hơi trắng quay tuabin và trạm biến áp tăng áp', settings: { speed: 1.4, amplitude: 1.4 } }
     ]
+  },
+  measurement_bench_3d: {
+    id: 'measurement_bench_3d',
+    domainId: 'mechanics',
+    grades: ['Lớp 6', 'Lớp 7', 'Lớp 8'],
+    title: 'Bàn Dụng Cụ Đo Thực Hành 3D (Thước – Bình Chia Độ – Lực Kế – Nhiệt Kế)',
+    subtitle: 'Quan sát mô hình 3D dụng cụ thật đặt trên bàn thí nghiệm: cân bằng thước, mực nước dâng khi thả vật và độ dãn lực kế lò xo',
+    formula: 'V_{\\text{vật}} = V_2 - V_1 \\quad|\\quad P = 10\\,m \\quad|\\quad \\Delta l \\propto F',
+    linkedLessonId: 'phys-6-b1',
+    presets: [
+      { label: 'Bàn đo chuẩn 15 cm · 18 mL', description: 'Đo đồng thời kích thước, thể tích và trọng lượng vật', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Vật nặng & thể tích lớn', description: 'Lò xo dãn sâu và mực nước dâng cao rõ nét', settings: { speed: 1, amplitude: 1.5 } }
+    ]
+  },
+  thermal_expansion_3d: {
+    id: 'thermal_expansion_3d',
+    domainId: 'thermal_nuclear',
+    grades: ['Lớp 6', 'Lớp 8'],
+    title: 'Thí Nghiệm Quả Cầu – Vòng Kim Loại & Băng Kép Nở Vì Nhiệt 3D',
+    subtitle: 'Đun nóng quả cầu đồng trên ngọn lửa đèn cồn khiến quả cầu nở to không lọt qua vòng kim loại, băng kép uốn cong đóng mạch chuông',
+    formula: 'V = V_0(1 + \\beta\\Delta t) \\quad|\\quad \\alpha_{\\text{Đồng}} > \\alpha_{\\text{Thép}}',
+    linkedLessonId: 'phys-2006-6-4',
+    presets: [
+      { label: 'Chưa nung (Quả cầu lọt qua vòng)', description: 'Nhiệt độ phòng 25°C, cầu đi qua dễ dàng', settings: { speed: 1, amplitude: 0.7 } },
+      { label: 'Nung nóng 120°C (Bị kẹt lại)', description: 'Quả cầu dãn nở mắc kẹt trên vòng và băng kép uốn cong', settings: { speed: 1.3, amplitude: 1.5 } }
+    ]
+  },
+  plane_mirror_3d: {
+    id: 'plane_mirror_3d',
+    domainId: 'optics_quantum',
+    grades: ['Lớp 7', 'Lớp 9'],
+    title: 'Gương Phẳng, Tia Phản Xạ Laser & Ảnh Ảo Đối Xứng 3D',
+    subtitle: 'Tia laser chiếu tới gương phẳng bật lại với góc phản xạ i\' = i; ảnh ảo đối xứng sau gương qua hai chùm tia đối xứng',
+    formula: 'i\' = i \\quad|\\quad d_{\\text{ảnh}} = d_{\\text{vật}}',
+    linkedLessonId: 'phys-7-b3',
+    presets: [
+      { label: 'Góc tới chuẩn 40°', description: 'Quan sát rõ góc tới bằng góc phản xạ trên mặt phẳng tới', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Góc tới nghiêng lớn 65°', description: 'Tia phản xạ vươn rộng đối xứng qua pháp tuyến', settings: { speed: 1, amplitude: 1.5 } }
+    ]
+  },
+  lever_pulley_3d: {
+    id: 'lever_pulley_3d',
+    domainId: 'mechanics',
+    grades: ['Lớp 6', 'Lớp 8', 'Lớp 10'],
+    title: 'Đòn Bẩy Moment Lực & Hệ Ròng Rọc Động – Cố Định 3D',
+    subtitle: 'Thanh đòn bẩy quay quanh điểm tựa O theo quy tắc F₁·d₁ = F₂·d₂ đặt cạnh hệ ròng rọc động giúp nâng vật nhẹ đi 2 lần',
+    formula: 'M = F \\cdot d \\quad|\\quad F_1 d_1 = F_2 d_2 \\quad|\\quad F_{\\text{RR động}} = P/2',
+    linkedLessonId: 'phys-8-b2',
+    presets: [
+      { label: 'Cân bằng Moment lực', description: 'Quả nặng bên cánh tay ngắn cân với lực nhẹ bên cánh tay dài', settings: { speed: 1, amplitude: 1 } },
+      { label: 'Nâng hạ đòn bẩy & ròng rọc', description: 'Quan sát trực tiếp độ lệch tay đòn và vòng quay ròng rọc', settings: { speed: 1.2, amplitude: 1.4 } }
+    ]
+  },
+  hydraulic_press_3d: {
+    id: 'hydraulic_press_3d',
+    domainId: 'mechanics',
+    grades: ['Lớp 8'],
+    title: 'Bình Thông Nhau & Máy Ép Thủy Lực Pascal 3D',
+    subtitle: 'Hai xilanh nối thông đáy chứa dầu thủy lực: nhấn lực nhỏ f xuống pít-tông hẹp s làm pít-tông lớn S nâng khối nặng F',
+    formula: '\\frac{F}{f} = \\frac{S}{s} \\quad|\\quad p = d \\cdot h',
+    linkedLessonId: 'phys-2006-8-1',
+    presets: [
+      { label: 'Ép nhẹ nâng khối lớn (tỉ lệ 6×)', description: 'Pít-tông nhỏ hạ nhiều, pít-tông lớn nâng chậm nhưng lực cực đại', settings: { speed: 1, amplitude: 1.2 } },
+      { label: 'Tăng lực nhấn tối đa', description: 'Áp suất chất lỏng truyền nguyên vẹn mọi hướng nâng vật lên cao', settings: { speed: 1.3, amplitude: 1.6 } }
+    ]
   }
 };
 
@@ -1252,5 +1426,59 @@ export const BATCH2_3D_SCENE_CONFIGS: Record<Batch2Physics3DModeId, Extra3DScene
       { key: 'p2', label: 'Chế độ (0:Nhiệt / 1:Thủy)', unit: '', min: 0, max: 1, step: 1, defaultVal: 1, accent: 'accent-amber-500' }
     ],
     computeReadout: (v) => `${v.p2 >= 0.5 ? 'Thủy điện' : 'Nhiệt điện'}: Tốc độ quay tuabin ${(v.p1 * 50).toFixed(0)} Hz · Điện áp lưới sau trạm nâng áp ${(v.p1 * 220).toFixed(0)} kV.`
+  },
+  measurement_bench_3d: {
+    mode: 'measurement_bench_3d',
+    shortLabel: 'Bàn Dụng Cụ Đo 3D',
+    hudTitle: 'Bàn Dụng Cụ Đo: Thước – Bình Chia Độ – Lực Kế – Nhiệt Kế 3D',
+    params: [
+      { key: 'p1', label: 'Thể tích / Độ dài mẫu', unit: 'cm/mL', min: 4, max: 30, step: 2, defaultVal: 14, accent: 'accent-sky-500' },
+      { key: 'p2', label: 'Khối lượng treo lực kế', unit: 'kg', min: 0.5, max: 5.0, step: 0.5, defaultVal: 2.0, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => `Thước: ${v.p1} cm · Bình chia độ dâng +${v.p1} mL · Trọng lượng P = 10m = ${(v.p2 * 10).toFixed(1)} N.`
+  },
+  thermal_expansion_3d: {
+    mode: 'thermal_expansion_3d',
+    shortLabel: 'Nở Vì Nhiệt 3D',
+    hudTitle: 'Quả Cầu – Vòng Kim Loại & Băng Kép Nở Vì Nhiệt 3D',
+    params: [
+      { key: 'p1', label: 'Nhiệt độ gia nhiệt', unit: '°C', min: 20, max: 180, step: 10, defaultVal: 110, accent: 'accent-rose-500' },
+      { key: 'p2', label: 'Độ nhạy băng kép', unit: '×', min: 0.5, max: 1.8, step: 0.1, defaultVal: 1.1, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => v.p1 >= 75 ? `T = ${v.p1}°C: Quả cầu đồng nở to KẸT trên vòng kim loại, băng kép cong đóng tiếp điểm!` : `T = ${v.p1}°C: Quả cầu nguội co lại lọt qua vòng kim loại dễ dàng.`
+  },
+  plane_mirror_3d: {
+    mode: 'plane_mirror_3d',
+    shortLabel: 'Gương Phẳng 3D',
+    hudTitle: 'Phản Xạ Ánh Sáng & Ảnh Ảo Qua Gương Phẳng 3D',
+    params: [
+      { key: 'p1', label: 'Góc tới i', unit: '°', min: 10, max: 75, step: 5, defaultVal: 40, accent: 'accent-emerald-500' },
+      { key: 'p2', label: 'Khoảng cách vật đến gương', unit: 'm', min: 0.8, max: 2.6, step: 0.2, defaultVal: 1.6, accent: 'accent-sky-500' }
+    ],
+    computeReadout: (v) => `Định luật phản xạ: Góc phản xạ i' = i = ${v.p1}° · Ảnh ảo cách gương đúng ${v.p2.toFixed(1)} m (cách vật ${(v.p2 * 2).toFixed(1)} m).`
+  },
+  lever_pulley_3d: {
+    mode: 'lever_pulley_3d',
+    shortLabel: 'Đòn Bẩy & Ròng Rọc 3D',
+    hudTitle: 'Đòn Bẩy Moment Lực & Hệ Ròng Rọc Động 3D',
+    params: [
+      { key: 'p1', label: 'Cánh tay đòn lực d₁', unit: 'm', min: 0.8, max: 2.8, step: 0.2, defaultVal: 2.0, accent: 'accent-sky-500' },
+      { key: 'p2', label: 'Tải trọng vật nặng P', unit: 'N', min: 20, max: 120, step: 10, defaultVal: 60, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => {
+      const fLever = (v.p2 * 1.0) / Math.max(0.5, v.p1);
+      const fPulley = v.p2 / 2;
+      return `Đòn bẩy (d₂=1 m): Cần lực F₁ = ${fLever.toFixed(1)} N (Moment M = ${(v.p2 * 1.0).toFixed(0)} N·m) · Ròng rọc động: F = P/2 = ${fPulley.toFixed(1)} N.`;
+    }
+  },
+  hydraulic_press_3d: {
+    mode: 'hydraulic_press_3d',
+    shortLabel: 'Máy Ép Thủy Lực 3D',
+    hudTitle: 'Bình Thông Nhau & Máy Ép Thủy Lực Pascal 3D',
+    params: [
+      { key: 'p1', label: 'Lực ấn pít-tông nhỏ f', unit: 'N', min: 10, max: 100, step: 5, defaultVal: 40, accent: 'accent-cyan-500' },
+      { key: 'p2', label: 'Tỉ số tiết diện S₂ / S₁', unit: '×', min: 2, max: 10, step: 1, defaultVal: 6, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => `Lực ấn f = ${v.p1} N qua máy ép tỉ số ${v.p2}× tạo lực nâng ở pít-tông lớn F = ${(v.p1 * v.p2).toFixed(0)} N!`
   }
 };

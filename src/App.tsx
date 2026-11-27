@@ -769,8 +769,8 @@ function MainApp() {
                   <span aria-hidden="true">·</span>
                   <span>
                     {isEn
-                      ? 'Interactive Academic STEM Studio (Grades 9–12)'
-                      : 'Hệ thống lớp học & mô phỏng STEM tương tác (Lớp 9–12)'}
+                      ? 'Interactive Academic STEM Studio (Grades 6–12 · Math–Physics–CS Core)'
+                      : 'Hệ thống lớp học & mô phỏng STEM (Lớp 6–12 · Mũi nhọn Toán – Lý – Tin)'}
                   </span>
                 </div>
 

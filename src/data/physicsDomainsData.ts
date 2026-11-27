@@ -25,7 +25,7 @@ export interface PhysicsParamBound {
 export interface Physics2DSimSpec {
   id: PhysicsSimType;
   domainId: PhysicsDomainId;
-  grades: ('Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
+  grades: ('Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
   title: string;
   subtitle: string;
   formula: string;
@@ -42,7 +42,7 @@ export interface Physics2DSimSpec {
 export interface Physics3DSimSpec {
   id: Physics3DMode;
   domainId: PhysicsDomainId;
-  grades: ('Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
+  grades: ('Lớp 6' | 'Lớp 7' | 'Lớp 8' | 'Lớp 9' | 'Lớp 10' | 'Lớp 11' | 'Lớp 12')[];
   title: string;
   subtitle: string;
   formula: string;

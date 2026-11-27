@@ -162,7 +162,7 @@ export const PHYSICS_MS_2018_LESSONS: PhysicsLesson[] = [
       '\\Delta l = l - l_0 \\quad (\\text{Độ dãn lò xo})',
       '\\frac{F_1}{F_2} = \\frac{\\Delta l_1}{\\Delta l_2}'
     ],
-    ...SIM_PRESETS.spring,
+    ...SIM_PRESETS.hooke_forces,
     practiceExercises: [
       {
         source: SRC_2018_6,
@@ -610,7 +610,7 @@ export const PHYSICS_MS_2018_LESSONS: PhysicsLesson[] = [
       '\\text{Ngoài nam châm: Đường sức đi ra cực } \\mathbf{N} \\to \\text{ đi vào cực } \\mathbf{S}',
       '\\text{Cùng cực đẩy nhau; khác cực hút nhau}'
     ],
-    ...SIM_PRESETS.mag_induction,
+    ...SIM_PRESETS.magnet_compass,
     practiceExercises: [
       {
         source: SRC_2018_7,
@@ -673,7 +673,7 @@ export const PHYSICS_MS_2018_LESSONS: PhysicsLesson[] = [
       '\\text{Lực từ nam châm điện} \\propto \\text{Số vòng dây } N \\times \\text{Dòng điện } I',
       '\\text{Không khí } \\to \\text{ Nước (xiên góc)}: \\text{góc khúc xạ nhỏ hơn góc tới}'
     ],
-    ...SIM_PRESETS.refraction,
+    ...SIM_PRESETS.electromagnet_bell,
     practiceExercises: [
       {
         source: SRC_2018_7,
@@ -993,7 +993,7 @@ export const PHYSICS_MS_2018_LESSONS: PhysicsLesson[] = [
     keyFormulas: [
       '\\text{Dẫn nhiệt (Rắn)} \\cdot \\text{Đối lưu (Lỏng, Khí)} \\cdot \\text{Bức xạ (Chân không)}'
     ],
-    ...SIM_PRESETS.thermal_expansion,
+    ...SIM_PRESETS.heat_transfer,
     practiceExercises: [
       {
         source: SRC_2018_8,

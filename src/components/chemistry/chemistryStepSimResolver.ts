@@ -55,7 +55,10 @@ const CHEM_2D_TO_3D: Record<ChemistrySimType, Chemistry3DMode> = {
   states_of_matter_2d: 'matter_states_3d',
   mixture_separation_2d: 'separation_lab_3d',
   bohr_shells_2d: 'ionic_covalent_3d',
-  acid_base_oxide_2d: 'indicator_bench_3d'
+  acid_base_oxide_2d: 'indicator_bench_3d',
+  oxygen_combustion_2d: 'combustion_reactor_3d',
+  mass_conservation_2d: 'mass_balance_3d',
+  solution_solubility_2d: 'solution_mixing_3d'
 };
 
 const KEYWORD_RULES: {
@@ -64,6 +67,9 @@ const KEYWORD_RULES: {
   sim3d?: Chemistry3DMode;
   label: string;
 }[] = [
+  { pattern: /bảo toàn khối lượng|định luật bảo toàn|phương trình hóa học|cân bằng phương trình|mol|khối lượng mol|tỉ khối/i, sim2d: 'mass_conservation_2d', sim3d: 'mass_balance_3d', label: 'Định Luật Bảo Toàn Khối Lượng & Phương Trình Hóa Học' },
+  { pattern: /độ tan|bão hòa|nồng độ phần trăm|nồng độ mol|pha chế dung dịch|tính theo phương trình/i, sim2d: 'solution_solubility_2d', sim3d: 'solution_mixing_3d', label: 'Độ Tan, Dung Dịch Bão Hòa & Nồng Độ C%, C_M' },
+  { pattern: /sự oxi hóa|phản ứng hóa hợp|phản ứng phân hủy|khử oxit|điều chế khí oxi|điều chế o₂|khí hiđro|khí hydro|dây sắt cháy|tàn đóm/i, sim2d: 'oxygen_combustion_2d', sim3d: 'combustion_reactor_3d', label: 'Khí Oxygen, Sự Cháy & Phản Ứng Hóa Hợp – Thế' },
   { pattern: /rắn|lỏng|khí|chuyển thể|nóng chảy|sôi|bay hơi|không khí|khí oxygen|duy trì sự cháy/i, sim2d: 'states_of_matter_2d', sim3d: 'matter_states_3d', label: 'Ba Thể Chất, Chuyển Thể & Thành Phần Không Khí' },
   { pattern: /tách chất|giấy lọc|cô cạn|phễu chiết|nam châm|hỗn hợp|dung dịch|chất tinh khiết|đồng nhất/i, sim2d: 'mixture_separation_2d', sim3d: 'separation_lab_3d', label: 'Phân Loại Hỗn Hợp & Phương Pháp Tách Chất' },
   { pattern: /mô hình bohr|lớp electron|hóa trị|nguyên tử khối|amu|cho.?nhận|góp chung|ion và cộng hóa trị/i, sim2d: 'bohr_shells_2d', sim3d: 'ionic_covalent_3d', label: 'Vỏ Nguyên Tử Bohr, Hóa Trị & Liên Kết Ion – CHT' },

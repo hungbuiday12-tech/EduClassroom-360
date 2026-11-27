@@ -33,7 +33,11 @@ export type Batch2PhysicsSim2DId =
   | 'thermal_expansion_2d'
   | 'plane_mirror_2d'
   | 'simple_machines_2d'
-  | 'fluid_pressure_2d';
+  | 'fluid_pressure_2d'
+  | 'hooke_forces_2d'
+  | 'shadow_eclipse_2d'
+  | 'magnet_compass_2d'
+  | 'heat_transfer_2d';
 
 export type Batch2Physics3DModeId =
   | 'atwood_pulley_3d'
@@ -66,7 +70,12 @@ export type Batch2Physics3DModeId =
   | 'thermal_expansion_3d'
   | 'plane_mirror_3d'
   | 'lever_pulley_3d'
-  | 'hydraulic_press_3d';
+  | 'hydraulic_press_3d'
+  | 'hooke_forces_3d'
+  | 'shadow_eclipse_3d'
+  | 'magnet_compass_3d'
+  | 'electromagnet_bell_3d'
+  | 'heat_transfer_3d';
 
 export const BATCH2_PHYSICS_2D_SIMS: Record<Batch2PhysicsSim2DId, Physics2DSimSpec> = {
   // MECHANICS (+4)
@@ -704,6 +713,83 @@ export const BATCH2_PHYSICS_2D_SIMS: Record<Batch2PhysicsSim2DId, Physics2DSimSp
       { label: 'Máy ép thủy lực Pascal (S₂/S₁ = 8)', description: 'Ấn tay nhẹ 50 N nâng được ô tô 400 N', params: { labMode: 2, depthM: 5.0, areaRatio: 8 } },
       { label: 'Áp suất chân đứng vs mũi đinh', description: 'Giảm diện tích S làm áp suất tăng vọt', params: { labMode: 3, depthM: 4.0, areaRatio: 6 } }
     ]
+  },
+  hooke_forces_2d: {
+    id: 'hooke_forces_2d',
+    domainId: 'mechanics',
+    grades: ['Lớp 6', 'Lớp 8', 'Lớp 10'],
+    title: 'Lực Kế Lò Xo (P = 10m), Trọng Lượng & Lực Ma Sát Trượt',
+    subtitle: 'Khảo sát độ dãn lò xo tỉ lệ thuận trọng lượng quả nặng và so sánh lực ma sát trên mặt băng trơn, gỗ và nhám',
+    formula: 'P = 10\\,m \\quad|\\quad \\Delta l = \\frac{F}{k} \\quad|\\quad F_{\\text{ms}} = \\mu N',
+    linkedLessonId: 'phys-6-b3',
+    defaultParams: { massKg: 1.5, springK: 40, surfaceMu: 0.25 },
+    paramBounds: {
+      massKg: { min: 0.5, max: 5.0, step: 0.5, unit: 'kg', label: 'Khối lượng quả nặng m' },
+      springK: { min: 20, max: 100, step: 10, unit: 'N/m', label: 'Độ cứng lò xo lực kế' },
+      surfaceMu: { min: 0.05, max: 0.55, step: 0.05, unit: '', label: 'Hệ số ma sát mặt trượt μ' }
+    },
+    presets: [
+      { label: 'Treo quả 1,5 kg (P = 15 N)', description: 'Kiểm chứng độ dãn lò xo tăng theo tỉ lệ thuận P = 10m', params: { massKg: 1.5, springK: 40, surfaceMu: 0.25 } },
+      { label: 'Mặt nhám ma sát lớn (μ = 0,5)', description: 'Cần lực kéo lớn hơn để thắng ma sát nghỉ/trượt', params: { massKg: 2.0, springK: 40, surfaceMu: 0.5 } }
+    ]
+  },
+  shadow_eclipse_2d: {
+    id: 'shadow_eclipse_2d',
+    domainId: 'optics_quantum',
+    grades: ['Lớp 7', 'Lớp 9'],
+    title: 'Định Luật Truyền Thẳng Ánh Sáng, Bóng Tối – Nửa Tối & Nhật/Nguyệt Thực',
+    subtitle: 'Điều chỉnh kích thước nguồn sáng và khoảng cách vật cản để tách biệt vùng bóng tối (Umbra) và bóng nửa tối (Penumbra)',
+    formula: '\\text{Tia sáng truyền thẳng trong môi trường đồng tính} \\implies \\text{Bóng tối & Bóng nửa tối}',
+    linkedLessonId: 'phys-2006-7-1',
+    defaultParams: { sourceSize: 18, objectDist: 0.46, obstacleRadius: 28 },
+    paramBounds: {
+      sourceSize: { min: 4, max: 32, step: 2, unit: 'px', label: 'Bán kính nguồn sáng' },
+      objectDist: { min: 0.25, max: 0.72, step: 0.05, unit: '×', label: 'Vị trí vật cản' },
+      obstacleRadius: { min: 16, max: 44, step: 2, unit: 'px', label: 'Kích thước vật cản' }
+    },
+    presets: [
+      { label: 'Nguồn rộng (Nhật thực toàn phần)', description: 'Xuất hiện đồng thời vùng bóng tối và bóng nửa tối trên màn', params: { sourceSize: 18, objectDist: 0.46, obstacleRadius: 28 } },
+      { label: 'Nguồn điểm (Bóng tối sắc nét)', description: 'Chỉ có vùng tối đen hoàn toàn không có bóng nửa tối', params: { sourceSize: 4, objectDist: 0.46, obstacleRadius: 28 } }
+    ]
+  },
+  magnet_compass_2d: {
+    id: 'magnet_compass_2d',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 7', 'Lớp 9'],
+    title: 'Nam Châm Vĩnh Cửu, Đường Sức Từ & Kim La Bàn Định Hướng',
+    subtitle: 'Quan sát quy ước đường sức từ ra cực Bắc (N) vào cực Nam (S) và sự xoay đồng bộ của 4 kim la bàn thử nghiệm',
+    formula: '\\text{Đường sức từ: Ra Bắc (N)} \\longrightarrow \\text{Vào Nam (S)}',
+    linkedLessonId: 'phys-7-b6',
+    defaultParams: { polarityFlip: 1, compassTiltDeg: 0, fieldStrength: 1.0 },
+    paramBounds: {
+      polarityFlip: { min: -1, max: 1, step: 2, unit: '', label: 'Đảo cực nam châm (1:N–S / -1:S–N)' },
+      compassTiltDeg: { min: -45, max: 45, step: 5, unit: '°', label: 'Góc nhiễu từ trường ngoài' },
+      fieldStrength: { min: 0.5, max: 2.0, step: 0.25, unit: '×', label: 'Độ mạnh nam châm' }
+    },
+    presets: [
+      { label: 'Nam châm N (trái) – S (phải)', description: 'Đường sức từ hướng từ N sang S ngoài thanh nam châm', params: { polarityFlip: 1, compassTiltDeg: 0, fieldStrength: 1.2 } },
+      { label: 'Đảo ngược cực S – N', description: 'Tất cả kim la bàn tự động xoay đảo đầu 180°', params: { polarityFlip: -1, compassTiltDeg: 0, fieldStrength: 1.2 } }
+    ]
+  },
+  heat_transfer_2d: {
+    id: 'heat_transfer_2d',
+    domainId: 'thermal_nuclear',
+    grades: ['Lớp 8'],
+    title: 'Ba Hình Thức Truyền Nhiệt: Dẫn Nhiệt – Đối Lưu – Bức Xạ Nhiệt',
+    subtitle: 'So sánh tốc độ rơi đinh sáp khi dẫn nhiệt kim loại, dòng đối lưu nóng-lạnh trong bình nước và hấp thụ tia nhiệt của vật đen/bóng',
+    formula: '\\text{Dẫn nhiệt (Rắn)} \\mid \\text{Đối lưu (Lỏng/Khí)} \\mid \\text{Bức xạ (Cả chân không)}',
+    linkedLessonId: 'phys-2006-8-14',
+    defaultParams: { transferMode: 2, heaterPower: 75, materialCoeff: 1.0 },
+    paramBounds: {
+      transferMode: { min: 1, max: 3, step: 1, unit: '', label: 'Hình thức (1:Dẫn nhiệt 2:Đối lưu 3:Bức xạ)' },
+      heaterPower: { min: 20, max: 100, step: 10, unit: '%', label: 'Công suất nguồn nhiệt' },
+      materialCoeff: { min: 0.5, max: 1.6, step: 0.1, unit: '×', label: 'Hệ số dẫn nhiệt vật liệu' }
+    },
+    presets: [
+      { label: '1. Dẫn nhiệt & Rơi đinh sáp', description: 'Nhiệt truyền từ đầu nóng sang đầu lạnh làm chảy sáp theo thứ tự', params: { transferMode: 1, heaterPower: 80, materialCoeff: 1.2 } },
+      { label: '2. Dòng đối lưu trong chất lỏng', description: 'Nước nóng giãn nở nổi lên, nước lạnh chìm xuống', params: { transferMode: 2, heaterPower: 75, materialCoeff: 1.0 } },
+      { label: '3. Bức xạ nhiệt (Vật đen vs Bóng)', description: 'Bề mặt sẫm xù xì hấp thụ tia nhiệt tốt hơn bề mặt sáng bóng', params: { transferMode: 3, heaterPower: 85, materialCoeff: 1.0 } }
+    ]
   }
 };
 
@@ -1121,6 +1207,66 @@ export const BATCH2_PHYSICS_3D_SIMS: Record<Batch2Physics3DModeId, Physics3DSimS
       { label: 'Ép nhẹ nâng khối lớn (tỉ lệ 6×)', description: 'Pít-tông nhỏ hạ nhiều, pít-tông lớn nâng chậm nhưng lực cực đại', settings: { speed: 1, amplitude: 1.2 } },
       { label: 'Tăng lực nhấn tối đa', description: 'Áp suất chất lỏng truyền nguyên vẹn mọi hướng nâng vật lên cao', settings: { speed: 1.3, amplitude: 1.6 } }
     ]
+  },
+  hooke_forces_3d: {
+    id: 'hooke_forces_3d',
+    domainId: 'mechanics',
+    grades: ['Lớp 6', 'Lớp 8', 'Lớp 10'],
+    title: 'Lực Kế Lò Xo (P = 10m) & Lực Ma Sát Trượt 3D',
+    subtitle: 'Treo quả nặng đo trọng lượng bằng độ dãn lò xo bên cạnh mô hình khối trượt chịu ma sát trên mặt bàn',
+    formula: 'P = 10\\,m \\quad|\\quad F_{\\text{ms}} = \\mu N',
+    linkedLessonId: 'phys-6-b3',
+    presets: [
+      { label: 'Quả nặng chuẩn 2 kg', description: 'Lực kế chỉ 20 N, khối trượt đều', settings: { speed: 1, amplitude: 1 } }
+    ]
+  },
+  shadow_eclipse_3d: {
+    id: 'shadow_eclipse_3d',
+    domainId: 'optics_quantum',
+    grades: ['Lớp 7', 'Lớp 9'],
+    title: 'Truyền Thẳng Ánh Sáng, Bóng Tối & Nhật Thực 3D',
+    subtitle: 'Chiếu chùm sáng qua vật cản cầu tạo nón bóng tối đen hoàn toàn và vành bóng nửa tối trên màn hứng',
+    formula: '\\text{Bóng tối (Umbra)} \\mid \\text{Bóng nửa tối (Penumbra)}',
+    linkedLessonId: 'phys-2006-7-1',
+    presets: [
+      { label: 'Vành bóng tối & nửa tối rõ nét', description: 'Đặt vật cản giữa nguồn sáng rộng và màn', settings: { speed: 1, amplitude: 1 } }
+    ]
+  },
+  magnet_compass_3d: {
+    id: 'magnet_compass_3d',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 7', 'Lớp 9'],
+    title: 'Nam Châm Vĩnh Cửu, Đường Sức Từ 3D & Kim La Bàn',
+    subtitle: 'Đường sức từ không gian 3 chiều quanh thanh nam châm thẳng và 4 kim la bàn xoay theo cực Bắc–Nam',
+    formula: '\\text{Từ trường Trái Đất} \\mid \\text{Ra Bắc (N) – Vào Nam (S)}',
+    linkedLessonId: 'phys-7-b6',
+    presets: [
+      { label: 'Đường sức từ chuẩn', description: 'Quan sát kim la bàn chỉ hướng từ phổ', settings: { speed: 1, showVectors: true } }
+    ]
+  },
+  electromagnet_bell_3d: {
+    id: 'electromagnet_bell_3d',
+    domainId: 'electricity_mag',
+    grades: ['Lớp 7', 'Lớp 9'],
+    title: 'Nam Châm Điện Cuộn Dây Lõi Sắt & Chuông Điện 3D',
+    subtitle: 'Dòng điện chạy qua ống dây biến lõi sắt thành nam châm hút búa gõ chuông rung liên hồi',
+    formula: 'B \\propto n \\cdot I',
+    linkedLessonId: 'phys-7-b7',
+    presets: [
+      { label: 'Đóng mạch chuông điện reo', description: 'Lõi sắt hút cần rung đập chuông liên tục', settings: { speed: 1.2, amplitude: 1.3 } }
+    ]
+  },
+  heat_transfer_3d: {
+    id: 'heat_transfer_3d',
+    domainId: 'thermal_nuclear',
+    grades: ['Lớp 8'],
+    title: 'Dẫn Nhiệt Thanh Kim Loại & Đối Lưu Chất Lỏng 3D',
+    subtitle: 'Đặt cạnh nhau thanh đồng dẫn nhiệt trên ngọn lửa và bình thủy tinh đối lưu dòng nóng đi lên – lạnh chìm xuống',
+    formula: '\\text{Dẫn nhiệt (Rắn)} \\mid \\text{Đối lưu (Lỏng/Khí)}',
+    linkedLessonId: 'phys-2006-8-14',
+    presets: [
+      { label: 'Gia nhiệt đối lưu mạnh', description: 'Các hạt nhiệt tuần hoàn nhanh trong bình nước', settings: { speed: 1.2, amplitude: 1.3 } }
+    ]
   }
 };
 
@@ -1480,5 +1626,55 @@ export const BATCH2_3D_SCENE_CONFIGS: Record<Batch2Physics3DModeId, Extra3DScene
       { key: 'p2', label: 'Tỉ số tiết diện S₂ / S₁', unit: '×', min: 2, max: 10, step: 1, defaultVal: 6, accent: 'accent-amber-500' }
     ],
     computeReadout: (v) => `Lực ấn f = ${v.p1} N qua máy ép tỉ số ${v.p2}× tạo lực nâng ở pít-tông lớn F = ${(v.p1 * v.p2).toFixed(0)} N!`
+  },
+  hooke_forces_3d: {
+    mode: 'hooke_forces_3d',
+    shortLabel: 'Lực Kế & Ma Sát 3D',
+    hudTitle: 'Lực Kế Lò Xo (P = 10m) & Lực Ma Sát Trượt 3D',
+    params: [
+      { key: 'p1', label: 'Khối lượng quả nặng m', unit: 'kg', min: 0.5, max: 5.0, step: 0.5, defaultVal: 2.0, accent: 'accent-amber-500' },
+      { key: 'p2', label: 'Hệ số ma sát μ', unit: '', min: 0.05, max: 0.6, step: 0.05, defaultVal: 0.25, accent: 'accent-rose-500' }
+    ],
+    computeReadout: (v) => `Trọng lượng P = 10·m = ${(v.p1 * 10).toFixed(1)} N · Lực ma sát trượt F_ms = ${(v.p1 * 10 * v.p2).toFixed(1)} N.`
+  },
+  shadow_eclipse_3d: {
+    mode: 'shadow_eclipse_3d',
+    shortLabel: 'Bóng Tối & Nhật Thực 3D',
+    hudTitle: 'Truyền Thẳng Ánh Sáng, Bóng Tối & Nhật Thực 3D',
+    params: [
+      { key: 'p1', label: 'Vị trí vật cản (m)', unit: 'm', min: -1.4, max: 1.4, step: 0.2, defaultVal: 0, accent: 'accent-sky-500' },
+      { key: 'p2', label: 'Kích thước nguồn sáng', unit: '×', min: 0.4, max: 1.5, step: 0.1, defaultVal: 1.0, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => `Nguồn sáng kích thước ${v.p2.toFixed(1)}× tạo vùng bóng tối đen và vành bóng nửa tối trên màn ảnh.`
+  },
+  magnet_compass_3d: {
+    mode: 'magnet_compass_3d',
+    shortLabel: 'Nam Châm & La Bàn 3D',
+    hudTitle: 'Nam Châm Vĩnh Cửu, Đường Sức Từ 3D & Kim La Bàn',
+    params: [
+      { key: 'p1', label: 'Chiều cực (1:N-S / -1:S-N)', unit: '', min: -1, max: 1, step: 2, defaultVal: 1, accent: 'accent-rose-500' },
+      { key: 'p2', label: 'Độ mạnh từ trường', unit: '×', min: 0.5, max: 2.0, step: 0.25, defaultVal: 1.2, accent: 'accent-sky-500' }
+    ],
+    computeReadout: (v) => `Cực ${v.p1 >= 0 ? 'Bắc (N) bên trái' : 'Bắc (N) bên phải'} · Đường sức đi ra cực Bắc (N) và vào cực Nam (S).`
+  },
+  electromagnet_bell_3d: {
+    mode: 'electromagnet_bell_3d',
+    shortLabel: 'Nam Châm Điện 3D',
+    hudTitle: 'Nam Châm Điện Cuộn Dây Lõi Sắt & Chuông Điện 3D',
+    params: [
+      { key: 'p1', label: 'Cường độ dòng điện I', unit: 'A', min: 0, max: 6, step: 0.5, defaultVal: 3.0, accent: 'accent-amber-500' },
+      { key: 'p2', label: 'Số vòng dây N', unit: 'vòng', min: 50, max: 300, step: 25, defaultVal: 150, accent: 'accent-cyan-500' }
+    ],
+    computeReadout: (v) => v.p1 > 0.2 ? `Dòng I = ${v.p1} A qua ${v.p2} vòng dây: Lõi sắt hóa nam châm mạnh làm chuông reo liên tục!` : 'Ngắt dòng điện (I = 0): Lõi sắt non mất hết từ tính ngay.'
+  },
+  heat_transfer_3d: {
+    mode: 'heat_transfer_3d',
+    shortLabel: 'Truyền Nhiệt 3D',
+    hudTitle: 'Dẫn Nhiệt (Rắn) & Đối Lưu (Lỏng/Khí) 3D',
+    params: [
+      { key: 'p1', label: 'Công suất nguồn nhiệt', unit: '%', min: 20, max: 100, step: 10, defaultVal: 75, accent: 'accent-rose-500' },
+      { key: 'p2', label: 'Chế độ (1:Dẫn 2:Đối lưu 3:Bức xạ)', unit: '', min: 1, max: 3, step: 1, defaultVal: 2, accent: 'accent-amber-500' }
+    ],
+    computeReadout: (v) => `Công suất ${v.p1}% · Dòng đối lưu nóng nổi lên lạnh chìm xuống kết hợp dẫn nhiệt qua chất rắn.`
   }
 };

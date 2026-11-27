@@ -866,6 +866,65 @@ export const CHEMISTRY_2D_SIMS: Chemistry2DSimSpec[] = [
       { label: 'Nước cất trung tính (pH = 7.0)', description: 'Quỳ giữ nguyên tím, phenolphthalein không màu', params: { samplePh: 7.0, indicatorType: 1, addZnRibbon: 0 } },
       { label: 'Dung dịch Kiềm NaOH (pH = 12.5)', description: 'Quỳ hóa XANH, Phenolphthalein hóa HỒNG cánh sen', params: { samplePh: 12.5, indicatorType: 2, addZnRibbon: 0 } }
     ]
+  },
+  {
+    id: 'oxygen_combustion_2d',
+    domainId: 'kinetics_thermo',
+    grades: ['Lớp 6', 'Lớp 8'],
+    title: 'Khí Oxygen (O₂), Sự Cháy Trong Không Khí & Phản Ứng Khử CuO Bằng H₂',
+    subtitle: 'Thay đổi nồng độ O₂ và nhiệt độ kích hoạt để quan sát tàn đóm bùng cháy, dây sắt cháy sáng rực và khử oxit đồng bằng H₂',
+    formula: '3\\text{Fe} + 2\\text{O}_2 \\xrightarrow{t^\\circ} \\text{Fe}_3\\text{O}_4 \\quad|\\quad \\text{H}_2 + \\text{CuO} \\xrightarrow{t^\\circ} \\text{Cu} + \\text{H}_2\\text{O}',
+    linkedLessonId: 'chem-2006-8-4',
+    defaultParams: { o2Concentration: 95, fuelType: 1, ignitionTemp: 550 },
+    paramBounds: {
+      o2Concentration: { min: 10, max: 100, step: 5, unit: '%', label: 'Nồng độ O₂ trong bình' },
+      fuelType: { min: 1, max: 3, step: 1, unit: '', label: 'Thí nghiệm (1:Tàn đóm 2:Đốt Fe 3:Khử CuO)' },
+      ignitionTemp: { min: 200, max: 900, step: 50, unit: '°C', label: 'Nhiệt độ mồi cháy' }
+    },
+    presets: [
+      { label: 'Bình O₂ tinh khiết (95%): Bùng cháy!', description: 'Que đóm còn tàn hồng đưa vào bình O₂ bùng thành ngọn lửa', params: { o2Concentration: 95, fuelType: 1, ignitionTemp: 550 } },
+      { label: 'Đốt dây Sắt Fe tạo hoa lửa', description: 'Tạo oxit sắt từ Fe₃O₄ màu nâu đen', params: { o2Concentration: 95, fuelType: 2, ignitionTemp: 750 } },
+      { label: 'Khí H₂ khử CuO đen thành Đồng đỏ', description: 'Phản ứng thế/khử đặc trưng của Hydro', params: { o2Concentration: 80, fuelType: 3, ignitionTemp: 600 } }
+    ]
+  },
+  {
+    id: 'mass_conservation_2d',
+    domainId: 'kinetics_thermo',
+    grades: ['Lớp 8'],
+    title: 'Định Luật Bảo Toàn Khối Lượng & Cân Bằng Phương Trình Hóa Học',
+    subtitle: 'So sánh cân điện tử khi phản ứng trong bình kín (Σm_đầu = Σm_sau) và bình hở có khí thoát ra ngoài',
+    formula: '\\sum m_{\\text{tham gia}} = \\sum m_{\\text{sản phẩm}}',
+    linkedLessonId: 'chem-8-b1',
+    defaultParams: { massReactantA: 20.8, massReactantB: 14.2, isClosedSystem: 1, reactionProgress: 80 },
+    paramBounds: {
+      massReactantA: { min: 5, max: 50, step: 1, unit: 'g', label: 'Khối lượng chất A' },
+      massReactantB: { min: 5, max: 50, step: 1, unit: 'g', label: 'Khối lượng chất B' },
+      isClosedSystem: { min: 0, max: 1, step: 1, unit: '', label: 'Hệ bình (1:Kín / 0:Hở thoát khí)' },
+      reactionProgress: { min: 0, max: 100, step: 20, unit: '%', label: 'Tiến độ phản ứng' }
+    },
+    presets: [
+      { label: 'Bình kín BaCl₂ + Na₂SO₄', description: 'Cân giữ nguyên 35.0 g dù tạo kết tủa trắng', params: { massReactantA: 20.8, massReactantB: 14.2, isClosedSystem: 1, reactionProgress: 80 } },
+      { label: 'Bình hở CaCO₃ + HCl thoát CO₂', description: 'Khối lượng trên cân giảm đúng bằng khối lượng khí CO₂ bay đi', params: { massReactantA: 20, massReactantB: 16, isClosedSystem: 0, reactionProgress: 80 } }
+    ]
+  },
+  {
+    id: 'solution_solubility_2d',
+    domainId: 'equilibrium_acidbase',
+    grades: ['Lớp 8'],
+    title: 'Dung Dịch Bão Hòa, Độ Tan S(t°C) & Nồng Độ C%, C_M',
+    subtitle: 'Điều chỉnh lượng chất tan, nước và nhiệt độ để quan sát điểm bão hòa trên đồ thị độ tan và tinh thể kết tinh dư',
+    formula: 'S = \\frac{m_{\\text{ct max}}}{m_{\\text{H}_2\\text{O}}}\\cdot 100 \\quad|\\quad C\\% = \\frac{m_{\\text{ct}}}{m_{\\text{dd}}}\\cdot 100\\%',
+    linkedLessonId: 'chem-2006-8-11',
+    defaultParams: { soluteMassG: 36, waterMassG: 100, solutionTempC: 25 },
+    paramBounds: {
+      soluteMassG: { min: 5, max: 95, step: 5, unit: 'g', label: 'Khối lượng chất tan cho vào' },
+      waterMassG: { min: 50, max: 200, step: 25, unit: 'g', label: 'Khối lượng nước (dung môi)' },
+      solutionTempC: { min: 5, max: 95, step: 5, unit: '°C', label: 'Nhiệt độ dung dịch' }
+    },
+    presets: [
+      { label: 'Chưa bão hòa (30g / 100g H₂O · 40°C)', description: 'Tan hoàn toàn trong nước tạo dung dịch trong suốt', params: { soluteMassG: 30, waterMassG: 100, solutionTempC: 40 } },
+      { label: 'Bão hòa dư tinh thể (75g · 25°C)', description: 'Vượt độ tan S = 36,3g nên phần dư lắng đáy', params: { soluteMassG: 75, waterMassG: 100, solutionTempC: 25 } }
+    ]
   }
 ];
 
@@ -1198,6 +1257,42 @@ export const CHEMISTRY_3D_SIMS: Chemistry3DSimSpec[] = [
     presets: [
       { label: 'Cốc Acid pH = 1.5 + Zn', description: 'Quỳ hóa đỏ rực và bọt H₂ sủi lên liên tục', settings: { speed: 1.2, showLabels: true } },
       { label: 'Cốc Kiềm NaOH pH = 12.5', description: 'Quỳ hóa xanh thẫm, Phenolphthalein hồng', settings: { speed: 1, showLabels: true } }
+    ]
+  },
+  {
+    id: 'combustion_reactor_3d',
+    domainId: 'kinetics_thermo',
+    grades: ['Lớp 6', 'Lớp 8'],
+    title: 'Bình Phản Ứng Đốt Cháy Trong Khí O₂ & Phản Ứng Hóa Hợp 3D',
+    subtitle: 'Quan sát dây sắt/tàn đóm cháy sáng bắn tia lửa trong bình thủy tinh chứa khí O₂ tinh khiết',
+    formula: '3\\text{Fe} + 2\\text{O}_2 \\xrightarrow{t^\\circ} \\text{Fe}_3\\text{O}_4',
+    linkedLessonId: 'chem-2006-8-4',
+    presets: [
+      { label: 'Bùng cháy trong bình O₂ 95%', description: 'Tia lửa bắn mạnh trong khí Oxygen đậm đặc', settings: { speed: 1.2, showLabels: true } }
+    ]
+  },
+  {
+    id: 'mass_balance_3d',
+    domainId: 'kinetics_thermo',
+    grades: ['Lớp 8'],
+    title: 'Cân Đòn 2 Đĩa Kiểm Chứng Định Luật Bảo Toàn Khối Lượng 3D',
+    subtitle: 'So sánh phản ứng xảy ra trong bình đậy nút kín (cân thăng bằng tuyệt đối) với bình hở thoát khí',
+    formula: '\\sum m_{\\text{trước}} = \\sum m_{\\text{sau}}',
+    linkedLessonId: 'chem-8-b1',
+    presets: [
+      { label: 'Hệ kín nút cao su cân bằng', description: 'Đòn cân thăng bằng hoàn hảo trước và sau phản ứng', settings: { speed: 1, showLabels: true } }
+    ]
+  },
+  {
+    id: 'solution_mixing_3d',
+    domainId: 'equilibrium_acidbase',
+    grades: ['Lớp 8'],
+    title: 'Cốc Khuấy Từ Pha Dung Dịch, Độ Tan S & Kết Tinh 3D',
+    subtitle: 'Khuấy tan tinh thể muối/CuSO₄ và quan sát ngưỡng bão hòa kết tinh khi giảm nhiệt độ',
+    formula: 'C\\% = \\frac{m_{\\text{ct}}}{m_{\\text{dd}}}\\cdot 100\\% \\quad|\\quad C_M = \\frac{n}{V}',
+    linkedLessonId: 'chem-2006-8-11',
+    presets: [
+      { label: 'Dung dịch bão hòa có kết tinh', description: 'Tinh thể dư lắng đáy cốc khi vượt độ tan S', settings: { speed: 1, showLabels: true } }
     ]
   }
 ];

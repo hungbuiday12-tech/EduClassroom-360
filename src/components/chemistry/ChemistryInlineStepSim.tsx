@@ -18,6 +18,8 @@ import { ChemSimTelemetry, renderChemistry2DSim } from './chemistry2DEngine';
 import { Chemistry3DView } from './Chemistry3DView';
 import { FormattedText, MathFormula } from '../common/MathRenderer';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { getStudioDpr } from '../common/studio2DCanvasKit';
+import { useCanvasModelDrag } from '../../hooks/useCanvasModelDrag';
 
 interface ChemistryInlineStepSimProps {
   lesson: ChemistryLesson;
@@ -65,6 +67,7 @@ export const ChemistryInlineStepSim: React.FC<ChemistryInlineStepSimProps> = ({
   runningRef.current = isRunning;
   const speedRef = useRef(simSpeed);
   speedRef.current = simSpeed;
+  const { dragRef, isMoved, resetDrag } = useCanvasModelDrag(canvasRef, `${lesson.id}-${stepIndex}-${resolved.sim2dId}`);
 
   useEffect(() => {
     setParams({ ...resolved.defaultParams });
@@ -85,7 +88,7 @@ export const ChemistryInlineStepSim: React.FC<ChemistryInlineStepSimProps> = ({
       if (canvas) {
         const rect = canvas.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const dpr = getStudioDpr(perfModeRef.current);
           if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
             canvas.width = Math.round(rect.width * dpr);
             canvas.height = Math.round(rect.height * dpr);
@@ -103,7 +106,8 @@ export const ChemistryInlineStepSim: React.FC<ChemistryInlineStepSimProps> = ({
               paramsRef.current,
               simTimeRef.current,
               isDark,
-              perfModeRef.current
+              perfModeRef.current,
+              dragRef.current
             );
             ctx.restore();
             frame++;
@@ -164,8 +168,22 @@ export const ChemistryInlineStepSim: React.FC<ChemistryInlineStepSimProps> = ({
             </div>
           </div>
 
-          <div className="bg-slate-950 border-b border-slate-200 dark:border-slate-800">
-            <canvas ref={canvasRef} className="w-full h-[255px] sm:h-[290px] block select-none" />
+          <div className="bg-slate-950 border-b border-slate-200 dark:border-slate-800 relative">
+            <canvas
+              ref={canvasRef}
+              title="Kéo thả mô hình trên sàn • Nhấp đúp để đặt lại"
+              className="w-full h-[255px] sm:h-[290px] block select-none"
+            />
+            {isMoved && (
+              <button
+                type="button"
+                onClick={resetDrag}
+                className="absolute bottom-3 left-3 z-20 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900/90 hover:bg-emerald-600 border border-emerald-500/40 text-[10px] font-semibold text-emerald-200 hover:text-white cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Đặt lại vị trí</span>
+              </button>
+            )}
           </div>
 
           <div className="px-3.5 py-2 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">

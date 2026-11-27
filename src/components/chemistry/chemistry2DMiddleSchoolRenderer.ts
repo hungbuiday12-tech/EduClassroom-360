@@ -1,6 +1,12 @@
 import { ChemistrySimType } from '../../types';
 import { PerformanceMode } from '../../context/BackgroundContext';
 import { ChemSimTelemetry } from './chemistry2DEngine';
+import {
+  drawStudioGlassVessel,
+  drawStudioStandAndClamp,
+  drawStudioThermometerProbe,
+  getStudioBenchY
+} from '../common/studio2DCanvasKit';
 
 function round(v: number, d = 2): number {
   const f = Math.pow(10, d);
@@ -75,12 +81,13 @@ export function renderMiddleSchool2DChemSim(
   params: Record<string, number>,
   t: number,
   dark: boolean,
-  _perfMode: PerformanceMode
+  perfMode: PerformanceMode
 ): ChemSimTelemetry {
+  const benchY = getStudioBenchY(h, h < 310);
   const fg = dark ? '#e2e8f0' : '#0f172a';
   const muted = dark ? '#94a3b8' : '#64748b';
   const cx = w * 0.5;
-  const cy = h * 0.54;
+  const cy = Math.min(h * 0.54, benchY - 72);
 
   switch (simType) {
     case 'states_of_matter_2d': {
@@ -731,29 +738,29 @@ export function renderMiddleSchool2DChemSim(
       ctx.closePath();
       ctx.fill();
 
-      // Solution beaker
-      const bx = cx - 72;
+      // Solution beaker with Fresnel glass + volumetric scale + stand
+      const bx = cx - 64;
       const by = cy - 28;
-      const bw = 144;
+      const bw = 128;
       const bh = 124;
 
-      let liqColor = isAcid ? 'rgba(56,189,248,0.22)' : isBase ? 'rgba(56,189,248,0.25)' : 'rgba(186,230,253,0.22)';
+      let liqColor = isAcid ? 'rgba(56,189,248,0.28)' : isBase ? 'rgba(56,189,248,0.3)' : 'rgba(186,230,253,0.26)';
       if (ind === 2) {
-        liqColor = ph >= 8.3 ? 'rgba(236,72,153,0.68)' : 'rgba(226,232,240,0.16)';
+        liqColor = ph >= 8.3 ? 'rgba(236,72,153,0.68)' : 'rgba(226,232,240,0.18)';
       } else if (ind === 3) {
         liqColor = ph < 4 ? 'rgba(239,68,68,0.58)' : ph < 6.5 ? 'rgba(192,132,252,0.5)' : ph < 8.5 ? 'rgba(99,102,241,0.5)' : ph < 11 ? 'rgba(16,185,129,0.55)' : 'rgba(234,179,8,0.62)';
       }
 
-      ctx.fillStyle = liqColor;
-      ctx.fillRect(bx + 3, by + 28, bw - 6, bh - 30);
-      ctx.strokeStyle = fg;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(bx, by);
-      ctx.lineTo(bx, by + bh);
-      ctx.lineTo(bx + bw, by + bh);
-      ctx.lineTo(bx + bw, by);
-      ctx.stroke();
+      drawStudioStandAndClamp(ctx, bx - 44, benchY, Math.max(150, benchY - by + 20), by + 10, bx, dark, 'GIÁ KẸP');
+      drawStudioGlassVessel(ctx, bx, by, bw, bh, {
+        fillFraction: 0.76,
+        liquidColor: liqColor,
+        liquidTopColor: 'rgba(224,242,254,0.65)',
+        maxMl: 100,
+        perfMode,
+        dark
+      });
+      drawStudioThermometerProbe(ctx, bx + bw - 22, by - 18, 108, 25 + (addZn && ph < 6 ? 12 : 0), dark, 0, 80);
 
       // Litmus strip dipped in beaker if ind === 1
       let indResult = '';
@@ -813,6 +820,291 @@ export function renderMiddleSchool2DChemSim(
           { label: 'Hiện tượng chỉ thị', value: indResult }
         ],
         statusNote: 'Dung dịch Acid (pH < 7) làm quỳ hóa đỏ và tác dụng kim loại (Mg, Zn, Fe) giải phóng khí H₂; Kiềm (pH > 7) làm quỳ hóa xanh.'
+      };
+    }
+
+    case 'oxygen_combustion_2d': {
+      const o2Pct = params.o2Concentration ?? 95;
+      const fuelId = Math.max(1, Math.min(3, Math.round(params.fuelType ?? 1))); // 1:Tan dom/C, 2:Fe, 3:H2 + CuO
+      const tempC = params.ignitionTemp ?? 550;
+      const ignited = tempC >= 350 && o2Pct >= 14;
+      const flamePower = ignited ? Math.min(1.6, 0.35 + (o2Pct / 100) * 1.1) : 0;
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 13px sans-serif';
+      const titleTxt =
+        fuelId === 1
+          ? `Thử tàn đóm đỏ trong khí O₂ (${o2Pct}%)`
+          : fuelId === 2
+          ? `Đốt dây Sắt (Fe) tạo Oxit sắt từ Fe₃O₄`
+          : `Đốt khí H₂ & Khử CuO đen → Cu đỏ`;
+      ctx.fillText(titleTxt, 18, 28);
+
+      // Gas Jar on left/center
+      const jx = w * 0.32;
+      const jy = cy + 8;
+      drawStudioGlassVessel(ctx, jx - 62, jy - 82, 124, 152, {
+        fillFraction: Math.min(0.88, 0.25 + (o2Pct / 100) * 0.55),
+        liquidColor: `rgba(56, 189, 248, ${0.12 + (o2Pct / 100) * 0.2})`,
+        liquidTopColor: 'rgba(186, 230, 253, 0.45)',
+        maxMl: 250,
+        perfMode,
+        dark
+      });
+
+      // Glowing splint / iron wire / copper oxide boat inside jar
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(jx, jy - 105);
+      ctx.lineTo(jx, jy + 18);
+      ctx.stroke();
+
+      if (ignited) {
+        const pulse = 1 + Math.sin(t * 14) * 0.14;
+        const rFlame = 18 * flamePower * pulse;
+        ctx.fillStyle = fuelId === 3 ? 'rgba(56, 189, 248, 0.78)' : 'rgba(249, 115, 22, 0.85)';
+        ctx.beginPath();
+        ctx.ellipse(jx, jy + 22, rFlame * 0.7, rFlame * 1.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(jx, jy + 24, rFlame * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (fuelId === 2) {
+          // Bright sparks around burning iron wire
+          for (let i = 0; i < 10; i++) {
+            const ang = t * 5 + i * 0.62;
+            const rad = 14 + ((t * 60 + i * 9) % 36);
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath();
+            ctx.arc(jx + Math.cos(ang) * rad, jy + 22 + Math.sin(ang) * rad, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      } else {
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(jx, jy + 20, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Right info & reaction equation panel
+      const rx = w * 0.56;
+      ctx.strokeStyle = muted;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(rx, cy - 82, w * 0.39, 160);
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 12px sans-serif';
+      const eq =
+        fuelId === 1
+          ? 'C + O₂ —(t°)→ CO₂↑'
+          : fuelId === 2
+          ? '3Fe + 2O₂ —(t°)→ Fe₃O₄'
+          : 'H₂ + CuO —(t°)→ Cu (đỏ) + H₂O';
+      ctx.fillText(`Phương trình: ${eq}`, rx + 14, cy - 48);
+      ctx.fillStyle = ignited ? '#10b981' : '#f43f5e';
+      ctx.fillText(
+        ignited ? (o2Pct > 60 ? 'BÙNG CHÁY MÃNH LIỆT!' : 'Cháy đều trong không khí') : 'Không đủ O₂ hoặc nhiệt độ (<350°C)',
+        rx + 14,
+        cy - 18
+      );
+      ctx.fillStyle = muted;
+      ctx.font = '11.5px sans-serif';
+      ctx.fillText(`Nồng độ O₂ trong bình: ${o2Pct}%`, rx + 14, cy + 16);
+      ctx.fillText(`Nhiệt độ nguồn kích: ${tempC}°C`, rx + 14, cy + 40);
+
+      return {
+        metrics: [
+          { label: 'Nồng độ O₂', value: o2Pct, unit: '%' },
+          { label: 'Hiện tượng cháy', value: ignited ? (o2Pct > 60 ? 'Bùng sáng rực rỡ' : 'Cháy nhẹ') : 'Tắt dần' },
+          { label: 'Sản phẩm phản ứng', value: fuelId === 1 ? 'CO₂ (Oxide)' : fuelId === 2 ? 'Fe₃O₄ (rắn)' : 'Cu + H₂O' }
+        ],
+        statusNote: 'Khí Oxygen (O₂) duy trì sự cháy và sự hô hấp; không khí chỉ chứa ~21% O₂ nên cháy chậm hơn nhiều so với O₂ tinh khiết.'
+      };
+    }
+
+    case 'mass_conservation_2d': {
+      const mReact1 = params.massReactantA ?? 20.8; // e.g. BaCl2 (g)
+      const mReact2 = params.massReactantB ?? 14.2; // e.g. Na2SO4 (g)
+      const closedFlask = (params.isClosedSystem ?? 1) >= 0.5;
+      const reactionDone = (params.reactionProgress ?? 80) >= 40;
+      const gasLoss = !closedFlask && reactionDone ? round(mReact2 * 0.25, 1) : 0;
+      const totalBefore = round(mReact1 + mReact2, 1);
+      const totalAfter = round(totalBefore - gasLoss, 1);
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(
+        closedFlask ? 'Bình kín: Kiểm chứng Định luật Bảo toàn Khối lượng (Σm_đầu = Σm_sau)' : 'Bình hở: Khí thoát ra làm cân nhẹ đi',
+        18,
+        28
+      );
+
+      // Electronic balance pan + scale beam
+      const bx = w * 0.36;
+      const panY = cy + 68;
+      ctx.fillStyle = '#334155';
+      ctx.beginPath();
+      ctx.roundRect(bx - 95, panY + 12, 190, 44, 8);
+      ctx.fill();
+      ctx.fillStyle = '#0ea5e9';
+      ctx.font = 'bold 15px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${(reactionDone ? totalAfter : totalBefore).toFixed(1)} g`, bx, panY + 40);
+
+      // Conical flask on scale
+      ctx.fillStyle = reactionDone ? 'rgba(248, 250, 252, 0.72)' : 'rgba(56, 189, 248, 0.32)';
+      ctx.beginPath();
+      ctx.moveTo(bx - 16, panY - 90);
+      ctx.lineTo(bx + 16, panY - 90);
+      ctx.lineTo(bx + 54, panY + 4);
+      ctx.lineTo(bx - 54, panY + 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+
+      if (closedFlask) {
+        // Rubber stopper sealing the flask
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(bx - 18, panY - 104, 36, 16);
+      } else if (reactionDone) {
+        // Gas bubbles escaping into air
+        for (let i = 0; i < 6; i++) {
+          const gy = panY - 102 - ((t * 50 + i * 16) % 58);
+          const gx = bx + Math.sin(t * 4 + i) * 12;
+          ctx.fillStyle = '#94a3b8';
+          ctx.beginPath();
+          ctx.arc(gx, gy, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Right comparison bar & atom count preservation
+      ctx.textAlign = 'left';
+      const rx = w * 0.6;
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(`Tổng khối lượng trước: ${totalBefore.toFixed(1)} g`, rx, cy - 36);
+      ctx.fillStyle = gasLoss > 0 ? '#f59e0b' : '#10b981';
+      ctx.fillText(`Số chỉ cân sau PƯ: ${totalAfter.toFixed(1)} g`, rx, cy - 10);
+      ctx.fillStyle = muted;
+      ctx.font = '11.5px sans-serif';
+      ctx.fillText('Số nguyên tử mỗi nguyên tố được BẢO TOÀN', rx, cy + 24);
+      ctx.fillText('Chỉ thay đổi liên kết giữa các nguyên tử!', rx, cy + 46);
+
+      return {
+        metrics: [
+          { label: 'Tổng m chất tham gia', value: totalBefore, unit: 'g' },
+          { label: 'Số chỉ cân sau PƯ', value: totalAfter, unit: 'g' },
+          { label: 'Hệ phản ứng', value: closedFlask ? 'Hệ kín (Bảo toàn 100%)' : `Hệ hở (Bay ${gasLoss}g khí)` }
+        ],
+        statusNote: 'Trong mọi phản ứng hóa học, tổng khối lượng các chất sản phẩm luôn bằng tổng khối lượng các chất tham gia phản ứng (ĐLBTKL Lomonosov–Lavoisier).'
+      };
+    }
+
+    case 'solution_solubility_2d': {
+      const soluteG = params.soluteMassG ?? 36;
+      const waterG = params.waterMassG ?? 100;
+      const tempC = params.solutionTempC ?? 25;
+      // Solubility S(g/100g nước) increases with temperature: e.g., KNO3/CuSO4 curve ~ 20 + 0.65 * T
+      const solubilityS = round(20 + 0.65 * tempC, 1);
+      const maxDissolvable = round((solubilityS * waterG) / 100, 1);
+      const dissolvedG = Math.min(soluteG, maxDissolvable);
+      const undissolvedG = round(Math.max(0, soluteG - maxDissolvable), 1);
+      const concPct = round((dissolvedG / (waterG + dissolvedG)) * 100, 1);
+      const stateTxt = undissolvedG > 0.2 ? 'Dung dịch BÃO HÒA (có kết tinh dư)' : soluteG > maxDissolvable * 0.9 ? 'Gần bão hòa' : 'Dung dịch CHƯA BÃO HÒA';
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(`Độ tan S(${tempC}°C) = ${solubilityS} g/100g H₂O · ${stateTxt}`, 18, 28);
+
+      // Beaker with dissolved blue solution + thermometer + excess crystals
+      const bx = w * 0.26;
+      const by = cy - 55;
+      const bw = 136;
+      const bh = 130;
+      const hueAlpha = Math.min(0.85, 0.22 + (concPct / 65) * 0.62);
+      drawStudioGlassVessel(ctx, bx, by, bw, bh, {
+        fillFraction: 0.78,
+        liquidColor: `rgba(14, 165, 233, ${hueAlpha})`,
+        liquidTopColor: 'rgba(186, 230, 253, 0.72)',
+        maxMl: 100,
+        perfMode,
+        dark
+      });
+      drawStudioThermometerProbe(ctx, bx + bw - 22, by - 14, 114, tempC, dark, 0, 100);
+
+      // Moving dissolved solute ions
+      const ionN = Math.min(24, Math.round(dissolvedG / 3));
+      for (let i = 0; i < ionN; i++) {
+        const ix = bx + 16 + ((i * 29 + Math.sin(t * 2 + i) * 18 + 100) % (bw - 32));
+        const iy = by + 40 + ((i * 23 + Math.cos(t * 2.4 + i) * 14 + 80) % (bh - 55));
+        ctx.fillStyle = '#e0f2fe';
+        ctx.beginPath();
+        ctx.arc(ix, iy, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Excess crystal mound at bottom if undissolved > 0
+      if (undissolvedG > 0.2) {
+        const moundH = Math.min(28, 6 + undissolvedG * 0.5);
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.moveTo(bx + 20, by + bh - 3);
+        ctx.lineTo(bx + bw / 2, by + bh - 3 - moundH);
+        ctx.lineTo(bx + bw - 20, by + bh - 3);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Solubility vs Temperature Mini Graph on right
+      const gx = w * 0.58;
+      const gy = cy + 68;
+      const gw = w * 0.36;
+      const gh = 120;
+      ctx.strokeStyle = muted;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(gx, gy - gh);
+      ctx.lineTo(gx, gy);
+      ctx.lineTo(gx + gw, gy);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      for (let tt = 0; tt <= 100; tt += 10) {
+        const sVal = 20 + 0.65 * tt;
+        const px = gx + (tt / 100) * gw;
+        const py = gy - (sVal / 100) * gh;
+        if (tt === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      const curX = gx + (tempC / 100) * gw;
+      const curS = (soluteG / Math.max(1, waterG)) * 100;
+      const curY = Math.max(gy - gh, gy - (curS / 100) * gh);
+      ctx.fillStyle = undissolvedG > 0.2 ? '#f43f5e' : '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(curX, curY, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(`Đường Độ Tan S(t°C) · C% = ${concPct}%`, gx, gy - gh - 10);
+
+      return {
+        metrics: [
+          { label: 'Độ tan cực đại S', value: `${solubilityS} g/100g H₂O` },
+          { label: 'Nồng độ phần trăm C%', value: concPct, unit: '%' },
+          { label: 'Chất rắn kết tinh dư', value: undissolvedG, unit: 'g' }
+        ],
+        statusNote: 'Đa số chất rắn tăng độ tan S khi nhiệt độ tăng; nâng nhiệt độ hoặc thêm nước sẽ hòa tan tiếp phần tinh thể chưa tan.'
       };
     }
 

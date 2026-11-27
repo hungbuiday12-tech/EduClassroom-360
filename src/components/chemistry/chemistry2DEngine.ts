@@ -1,6 +1,18 @@
 import { ChemistrySimType } from '../../types';
 import { PerformanceMode } from '../../context/BackgroundContext';
 import { renderMiddleSchool2DChemSim } from './chemistry2DMiddleSchoolRenderer';
+import {
+  drawStudioFloorReticle,
+  drawStudioGlassVessel,
+  drawStudioIncomingLight,
+  drawStudioLabBackdrop,
+  drawStudioSensorProbe,
+  drawStudioStandAndClamp,
+  drawStudioThermometerProbe,
+  getStudioBenchY,
+  Studio2DDragState,
+  ZERO_STUDIO_DRAG
+} from '../common/studio2DCanvasKit';
 
 export interface ChemSimTelemetry {
   metrics: { label: string; value: number | string; unit?: string }[];
@@ -53,35 +65,6 @@ function drawGlassReflect(
   sheen.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = sheen;
   ctx.fillRect(x + 2, y + 2, wGlass - 4, hGlass - 4);
-  ctx.restore();
-}
-
-function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, dark: boolean, perfMode: PerformanceMode = 'balanced') {
-  ctx.save();
-  ctx.fillStyle = dark ? '#0b1120' : '#f8fafc';
-  ctx.fillRect(0, 0, w, h);
-  if (perfMode !== 'smooth') {
-    const amb = ctx.createRadialGradient(w * 0.5, h * 0.45, 20, w * 0.5, h * 0.45, Math.max(w, h) * 0.65);
-    amb.addColorStop(0, dark ? 'rgba(16,185,129,0.09)' : 'rgba(14,165,233,0.06)');
-    amb.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = amb;
-    ctx.fillRect(0, 0, w, h);
-  }
-  ctx.strokeStyle = dark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.06)';
-  ctx.lineWidth = 1;
-  const step = 32;
-  for (let x = 0; x <= w; x += step) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, h);
-    ctx.stroke();
-  }
-  for (let y = 0; y <= h; y += step) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-    ctx.stroke();
-  }
   ctx.restore();
 }
 
@@ -148,13 +131,38 @@ export function renderChemistry2DSim(
   params: Record<string, number>,
   t: number,
   dark: boolean,
-  perfMode: PerformanceMode = 'balanced'
+  perfMode: PerformanceMode = 'balanced',
+  dragState: Studio2DDragState = ZERO_STUDIO_DRAG
 ): ChemSimTelemetry {
-  drawGrid(ctx, w, h, dark, perfMode);
+  const benchY = drawStudioLabBackdrop(ctx, w, h, dark, perfMode, { subject: 'chemistry' });
+
+  ctx.save();
+  if (dragState.offsetX !== 0 || dragState.offsetY !== 0) {
+    ctx.translate(dragState.offsetX, dragState.offsetY);
+  }
+  const telemetry = renderChemistry2DCore(ctx, w, h, benchY, simType, params, t, dark, perfMode);
+  ctx.restore();
+
+  drawStudioFloorReticle(ctx, w, h, dragState, dark, 'chemistry');
+  drawStudioIncomingLight(ctx, w, h, undefined, dark, perfMode, { subject: 'chemistry', benchY });
+  return telemetry;
+}
+
+function renderChemistry2DCore(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  benchY: number,
+  simType: ChemistrySimType,
+  params: Record<string, number>,
+  t: number,
+  dark: boolean,
+  perfMode: PerformanceMode
+): ChemSimTelemetry {
   const fg = dark ? '#e2e8f0' : '#0f172a';
   const muted = dark ? '#94a3b8' : '#64748b';
   const cx = w * 0.5;
-  const cy = h * 0.52;
+  const cy = Math.min(h * 0.52, benchY - 78);
 
   switch (simType) {
     case 'atomic_orbitals_2d': {
@@ -835,21 +843,27 @@ export function renderChemistry2DSim(
       const curPh = round(calcPh(baseMl), 2);
       const isPink = curPh >= 8.2;
 
-      const fx = w * 0.25;
-      const fy = h * 0.68;
-      ctx.strokeStyle = muted;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(fx - 12, 24, 24, 108);
-      const buretteFill = Math.max(0.1, 1 - baseMl / 50);
-      ctx.fillStyle = 'rgba(56,189,248,0.35)';
-      ctx.fillRect(fx - 10, 26 + (1 - buretteFill) * 102, 20, buretteFill * 102);
+      const fx = w * 0.27;
+      const fy = Math.min(h * 0.68, benchY - 56);
+      drawStudioStandAndClamp(ctx, fx - 54, benchY, Math.max(145, benchY - 30), 66, fx, dark, 'GIÁ KẸP BURET');
 
-      const dropY = 136 + ((t * 95) % 58);
+      drawStudioGlassVessel(ctx, fx - 12, 22, 24, 108, {
+        fillFraction: Math.max(0.12, 1 - baseMl / 50),
+        liquidColor: 'rgba(56,189,248,0.42)',
+        liquidTopColor: 'rgba(186,230,253,0.75)',
+        maxMl: 50,
+        perfMode,
+        dark,
+        rimGlowColor: '#38bdf8'
+      });
+
+      const dropY = 134 + ((t * 95) % Math.max(24, fy - 178));
       ctx.fillStyle = '#38bdf8';
       ctx.beginPath();
       ctx.arc(fx, dropY, 4, 0, Math.PI * 2);
       ctx.fill();
 
+      // Conical Erlenmeyer flask with crisp Fresnel highlight & meniscus
       ctx.beginPath();
       ctx.moveTo(fx - 14, fy - 42);
       ctx.lineTo(fx - 52, fy + 48);
@@ -859,11 +873,29 @@ export function renderChemistry2DSim(
       ctx.fillStyle = isPink
         ? 'rgba(236,72,153,0.48)'
         : curPh > 6.5
-        ? 'rgba(244,114,182,0.22)'
-        : 'rgba(148,163,184,0.16)';
+        ? 'rgba(244,114,182,0.24)'
+        : 'rgba(56,189,248,0.18)';
       ctx.fill();
-      ctx.strokeStyle = fg;
+      if (perfMode === 'ultra') {
+        ctx.save();
+        ctx.shadowColor = isPink ? '#ec4899' : '#38bdf8';
+        ctx.shadowBlur = 10;
+        ctx.strokeStyle = isPink ? '#f472b6' : '#38bdf8';
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.1;
+        ctx.stroke();
+      }
+      ctx.strokeStyle = dark ? '#e0f2fe' : '#0284c7';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.ellipse(fx, fy - 6, 31, 4.5, 0, 0, Math.PI * 2);
       ctx.stroke();
+      drawStudioThermometerProbe(ctx, fx + 36, fy - 48, 86, 25 + Math.max(0, 7 - Math.abs(7 - curPh)) * 1.4, dark, 0, 60);
+
       drawBloomOrb(
         ctx,
         fx,
@@ -1018,14 +1050,18 @@ export function renderChemistry2DSim(
 
       const lx = w * 0.25;
       const rx = w * 0.75;
-      const by = h * 0.56;
+      const by = Math.min(h * 0.56, benchY - 76);
 
       [lx, rx].forEach((bx, idx) => {
-        ctx.fillStyle = idx === 0 ? 'rgba(148,163,184,0.2)' : 'rgba(14,165,233,0.28)';
-        ctx.fillRect(bx - 65, by - 30, 130, 105);
-        ctx.strokeStyle = fg;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(bx - 65, by - 30, 130, 105);
+        drawStudioGlassVessel(ctx, bx - 64, by - 36, 128, 110, {
+          fillFraction: 0.76,
+          liquidColor: idx === 0 ? 'rgba(148,163,184,0.26)' : 'rgba(14,165,233,0.44)',
+          liquidTopColor: idx === 0 ? 'rgba(226,232,240,0.45)' : 'rgba(125,211,252,0.72)',
+          maxMl: 100,
+          perfMode,
+          dark,
+          rimGlowColor: idx === 0 ? '#94a3b8' : '#38bdf8'
+        });
       });
 
       ctx.fillStyle = '#94a3b8';
@@ -1093,12 +1129,14 @@ export function renderChemistry2DSim(
       const mCu = code === 2 ? 0 : round((ne / 2) * 64, 2);
       const gasMol = round(code === 1 ? ne / 4 : ne / 2, 3);
 
-      ctx.fillStyle = code === 2 ? 'rgba(148,163,184,0.18)' : 'rgba(14,165,233,0.28)';
-      ctx.fillRect(cx - 140, cy - 45, 280, 145);
-      drawGlassReflect(ctx, cx - 140, cy - 45, 280, 145, perfMode);
-      ctx.strokeStyle = fg;
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(cx - 140, cy - 45, 280, 145);
+      drawStudioGlassVessel(ctx, cx - 140, cy - 48, 280, 148, {
+        fillFraction: 0.78,
+        liquidColor: code === 2 ? 'rgba(148,163,184,0.24)' : 'rgba(14,165,233,0.36)',
+        liquidTopColor: code === 2 ? 'rgba(226,232,240,0.42)' : 'rgba(125,211,252,0.68)',
+        maxMl: 500,
+        perfMode,
+        dark
+      });
 
       ctx.fillStyle = '#475569';
       ctx.fillRect(cx - 95, cy - 72, 20, 130);
@@ -1153,21 +1191,28 @@ export function renderChemistry2DSim(
         solCode === 3;
       const intensity = reacts ? (5 - metalCode) * conc : 0;
 
-      // Test tube with solution & metal strip
-      ctx.fillStyle = solCode === 2 ? 'rgba(14,165,233,0.34)' : 'rgba(148,163,184,0.18)';
-      ctx.fillRect(cx - 65, cy - 45, 130, 145);
-      ctx.strokeStyle = fg;
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(cx - 65, cy - 55, 130, 155);
+      // Retort stand + Fresnel round-bottom reaction tube + sensor probe
+      drawStudioStandAndClamp(ctx, cx - 88, benchY, Math.max(165, benchY - 58), cy - 32, cx - 44, dark, 'GIÁ KẸP');
+      drawStudioGlassVessel(ctx, cx - 44, cy - 58, 88, 152, {
+        fillFraction: 0.7,
+        liquidColor: solCode === 2 ? 'rgba(14,165,233,0.4)' : 'rgba(56,189,248,0.2)',
+        liquidTopColor: solCode === 2 ? 'rgba(125,211,252,0.72)' : 'rgba(186,230,253,0.52)',
+        maxMl: 40,
+        perfMode,
+        dark,
+        roundBottom: true
+      });
+      drawStudioThermometerProbe(ctx, cx + 22, cy - 72, 118, 25 + intensity * 4.5, dark, 0, 80);
+      drawStudioSensorProbe(ctx, cx + 146, benchY - 62, benchY, 'CẢM BIẾN PHẢN ỨNG', reacts ? '#10b981' : '#f59e0b', dark);
 
       ctx.fillStyle = metalCode === 4 ? '#d97706' : '#94a3b8';
-      ctx.fillRect(cx - 12, cy - 82, 24, 150);
+      ctx.fillRect(cx - 12, cy - 76, 20, 140);
 
       if (reacts) {
         if (solCode === 1) {
           for (let i = 0; i < Math.round(6 + intensity * 3); i++) {
-            const by = cy + 65 - ((t * (35 + intensity * 12) + i * 23) % 105);
-            const bx = cx + Math.sin(t * 5 + i) * 18;
+            const by = cy + 62 - ((t * (35 + intensity * 12) + i * 23) % 102);
+            const bx = cx + Math.sin(t * 5 + i) * 16;
             ctx.fillStyle = '#e2e8f0';
             ctx.beginPath();
             ctx.arc(bx, by, 3, 0, Math.PI * 2);
@@ -1175,7 +1220,7 @@ export function renderChemistry2DSim(
           }
         } else {
           ctx.fillStyle = solCode === 2 ? '#b45309' : '#e2e8f0';
-          ctx.fillRect(cx - 16, cy - 35, 32, 95);
+          ctx.fillRect(cx - 15, cy - 28, 26, 86);
         }
       }
 
@@ -2241,3 +2286,5 @@ export function renderChemistry2DSim(
     }
   }
 }
+
+void getStudioBenchY;

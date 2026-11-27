@@ -82,8 +82,8 @@ export const CHEMISTRY_MS_2006_LESSONS: ChemistryLesson[] = [
     keyFormulas: [
       '\\text{Không khí} \\approx 21\\%\\,\\text{O}_2 + 78\\%\\,\\text{N}_2 + 1\\%\\,\\text{khí khác}'
     ],
-    sim2d: 'states_of_matter_2d',
-    sim3d: 'matter_states_3d',
+    sim2d: 'oxygen_combustion_2d',
+    sim3d: 'combustion_reactor_3d',
     mcq1: {
       source: 'Cầu nối Hóa 2006 · Lớp 6',
       question: 'Trong không khí, chất khí nào duy trì sự sống của con người và sự cháy của bếp than?',
@@ -380,8 +380,8 @@ export const CHEMISTRY_MS_2006_LESSONS: ChemistryLesson[] = [
     keyFormulas: [
       'm_{\\text{chất tham gia}} = m_{\\text{sản phẩm}}'
     ],
-    sim2d: 'reaction_kinetics_2d',
-    sim3d: 'activation_surface_3d',
+    sim2d: 'mass_conservation_2d',
+    sim3d: 'mass_balance_3d',
     mcq1: {
       source: 'SGK Hóa 8 (2006) · Chương II',
       question: 'Đốt cháy hoàn toàn $3{,}1\\text{ g}$ Photpho ($\\text{P}$) trong khí Oxi thu được $7{,}1\\text{ g}$ điphotpho pentaoxit ($\\text{P}_2\\text{O}_5$). Khối lượng khí Oxi đã phản ứng là:',
@@ -482,8 +482,8 @@ export const CHEMISTRY_MS_2006_LESSONS: ChemistryLesson[] = [
       '2\\text{KMnO}_4 \\xrightarrow{t^\\circ} \\text{K}_2\\text{MnO}_4 + \\text{MnO}_2 + \\text{O}_2\\uparrow',
       '2\\text{KClO}_3 \\xrightarrow{t^\\circ, \\text{MnO}_2} 2\\text{KCl} + 3\\text{O}_2\\uparrow'
     ],
-    sim2d: 'states_of_matter_2d',
-    sim3d: 'matter_states_3d',
+    sim2d: 'oxygen_combustion_2d',
+    sim3d: 'combustion_reactor_3d',
     mcq1: {
       source: 'SGK Hóa 8 (2006) · Chương IV',
       question: 'Phản ứng $2\\text{KClO}_3 \\xrightarrow{t^\\circ, \\text{MnO}_2} 2\\text{KCl} + 3\\text{O}_2\\uparrow$ thuộc loại phản ứng nào?',
@@ -595,8 +595,8 @@ export const CHEMISTRY_MS_2006_LESSONS: ChemistryLesson[] = [
       'S = \\frac{m_{\\text{ct}}}{m_{\\text{H}_2\\text{O}}} \\cdot 100; \\quad C\\%_{\\text{bão hòa}} = \\frac{S}{100 + S} \\cdot 100\\%',
       'C\\% = \\frac{m_{\\text{ct}}}{m_{\\text{dd}}} \\cdot 100\\%, \\quad C_M = \\frac{n}{V_{\\text{lít}}}, \\quad C_M = \\frac{10 \\cdot D \\cdot C\\%}{M}'
     ],
-    sim2d: 'qualitative_ion_2d',
-    sim3d: 'titration_bench_3d',
+    sim2d: 'solution_solubility_2d',
+    sim3d: 'solution_mixing_3d',
     mcq1: {
       source: 'SGK Hóa 8 (2006) · Chương VI',
       question: 'Ở $20^\\circ\\text{C}$, hòa tan tối đa $36\\text{ g}$ $\\text{NaCl}$ vào $100\\text{ g}$ nước để được dung dịch bão hòa. Nồng độ phần trăm $C\\%$ của dung dịch bão hòa này là:',

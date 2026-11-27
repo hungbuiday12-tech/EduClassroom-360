@@ -53,7 +53,9 @@ const BIO_2D_TO_3D: Record<BiologySimType, Biology3DMode> = {
   microscope_cell_compare_2d: 'eukaryotic_cell_3d',
   plant_organs_flowering_2d: 'plant_flower_seed_3d',
   vertebrate_taxonomy_2d: 'comparative_hearts_3d',
-  digestion_enzymes_2d: 'digestive_tract_3d'
+  digestion_enzymes_2d: 'digestive_tract_3d',
+  kingdoms_invertebrates_2d: 'invertebrate_biodiversity_3d',
+  human_skeleton_senses_2d: 'skeleton_senses_3d'
 };
 
 const KEYWORD_RULES: {
@@ -63,9 +65,12 @@ const KEYWORD_RULES: {
   label: string;
 }[] = [
   { pattern: /kính hiển vi|nhân sơ|tế bào thực vật|tế bào động vật|bạn đồng hành|vách tế bào/i, sim2d: 'microscope_cell_compare_2d', sim3d: 'eukaryotic_cell_3d', label: 'Kính Hiển Vi & So Sánh Tế Bào Nhân Sơ – Thực Vật – Động Vật' },
-  { pattern: /hoa lưỡng tính|thụ phấn|thụ tinh|nảy mầm|quả và hạt|hạt kín|hạt trần|lông hút rễ|rễ.*thân.*lá/i, sim2d: 'plant_organs_flowering_2d', sim3d: 'plant_flower_seed_3d', label: 'Cơ Quan Thực Vật (Rễ–Thân–Lá) & Hoa – Quả – Hạt' },
-  { pattern: /5 giới|khóa lưỡng phân|đa dạng sinh học|lưỡng cư|bò sát|chân khớp|thân mềm|ruột khoang|tim 2 ngăn|tim 3 ngăn/i, sim2d: 'vertebrate_taxonomy_2d', sim3d: 'comparative_hearts_3d', label: 'Phân Loại 5 Giới, Khóa Lưỡng Phân & Tiến Hóa Động Vật' },
-  { pattern: /tiêu hóa|dạ dày|ruột non|nhung mao|amylase|pepsin|tuyến nước bọt|xương và cơ/i, sim2d: 'digestion_enzymes_2d', sim3d: 'digestive_tract_3d', label: 'Hệ Tiêu Hóa Người, Enzym & Hấp Thụ Ruột Non' },
+  { pattern: /hoa lưỡng tính|thụ phấn|thụ tinh|quả và hạt|hạt kín|hạt trần|lông hút rễ|rễ.*thân.*lá/i, sim2d: 'plant_organs_flowering_2d', sim3d: 'plant_flower_seed_3d', label: 'Cơ Quan Thực Vật (Rễ–Thân–Lá) & Hoa – Quả – Hạt' },
+  { pattern: /nảy mầm|hướng sáng|hướng đất|cảm ứng.*thực vật|sinh trưởng.*hạt/i, sim2d: 'phytohormone_tropism_2d', sim3d: 'plant_tropism_germination_3d', label: 'Nảy Mầm, Tính Hướng Động & Cảm Ứng Thực Vật' },
+  { pattern: /5 giới|khóa lưỡng phân|đa dạng sinh học|chân khớp|thân mềm|ruột khoang|giun đốt|không xương sống|nấm và vi khuẩn/i, sim2d: 'kingdoms_invertebrates_2d', sim3d: 'invertebrate_biodiversity_3d', label: '5 Giới Sinh Vật, Khóa Lưỡng Phân & Động Vật Không Xương Sống' },
+  { pattern: /lưỡng cư|bò sát|tim 2 ngăn|tim 3 ngăn|có xương sống|cá chép|chim bồ câu/i, sim2d: 'vertebrate_taxonomy_2d', sim3d: 'comparative_hearts_3d', label: 'Tiến Hóa Động Vật Có Xương Sống (Cá → Lưỡng cư → Bò sát → Chim → Thú)' },
+  { pattern: /xương|cơ bắp|khớp động|hệ vận động|cận thị|viễn thị|thị giác|mắt người|thính giác|màng nhĩ|ốc tai/i, sim2d: 'human_skeleton_senses_2d', sim3d: 'skeleton_senses_3d', label: 'Hệ Vận Động (Xương–Khớp–Cơ) & Cơ Quan Thụ Cảm (Mắt – Tai)' },
+  { pattern: /tiêu hóa|dạ dày|ruột non|nhung mao|amylase|pepsin|tuyến nước bọt/i, sim2d: 'digestion_enzymes_2d', sim3d: 'digestive_tract_3d', label: 'Hệ Tiêu Hóa Người, Enzym & Hấp Thụ Ruột Non' },
   { pattern: /thẩm thấu|ưu trương|nhược trương|màng sinh chất|vận chuyển/i, sim2d: 'membrane_osmosis_2d', sim3d: 'phospholipid_bilayer_3d', label: 'Màng Sinh chất & Cân bằng Thẩm thấu' },
   { pattern: /tế bào nhân thực|bào quan|golgi|lưới nội chất|tế bào thực vật/i, sim2d: 'cell_organelles_2d', sim3d: 'eukaryotic_cell_3d', label: 'Cấu trúc Tế bào Nhân thực & Bào quan' },
   { pattern: /virus|phage|sinh tan|tiềm tan|capsid/i, sim2d: 'viral_lytic_cycle_2d', sim3d: 'virus_bacteriophage_3d', label: 'Chu trình Nhân lên của Virus & Phage T4' },

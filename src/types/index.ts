@@ -403,7 +403,12 @@ export interface MathLecture {
     | 'conic_ellipse'
     | 'spatial_pyramid'
     | 'geometric_transform'
-    | 'complex_plane';
+    | 'complex_plane'
+    | 'number_fractions_2d'
+    | 'angles_parallel'
+    | 'quadrilaterals_sym'
+    | 'thales_similarity'
+    | 'stat_charts_2d';
   sim3dMode?:
     | 'oxyz_vector'
     | 'sphere_plane'
@@ -417,7 +422,8 @@ export interface MathLecture {
     | 'probability_bell_3d'
     | 'geometric_transform_3d'
     | 'arithmetic_prism_3d'
-    | 'solid_prism_nets_3d';
+    | 'solid_prism_nets_3d'
+    | 'angle_thales_3d';
   defaultGraphConfig?: Partial<FunctionPlotConfig>;
 }
 
@@ -500,7 +506,11 @@ export type PhysicsSimType =
   | 'thermal_expansion_2d'
   | 'plane_mirror_2d'
   | 'simple_machines_2d'
-  | 'fluid_pressure_2d';
+  | 'fluid_pressure_2d'
+  | 'hooke_forces_2d'
+  | 'shadow_eclipse_2d'
+  | 'magnet_compass_2d'
+  | 'heat_transfer_2d';
 
 export type Physics3DMode =
   | 'pendulum_spring'
@@ -569,7 +579,12 @@ export type Physics3DMode =
   | 'thermal_expansion_3d'
   | 'plane_mirror_3d'
   | 'lever_pulley_3d'
-  | 'hydraulic_press_3d';
+  | 'hydraulic_press_3d'
+  | 'hooke_forces_3d'
+  | 'shadow_eclipse_3d'
+  | 'magnet_compass_3d'
+  | 'electromagnet_bell_3d'
+  | 'heat_transfer_3d';
 
 export type PhysicsDomainId =
   | 'mechanics'
@@ -679,7 +694,10 @@ export type ChemistrySimType =
   | 'states_of_matter_2d'
   | 'mixture_separation_2d'
   | 'bohr_shells_2d'
-  | 'acid_base_oxide_2d';
+  | 'acid_base_oxide_2d'
+  | 'oxygen_combustion_2d'
+  | 'mass_conservation_2d'
+  | 'solution_solubility_2d';
 
 export type Chemistry3DMode =
   | 'atomic_orbitals_3d'
@@ -709,7 +727,10 @@ export type Chemistry3DMode =
   | 'matter_states_3d'
   | 'separation_lab_3d'
   | 'ionic_covalent_3d'
-  | 'indicator_bench_3d';
+  | 'indicator_bench_3d'
+  | 'combustion_reactor_3d'
+  | 'mass_balance_3d'
+  | 'solution_mixing_3d';
 
 export type ChemistryDomainId =
   | 'atomic_periodic'
@@ -790,7 +811,9 @@ export type BiologySimType =
   | 'microscope_cell_compare_2d'
   | 'plant_organs_flowering_2d'
   | 'vertebrate_taxonomy_2d'
-  | 'digestion_enzymes_2d';
+  | 'digestion_enzymes_2d'
+  | 'kingdoms_invertebrates_2d'
+  | 'human_skeleton_senses_2d';
 
 export type Biology3DMode =
   | 'eukaryotic_cell_3d'
@@ -817,7 +840,10 @@ export type Biology3DMode =
   // Middle school (Lớp 6-8) 3D biology sims
   | 'plant_flower_seed_3d'
   | 'comparative_hearts_3d'
-  | 'digestive_tract_3d';
+  | 'digestive_tract_3d'
+  | 'invertebrate_biodiversity_3d'
+  | 'plant_tropism_germination_3d'
+  | 'skeleton_senses_3d';
 
 export type BiologyDomainId =
   | 'cell_membrane'

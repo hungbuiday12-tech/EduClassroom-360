@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { SubjectType } from '../types';
 import {
   LayoutDashboard,
@@ -21,8 +22,9 @@ import {
   Flame,
   Layers,
   Cpu,
-  BookOpen,
   ChevronDown,
+  ChevronRight,
+  GraduationCap,
   Crown,
   FlaskConical,
   Dna,
@@ -33,7 +35,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useBackgroundTheme } from '../context/BackgroundContext';
-import { useNavigation } from '../context/NavigationContext';
+import { CatalogGradeFilter, useNavigation } from '../context/NavigationContext';
 import { usePremium } from '../context/PremiumContext';
 import { BrandLogo } from './common/BrandLogo';
 import { getPhysicsSimCounts } from '../data/physicsDomainsData';
@@ -257,6 +259,151 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { location, navigate, requestScrollToReviews, requestScrollToDirectory } = useNavigation();
   const [physicsSimTotal, setPhysicsSimTotal] = useState<number>(() => getPhysicsSimCounts().total);
 
+  const [isGradeFlyoutOpen, setIsGradeFlyoutOpen] = useState<boolean>(false);
+  const [flyoutPos, setFlyoutPos] = useState<{ top: number; left: number }>({ top: 180, left: 282 });
+  const gradeBtnDesktopRef = useRef<HTMLButtonElement | null>(null);
+  const gradeBtnMobileRef = useRef<HTMLButtonElement | null>(null);
+  const gradeFlyoutRef = useRef<HTMLDivElement | null>(null);
+
+  const activeGrade: CatalogGradeFilter = location.catalogGrade || 'all';
+  const activeGradeBadge =
+    activeGrade === 'all' ? '6–12' : activeGrade.replace('Lớp ', 'K');
+
+  const GRADE_OPTIONS: { id: CatalogGradeFilter; labelVi: string; labelEn: string; short: string }[] = [
+    { id: 'all', labelVi: 'Tất cả khối', labelEn: 'All Grades', short: '6–12' },
+    { id: 'Lớp 6', labelVi: 'Khối 6', labelEn: 'Grade 6', short: 'K6' },
+    { id: 'Lớp 7', labelVi: 'Khối 7', labelEn: 'Grade 7', short: 'K7' },
+    { id: 'Lớp 8', labelVi: 'Khối 8', labelEn: 'Grade 8', short: 'K8' },
+    { id: 'Lớp 9', labelVi: 'Khối 9', labelEn: 'Grade 9', short: 'K9' },
+    { id: 'Lớp 10', labelVi: 'Khối 10', labelEn: 'Grade 10', short: 'K10' },
+    { id: 'Lớp 11', labelVi: 'Khối 11', labelEn: 'Grade 11', short: 'K11' },
+    { id: 'Lớp 12', labelVi: 'Khối 12', labelEn: 'Grade 12', short: 'K12' }
+  ];
+
+  const SUBJECT_SHORTCUTS: {
+    id: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs';
+    labelVi: string;
+    labelEn: string;
+    icon: React.ReactNode;
+    accentClass: string;
+  }[] = [
+    {
+      id: 'math',
+      labelVi: 'Toán học',
+      labelEn: 'Math',
+      icon: <Compass className="w-4 h-4 shrink-0" />,
+      accentClass: 'text-sky-600 dark:text-sky-400 border-sky-300/80 dark:border-sky-500/40 bg-sky-50/80 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/55'
+    },
+    {
+      id: 'physics',
+      labelVi: 'Vật lí',
+      labelEn: 'Physics',
+      icon: <Zap className="w-4 h-4 shrink-0" />,
+      accentClass: 'text-amber-700 dark:text-amber-300 border-amber-300/80 dark:border-amber-500/40 bg-amber-50/80 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/55'
+    },
+    {
+      id: 'chemistry',
+      labelVi: 'Hóa học',
+      labelEn: 'Chemistry',
+      icon: <FlaskConical className="w-4 h-4 shrink-0" />,
+      accentClass: 'text-emerald-700 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-500/40 bg-emerald-50/80 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/55'
+    },
+    {
+      id: 'biology',
+      labelVi: 'Sinh học',
+      labelEn: 'Biology',
+      icon: <Dna className="w-4 h-4 shrink-0" />,
+      accentClass: 'text-teal-700 dark:text-teal-300 border-teal-300/80 dark:border-teal-500/40 bg-teal-50/80 dark:bg-teal-950/40 hover:bg-teal-100 dark:hover:bg-teal-900/55'
+    },
+    {
+      id: 'cs',
+      labelVi: 'Tin học & IDE',
+      labelEn: 'CS & IDE',
+      icon: <Code2 className="w-4 h-4 shrink-0" />,
+      accentClass: 'text-indigo-700 dark:text-indigo-300 border-indigo-300/80 dark:border-indigo-500/40 bg-indigo-50/80 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/55'
+    }
+  ];
+
+  const syncFlyoutPos = (btnEl: HTMLButtonElement | null) => {
+    if (!btnEl || typeof window === 'undefined') return;
+    const rect = btnEl.getBoundingClientRect();
+    const panelWidth = 288;
+    const panelHeight = 380;
+    const left = Math.min(rect.right + 10, Math.max(12, window.innerWidth - panelWidth - 12));
+    const top = Math.max(12, Math.min(rect.top - 8, window.innerHeight - panelHeight - 12));
+    setFlyoutPos({ top, left });
+  };
+
+  const openSubjectKeepingGrade = (
+    subId: 'math' | 'physics' | 'chemistry' | 'biology' | 'cs',
+    gradeOverride?: CatalogGradeFilter
+  ) => {
+    const grade = gradeOverride ?? activeGrade;
+    if (subId === 'math') {
+      navigate({
+        subject: 'math',
+        mathTab: 'lectures',
+        mathViewMode: 'catalog',
+        catalogGrade: grade,
+        tutorOpen: false
+      });
+    } else if (subId === 'physics') {
+      navigate({
+        subject: 'physics',
+        physicsView: 'catalog',
+        physicsTab: 'theory',
+        catalogGrade: grade,
+        tutorOpen: false
+      });
+    } else if (subId === 'chemistry') {
+      navigate({
+        subject: 'chemistry',
+        chemistryView: 'catalog',
+        chemistryTab: 'theory',
+        catalogGrade: grade,
+        tutorOpen: false
+      });
+    } else if (subId === 'biology') {
+      navigate({
+        subject: 'biology',
+        biologyView: 'catalog',
+        biologyTab: 'theory',
+        catalogGrade: grade,
+        tutorOpen: false
+      });
+    } else {
+      navigate({
+        subject: 'cs',
+        csViewMode: 'curriculum',
+        csSubView: 'roadmap',
+        csLessonTab: 'lecture',
+        catalogGrade: grade,
+        tutorOpen: false
+      });
+    }
+    onCloseMobile();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleChooseGrade = (gradeId: CatalogGradeFilter) => {
+    if (
+      currentSubject === 'math' ||
+      currentSubject === 'physics' ||
+      currentSubject === 'chemistry' ||
+      currentSubject === 'biology'
+    ) {
+      navigate({
+        catalogGrade: gradeId,
+        ...(currentSubject === 'math' ? { mathViewMode: 'catalog' } : {}),
+        ...(currentSubject === 'physics' ? { physicsView: 'catalog' } : {}),
+        ...(currentSubject === 'chemistry' ? { chemistryView: 'catalog' } : {}),
+        ...(currentSubject === 'biology' ? { biologyView: 'catalog' } : {})
+      });
+    } else {
+      navigate({ catalogGrade: gradeId });
+    }
+  };
+
   const [isSubjectsOpen, setIsSubjectsOpen] = useState<boolean>(
     () =>
       currentSubject === 'math' ||
@@ -278,6 +425,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
     simulations: false,
     sandboxes: false,
   });
+
+  useEffect(() => {
+    if (!isGradeFlyoutOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsGradeFlyoutOpen(false);
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (
+        gradeFlyoutRef.current?.contains(target) ||
+        gradeBtnDesktopRef.current?.contains(target) ||
+        gradeBtnMobileRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setIsGradeFlyoutOpen(false);
+    };
+    const onResize = () => {
+      syncFlyoutPos(mobileOpen ? gradeBtnMobileRef.current : gradeBtnDesktopRef.current);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [isGradeFlyoutOpen, mobileOpen]);
 
   useEffect(() => {
     if (
@@ -762,27 +939,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               )}
 
-              {/* Grouped "Môn học" Folder Button right inside Disciplines & Labs group */}
+              {/* "Chọn khối" Button + Right-Side Grade Selector Popover inside Disciplines & Labs */}
               {group.titleEn === 'Disciplines & Labs' && (
                 <div className="space-y-1.5 pt-0.5">
                   <button
+                    ref={isMobileDrawer ? gradeBtnMobileRef : gradeBtnDesktopRef}
                     type="button"
                     data-ripple="true"
-                    aria-expanded={isSubjectsOpen}
-                    onClick={() => {
-                      if (isRail) {
-                        onToggleCollapse();
-                        setIsSubjectsOpen(true);
-                      } else {
-                        setIsSubjectsOpen((v) => !v);
-                      }
+                    aria-expanded={isGradeFlyoutOpen}
+                    onClick={(e) => {
+                      syncFlyoutPos(e.currentTarget);
+                      setIsGradeFlyoutOpen((v) => !v);
+                      if (!isRail) setIsSubjectsOpen(true);
                     }}
-                    title={isEn ? 'Subjects (Math · Physics · Chemistry · Biology · CS)' : 'Môn học (Toán · Lí · Hóa · Sinh · Tin)'}
+                    title={
+                      isEn
+                        ? 'Choose Grade (Grades 6–12) & Subjects'
+                        : 'Chọn khối lớp (Khối 6–12) & Môn học'
+                    }
                     className={`group cs-deck-btn w-full min-h-[46px] flex items-center ${
                       isRail
                         ? 'justify-center px-2.5 py-3'
                         : 'justify-between gap-2.5 px-3 py-2.5'
                     } rounded text-[13.5px] font-semibold transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                      isGradeFlyoutOpen ||
+                      activeGrade !== 'all' ||
                       currentSubject === 'math' ||
                       currentSubject === 'physics' ||
                       currentSubject === 'chemistry' ||
@@ -793,17 +974,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }`}
                   >
                     <span className="flex items-center gap-2.5 min-w-0">
-                      <BookOpen className="w-5 h-5 shrink-0" />
+                      <GraduationCap className="w-5 h-5 shrink-0" />
                       {!isRail && (
-                        <span className="truncate">{isEn ? 'Subjects (5)' : 'Môn học'}</span>
+                        <span className="truncate">{isEn ? 'Select Grade' : 'Chọn khối'}</span>
                       )}
                     </span>
                     {!isRail && (
                       <span className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[11px] font-mono opacity-80">5</span>
-                        <ChevronDown
+                        <span className="text-[11px] font-mono opacity-90">{activeGradeBadge}</span>
+                        <ChevronRight
                           className={`w-4 h-4 transition-transform duration-150 ${
-                            isSubjectsOpen ? 'rotate-180' : ''
+                            isGradeFlyoutOpen ? 'translate-x-0.5 text-sky-300' : ''
                           }`}
                         />
                       </span>
@@ -872,7 +1053,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             key={subItem.id}
                             type="button"
                             data-ripple="true"
-                            onClick={() => handleSelect(subItem)}
+                            onClick={() =>
+                              openSubjectKeepingGrade(
+                                subItem.id as 'math' | 'physics' | 'chemistry' | 'biology' | 'cs'
+                              )
+                            }
                             className={`group cs-deck-btn w-full min-h-[40px] flex items-center gap-2.5 px-3 py-2 rounded text-[13px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                               subActive ? subItem.activeClass : subItem.idleClass
                             }`}
@@ -1210,6 +1395,92 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </aside>
         </div>
       )}
+
+      {/* Right-Side Grade Selector Flyout Portal (appears directly to the right of "Chọn khối") */}
+      {isGradeFlyoutOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={gradeFlyoutRef}
+            style={{ top: flyoutPos.top, left: flyoutPos.left }}
+            role="dialog"
+            aria-label={isEn ? 'Select Grade & Subject' : 'Chọn khối lớp và môn học'}
+            className="fixed z-[160] w-[288px] rounded-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-2xl shadow-slate-900/20 p-3.5 text-slate-900 dark:text-slate-100"
+          >
+            <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2 min-w-0">
+                <GraduationCap className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
+                <span className="text-[13px] font-bold truncate">
+                  {isEn ? 'Choose Grade (6–12)' : 'Chọn khối lớp (6–12)'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsGradeFlyoutOpen(false)}
+                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                aria-label={isEn ? 'Close grade selector' : 'Đóng bảng chọn khối'}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5 pt-2.5">
+              {GRADE_OPTIONS.map((g) => {
+                const isSelected = activeGrade === g.id;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => {
+                      handleChooseGrade(g.id);
+                      if (
+                        currentSubject !== 'math' &&
+                        currentSubject !== 'physics' &&
+                        currentSubject !== 'chemistry' &&
+                        currentSubject !== 'biology'
+                      ) {
+                        setIsSubjectsOpen(true);
+                      }
+                    }}
+                    className={`px-2.5 py-2 rounded-lg text-[12.5px] font-semibold border transition-all cursor-pointer flex items-center justify-between gap-1 whitespace-nowrap ${
+                      isSelected
+                        ? 'bg-sky-600 border-sky-500 text-white shadow-sm'
+                        : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40'
+                    }`}
+                  >
+                    <span className="truncate">{isEn ? g.labelEn : g.labelVi}</span>
+                    <span className={`text-[10.5px] font-mono shrink-0 ${isSelected ? 'text-sky-100' : 'text-slate-400'}`}>
+                      {g.short}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                {isEn ? 'Open Subject with Selected Grade' : 'Mở nhanh môn học theo khối'}
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {SUBJECT_SHORTCUTS.map((sub) => (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => {
+                      openSubjectKeepingGrade(sub.id);
+                      setIsGradeFlyoutOpen(false);
+                    }}
+                    className={`px-2.5 py-2 rounded-lg border text-[12px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${sub.accentClass}`}
+                  >
+                    {sub.icon}
+                    <span className="truncate">{isEn ? sub.labelEn : sub.labelVi}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </>
   );
 };

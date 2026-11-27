@@ -787,6 +787,439 @@ export function renderMiddleSchool2DPhysicsSim(
       return true;
     }
 
+    // 6. HOOKE FORCES & FRICTION 2D (Lớp 6 & Lớp 8: Lực & Biến dạng lò xo, Trọng lượng vs Khối lượng, Ma sát)
+    case 'hooke_forces_2d': {
+      const massKg = p.massKg ?? 1.5;
+      const springK = p.springK ?? 40;
+      const surfaceMu = p.surfaceMu ?? 0.25;
+      const weightN = massKg * 10;
+      const deltaLCm = (weightN / Math.max(10, springK)) * 100;
+      const fFriction = surfaceMu * weightN;
+
+      pushTelemetry({
+        metric1Label: 'Trọng lượng P = 10·m',
+        metric1Val: `${weightN.toFixed(1)} N`,
+        metric2Label: 'Độ dãn lò xo Δl = P/k',
+        metric2Val: `${deltaLCm.toFixed(1)} cm`,
+        metric3Label: 'Lực ma sát trượt F_ms = μP',
+        metric3Val: `${fFriction.toFixed(2)} N`,
+        note: `Treo ${massKg.toFixed(1)} kg lên lực kế: độ dãn Δl tỉ lệ thuận với trọng lượng P = 10m; lực ma sát phụ thuộc vật liệu bề mặt (μ = ${surfaceMu.toFixed(2)}).`
+      });
+
+      // Left: Hanging Spring Scale (Lực kế)
+      const sx = w * 0.28;
+      const topY = 48;
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(sx - 44, topY - 10, 88, 12);
+
+      const coils = 9;
+      const lenPx = Math.min(130, 42 + deltaLCm * 1.45);
+      const stepY = lenPx / coils;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.moveTo(sx, topY + 2);
+      for (let i = 1; i < coils; i++) {
+        const dx = i % 2 === 0 ? -12 : 12;
+        ctx.lineTo(sx + dx, topY + 2 + i * stepY);
+      }
+      ctx.lineTo(sx, topY + 2 + lenPx);
+      ctx.stroke();
+
+      // Hanging Mass Block + Force Vectors (P down, Fdh up)
+      const boxS = 26 + massKg * 8;
+      const boxY = topY + 6 + lenPx;
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.roundRect(sx - boxS / 2, boxY, boxS, boxS, 6);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${massKg.toFixed(1)}kg`, sx, boxY + boxS / 2 + 4);
+
+      drawVec(ctx, sx, boxY + boxS, sx, boxY + boxS + 34 + weightN * 0.55, '#ef4444', `P=${weightN.toFixed(0)}N`);
+      drawVec(ctx, sx - 16, boxY + 4, sx - 16, boxY - 26 - weightN * 0.45, '#10b981', 'F_đh');
+
+      // Right: Horizontal Pull & Friction Block
+      const rx = w * 0.69;
+      const floorY = h * 0.68;
+      ctx.fillStyle = surfaceMu > 0.35 ? '#92400e' : surfaceMu > 0.15 ? '#64748b' : '#38bdf8';
+      ctx.fillRect(rx - 105, floorY, 210, 12);
+
+      const slideX = rx - 22 + Math.sin(t * 1.6) * 26;
+      ctx.fillStyle = '#6366f1';
+      ctx.beginPath();
+      ctx.roundRect(slideX - 26, floorY - 40, 52, 40, 6);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('Vật trượt', slideX, floorY - 16);
+
+      drawVec(ctx, slideX + 26, floorY - 20, slideX + 68 + fFriction * 2.2, floorY - 20, '#38bdf8', 'F_kéo');
+      drawVec(ctx, slideX - 26, floorY - 12, slideX - 42 - fFriction * 2.2, floorY - 12, '#f43f5e', `F_ms=${fFriction.toFixed(1)}N`);
+
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Lực kế lò xo (Δl = ${deltaLCm.toFixed(1)} cm)`, sx, h - 18);
+      ctx.fillText(`Mặt trượt (μ = ${surfaceMu.toFixed(2)})`, rx, h - 18);
+      return true;
+    }
+
+    // 7. SHADOW & ECLIPSE 2D (Lớp 7 / 2006: Định luật truyền thẳng ánh sáng, Bóng tối – Nửa tối, Nhật – Nguyệt thực)
+    case 'shadow_eclipse_2d': {
+      const srcRadius = p.sourceSize ?? 18;
+      const objDist = p.objectDist ?? 0.46; // 0.3..0.7
+      const occR = p.obstacleRadius ?? 28;
+
+      const lx = w * 0.14;
+      const ly = h * 0.5;
+      const ox = lx + (w * 0.72) * objDist;
+      const oy = ly;
+      const screenX = w * 0.86;
+
+      // Upper and lower rays for umbra (bóng tối) and penumbra (bóng nửa tối)
+      const slopeOuterTop = (oy - occR - (ly + srcRadius)) / (ox - lx);
+      const slopeOuterBot = (oy + occR - (ly - srcRadius)) / (ox - lx);
+      const slopeInnerTop = (oy - occR - (ly - srcRadius)) / (ox - lx);
+      const slopeInnerBot = (oy + occR - (ly + srcRadius)) / (ox - lx);
+
+      const penTopY = (ly + srcRadius) + slopeOuterTop * (screenX - lx);
+      const penBotY = (ly - srcRadius) + slopeOuterBot * (screenX - lx);
+      const umbTopY = (ly - srcRadius) + slopeInnerTop * (screenX - lx);
+      const umbBotY = (ly + srcRadius) + slopeInnerBot * (screenX - lx);
+      const hasUmbra = umbBotY > umbTopY;
+
+      pushTelemetry({
+        metric1Label: 'Kích thước nguồn sáng',
+        metric1Val: srcRadius <= 6 ? 'Nguồn điểm' : `Nguồn rộng (r=${srcRadius}px)`,
+        metric2Label: 'Vùng bóng tối (Umbra)',
+        metric2Val: hasUmbra ? `${Math.round(umbBotY - umbTopY)} px (Tối đen)` : 'Không còn bóng tối!',
+        metric3Label: 'Vùng bóng nửa tối',
+        metric3Val: `${Math.max(0, Math.round(penBotY - penTopY - Math.max(0, umbBotY - umbTopY)))} px`,
+        note: 'Ánh sáng truyền thẳng: nguồn nhỏ tạo bóng tối rõ nét; nguồn rộng tạo cả vùng bóng tối và bóng nửa tối (giải thích Nhật thực toàn phần/một phần).'
+      });
+
+      // Penumbra cone fill
+      ctx.fillStyle = isDark ? 'rgba(250, 204, 21, 0.14)' : 'rgba(250, 204, 21, 0.25)';
+      ctx.beginPath();
+      ctx.moveTo(lx, ly - srcRadius);
+      ctx.lineTo(screenX, 24);
+      ctx.lineTo(screenX, h - 24);
+      ctx.lineTo(lx, ly + srcRadius);
+      ctx.closePath();
+      ctx.fill();
+
+      // Penumbra shadow wedge behind obstacle
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+      ctx.beginPath();
+      ctx.moveTo(ox, oy - occR);
+      ctx.lineTo(screenX, penTopY);
+      ctx.lineTo(screenX, penBotY);
+      ctx.lineTo(ox, oy + occR);
+      ctx.closePath();
+      ctx.fill();
+
+      // Umbra shadow wedge
+      if (hasUmbra) {
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
+        ctx.beginPath();
+        ctx.moveTo(ox, oy - occR);
+        ctx.lineTo(screenX, umbTopY);
+        ctx.lineTo(screenX, umbBotY);
+        ctx.lineTo(ox, oy + occR);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Ray guide lines
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      const rays: [number, number][] = [
+        [ly + srcRadius, penTopY],
+        [ly - srcRadius, penBotY],
+        [ly - srcRadius, umbTopY],
+        [ly + srcRadius, umbBotY]
+      ];
+      rays.forEach(([sy0, ey0]) => {
+        ctx.beginPath();
+        ctx.moveTo(lx, sy0);
+        ctx.lineTo(screenX, ey0);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+
+      // Light source, Obstacle, Screen
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(lx, ly, Math.max(5, srcRadius), 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.arc(ox, oy, occR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = isDark ? '#e2e8f0' : '#334155';
+      ctx.fillRect(screenX, 24, 10, h - 48);
+      if (hasUmbra) {
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(screenX, umbTopY, 10, umbBotY - umbTopY);
+      }
+
+      ctx.fillStyle = txt;
+      ctx.font = 'bold 11.5px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Nguồn sáng', lx, h - 18);
+      ctx.fillText('Vật cản sáng', ox, oy + occR + 20);
+      ctx.fillText('Màn chắn (Bóng)', screenX - 18, h - 18);
+      return true;
+    }
+
+    // 8. MAGNET & COMPASS 2D (Lớp 7 KHTN: Nam châm, Từ phổ, Kim la bàn định hướng N-S)
+    case 'magnet_compass_2d': {
+      const polarity = p.polarityFlip ?? 1; // +1 (N-S) or -1 (S-N)
+      const compassAngleOffset = (p.compassTiltDeg ?? 0) * (Math.PI / 180);
+      const strength = p.fieldStrength ?? 1.0;
+
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+
+      pushTelemetry({
+        metric1Label: 'Cực nam châm (Trái / Phải)',
+        metric1Val: polarity >= 0 ? 'Bắc (N - Đỏ) | Nam (S - Xanh)' : 'Nam (S - Xanh) | Bắc (N - Đỏ)',
+        metric2Label: 'Quy ước đường sức từ',
+        metric2Val: 'Ra Bắc (N) → Vào Nam (S)',
+        metric3Label: 'Cảm ứng từ tương đối',
+        metric3Val: `${strength.toFixed(1)}×`,
+        note: 'Bên ngoài thanh nam châm, đường sức từ đi ra từ cực Bắc (N) và đi vào cực Nam (S); cực Bắc kim la bàn luôn hướng theo chiều đường sức!'
+      });
+
+      // Magnetic field arcs above and below bar magnet
+      const magW = 160;
+      const magH = 42;
+      const loops = [42, 78, 114];
+      ctx.lineWidth = 2.0;
+      loops.forEach((amp, i) => {
+        ctx.strokeStyle = isDark ? `rgba(56, 189, 248, ${0.85 - i * 0.2})` : `rgba(2, 132, 199, ${0.85 - i * 0.2})`;
+        [-1, 1].forEach((side) => {
+          ctx.beginPath();
+          ctx.moveTo(cx - magW * 0.42, cy);
+          ctx.bezierCurveTo(cx - magW * 0.65, cy + side * amp * 1.35, cx + magW * 0.65, cy + side * amp * 1.35, cx + magW * 0.42, cy);
+          ctx.stroke();
+
+          // Field direction arrow at crest
+          const dir = polarity >= 0 ? 1 : -1;
+          const ax = cx;
+          const ay = cy + side * amp * 1.01;
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.moveTo(ax + dir * 7, ay);
+          ctx.lineTo(ax - dir * 5, ay - 5);
+          ctx.lineTo(ax - dir * 5, ay + 5);
+          ctx.closePath();
+          ctx.fill();
+        });
+      });
+
+      // Bar magnet (N red, S blue)
+      const leftColor = polarity >= 0 ? '#ef4444' : '#2563eb';
+      const rightColor = polarity >= 0 ? '#2563eb' : '#ef4444';
+      const leftLabel = polarity >= 0 ? 'N' : 'S';
+      const rightLabel = polarity >= 0 ? 'S' : 'N';
+
+      ctx.fillStyle = leftColor;
+      ctx.fillRect(cx - magW / 2, cy - magH / 2, magW / 2, magH);
+      ctx.fillStyle = rightColor;
+      ctx.fillRect(cx, cy - magH / 2, magW / 2, magH);
+      ctx.strokeStyle = txt;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cx - magW / 2, cy - magH / 2, magW, magH);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(leftLabel, cx - magW / 4, cy + 6);
+      ctx.fillText(rightLabel, cx + magW / 4, cy + 6);
+
+      // 4 test compasses around magnet aligning with field direction
+      const compassSpots: [number, number, number][] = [
+        [cx, cy - 88, polarity >= 0 ? 0 : Math.PI],
+        [cx, cy + 88, polarity >= 0 ? 0 : Math.PI],
+        [cx - 145, cy, polarity >= 0 ? Math.PI : 0],
+        [cx + 145, cy, polarity >= 0 ? Math.PI : 0]
+      ];
+      compassSpots.forEach(([kx, ky, baseAng], idx) => {
+        const ang = baseAng + Math.sin(t * 2 + idx) * 0.04 + compassAngleOffset * 0.25;
+        ctx.save();
+        ctx.translate(kx, ky);
+        ctx.fillStyle = isDark ? '#1e293b' : '#f1f5f9';
+        ctx.strokeStyle = mut;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.rotate(ang);
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(14, 0);
+        ctx.lineTo(0, -4.5);
+        ctx.lineTo(0, 4.5);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.moveTo(-14, 0);
+        ctx.lineTo(0, -4.5);
+        ctx.lineTo(0, 4.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      });
+      return true;
+    }
+
+    // 9. HEAT TRANSFER 2D (Lớp 8: Dẫn nhiệt – Đối lưu – Bức xạ nhiệt)
+    case 'heat_transfer_2d': {
+      const transferMode = Math.max(1, Math.min(3, Math.round(p.transferMode ?? 2)));
+      const heaterPower = p.heaterPower ?? 75;
+      const condMat = p.materialCoeff ?? 1.0;
+
+      const modeName =
+        transferMode === 1
+          ? 'Dẫn nhiệt qua thanh kim loại (Rắn)'
+          : transferMode === 2
+          ? 'Đối lưu dòng chất lỏng / khí'
+          : 'Bức xạ nhiệt qua chân không / không khí';
+
+      pushTelemetry({
+        metric1Label: 'Hình thức truyền nhiệt',
+        metric1Val: modeName,
+        metric2Label: 'Công suất nguồn nhiệt',
+        metric2Val: `${heaterPower}%`,
+        metric3Label: 'Môi trường truyền chủ yếu',
+        metric3Val: transferMode === 1 ? 'Chất rắn (Kim loại tốt)' : transferMode === 2 ? 'Chất lỏng & Chất khí' : 'Cả chân không (Tia nhiệt)',
+        note: 'Dẫn nhiệt xảy ra mạnh nhất ở chất rắn; Đối lưu tạo dòng tuần hoàn nóng lên – lạnh xuống ở lỏng/khí; Bức xạ truyền thẳng dưới dạng tia nhiệt cả trong chân không.'
+      });
+
+      if (transferMode === 1) {
+        // Conduction bar with wax pins dropping one by one
+        const bx = w * 0.2;
+        const bw = w * 0.62;
+        const by = h * 0.45;
+        const grad = ctx.createLinearGradient(bx, by, bx + bw, by);
+        grad.addColorStop(0, '#ef4444');
+        grad.addColorStop(Math.min(1, 0.25 + (heaterPower / 100) * 0.55), '#f59e0b');
+        grad.addColorStop(1, '#64748b');
+        ctx.fillStyle = grad;
+        ctx.fillRect(bx, by, bw, 22);
+        ctx.strokeStyle = txt;
+        ctx.lineWidth = 1.6;
+        ctx.strokeRect(bx, by, bw, 22);
+
+        // Flame under left end
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.ellipse(bx + 14, by + 44, 10, 18 + Math.sin(t * 8) * 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4 wax pins along bar
+        for (let i = 0; i < 4; i++) {
+          const px = bx + bw * (0.28 + i * 0.21);
+          const threshold = (i + 1) * 24;
+          const effHeat = heaterPower * condMat;
+          const dropped = effHeat >= threshold;
+          ctx.fillStyle = dropped ? '#94a3b8' : '#fde047';
+          const pinY = dropped ? by + 68 : by + 22;
+          ctx.fillRect(px - 3, pinY, 6, 20);
+          ctx.fillStyle = txt;
+          ctx.font = 'bold 10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(dropped ? 'Rơi!' : `Đinh ${i + 1}`, px, by - 10);
+        }
+      } else if (transferMode === 2) {
+        // Convection beaker with rotating thermal plumes
+        const bx = w * 0.34;
+        const bw = w * 0.32;
+        const by = h * 0.2;
+        const bh = h * 0.58;
+        ctx.fillStyle = 'rgba(14, 165, 233, 0.24)';
+        ctx.fillRect(bx, by + 20, bw, bh - 20);
+        ctx.strokeStyle = txt;
+        ctx.lineWidth = 2.4;
+        ctx.strokeRect(bx, by, bw, bh);
+
+        // Flame bottom center
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.ellipse(bx + bw / 2, by + bh + 22, 12, 16 + Math.sin(t * 7) * 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rising hot particles (red) in center & sinking cool particles (blue) at sides
+        const count = 14;
+        for (let i = 0; i < count; i++) {
+          const prog = (t * (0.35 + (heaterPower / 100) * 0.6) + i / count) % 1;
+          const loopAng = prog * Math.PI * 2;
+          const side = i % 2 === 0 ? 1 : -1;
+          const px = bx + bw * 0.5 + side * Math.sin(loopAng) * (bw * 0.34);
+          const py = by + bh * 0.54 - Math.cos(loopAng) * (bh * 0.34);
+          ctx.fillStyle = Math.cos(loopAng) > 0 ? '#38bdf8' : '#ef4444';
+          ctx.beginPath();
+          ctx.arc(px, py, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = txt;
+        ctx.font = 'bold 11.5px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Nước nóng nhẹ hơn đi lên ↑ · Nước lạnh nặng hơn chìm xuống ↓', w * 0.5, h - 18);
+      } else {
+        // Radiation lamp heating dark vs silver foil flask across vacuum
+        const sx = w * 0.22;
+        const cy = h * 0.5;
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(sx, cy, 26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = txt;
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Đèn nhiệt (Chân không)', sx, cy + 48);
+
+        // Wavy infrared rays moving rightward
+        for (let r = -1; r <= 1; r++) {
+          ctx.strokeStyle = '#f97316';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let x = sx + 32; x <= w * 0.65; x += 6) {
+            const ry = cy + r * 36 + Math.sin(x * 0.14 - t * 6) * 5;
+            if (x === sx + 32) ctx.moveTo(x, ry);
+            else ctx.lineTo(x, ry);
+          }
+          ctx.stroke();
+        }
+
+        // Matte black flask (absorbs strongly) vs shiny silver flask
+        const fx = w * 0.74;
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(fx - 38, cy - 56, 36, 52);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(fx + 14, cy - 56, 36, 52);
+        ctx.fillStyle = txt;
+        ctx.fillText('Phủ muội đen', fx - 20, cy - 66);
+        ctx.fillText('Sáng bóng', fx + 32, cy - 66);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText(`+${Math.round(heaterPower * 0.55)}°C`, fx - 20, cy + 16);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`+${Math.round(heaterPower * 0.18)}°C`, fx + 32, cy + 16);
+      }
+      return true;
+    }
+
     default:
       return false;
   }

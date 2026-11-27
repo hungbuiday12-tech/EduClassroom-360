@@ -77,7 +77,12 @@ type GeoPreset =
   | 'conic_ellipse'
   | 'spatial_pyramid'
   | 'geometric_transform'
-  | 'complex_plane';
+  | 'complex_plane'
+  | 'number_fractions_2d'
+  | 'angles_parallel'
+  | 'quadrilaterals_sym'
+  | 'thales_similarity'
+  | 'stat_charts_2d';
 type FreeTool =
   | 'select'
   | 'point'
@@ -103,7 +108,12 @@ const VALID_GEO_PRESETS: GeoPreset[] = [
   'conic_ellipse',
   'spatial_pyramid',
   'geometric_transform',
-  'complex_plane'
+  'complex_plane',
+  'number_fractions_2d',
+  'angles_parallel',
+  'quadrilaterals_sym',
+  'thales_similarity',
+  'stat_charts_2d'
 ];
 
 interface GeometryStudioProps {
@@ -259,6 +269,33 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ initialPreset, o
     complex_plane: [
       { id: 'Z1', x: 410, y: 175, label: 'z₁' },
       { id: 'Z2', x: 245, y: 165, label: 'z₂' }
+    ],
+    number_fractions_2d: [
+      { id: 'A', x: 225, y: 120, label: 'x₁' },
+      { id: 'B', x: 375, y: 120, label: 'x₂' },
+      { id: 'P', x: 350, y: 240, label: 'p/q' }
+    ],
+    angles_parallel: [
+      { id: 'P1', x: 240, y: 145, label: 'T₁' },
+      { id: 'P2', x: 375, y: 345, label: 'T₂' }
+    ],
+    quadrilaterals_sym: [
+      { id: 'A', x: 215, y: 150, label: 'A' },
+      { id: 'B', x: 400, y: 150, label: 'B' },
+      { id: 'C', x: 435, y: 330, label: 'C' },
+      { id: 'D', x: 185, y: 330, label: 'D' }
+    ],
+    thales_similarity: [
+      { id: 'A', x: 310, y: 95, label: 'A' },
+      { id: 'B', x: 155, y: 355, label: 'B' },
+      { id: 'C', x: 475, y: 355, label: 'C' },
+      { id: 'M', x: 240, y: 212, label: 'M' }
+    ],
+    stat_charts_2d: [
+      { id: 'H1', x: 175, y: 170, label: 'C₁' },
+      { id: 'H2', x: 265, y: 220, label: 'C₂' },
+      { id: 'H3', x: 355, y: 140, label: 'C₃' },
+      { id: 'H4', x: 445, y: 245, label: 'C₄' }
     ]
   });
 
@@ -1798,6 +1835,285 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ initialPreset, o
           14,
           24
         );
+      } else if (activePreset === 'number_fractions_2d') {
+        const pA = activePts.find((p) => p.id === 'A') || { x: 225, y: 120 };
+        const pB = activePts.find((p) => p.id === 'B') || { x: 375, y: 120 };
+        const pP = activePts.find((p) => p.id === 'P') || { x: 350, y: 240 };
+
+        const trackLeft = 75;
+        const trackRight = Math.max(trackLeft + 260, rect.width - 75);
+        const lineY = 120;
+        const tickW = (trackRight - trackLeft) / 12; // -6 .. +6
+        const originX = trackLeft + 6 * tickW;
+
+        ctx.strokeStyle = isDark ? '#94a3b8' : '#334155';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(trackLeft - 15, lineY);
+        ctx.lineTo(trackRight + 15, lineY);
+        ctx.stroke();
+
+        for (let i = -6; i <= 6; i++) {
+          const tx = originX + i * tickW;
+          ctx.strokeStyle = i === 0 ? '#f59e0b' : '#64748b';
+          ctx.lineWidth = i === 0 ? 2.6 : 1.3;
+          ctx.beginPath();
+          ctx.moveTo(tx, lineY - 7);
+          ctx.lineTo(tx, lineY + 7);
+          ctx.stroke();
+          ctx.fillStyle = i === 0 ? '#f59e0b' : (isDark ? '#cbd5e1' : '#334155');
+          ctx.font = 'bold 11px "JetBrains Mono", monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(String(i), tx, lineY + 22);
+        }
+
+        const v1 = Math.round(((pA.x - originX) / tickW) * 2) / 2;
+        const v2 = Math.round(((pB.x - originX) / tickW) * 2) / 2;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(originX, lineY - 8);
+        ctx.quadraticCurveTo((originX + pA.x) / 2, lineY - 46, pA.x, lineY - 8);
+        ctx.stroke();
+        ctx.strokeStyle = '#10b981';
+        ctx.beginPath();
+        ctx.moveTo(pA.x, lineY - 8);
+        ctx.quadraticCurveTo((pA.x + pB.x) / 2, lineY - 52, pB.x, lineY - 8);
+        ctx.stroke();
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+        ctx.font = 'bold 12px "JetBrains Mono", monospace';
+        ctx.fillText(`Trục số nguyên & Hữu tỉ: x₁ = ${v1.toFixed(1)} · x₂ = ${v2.toFixed(1)} · Khoảng cách |x₂ − x₁| = ${Math.abs(v2 - v1).toFixed(1)}`, 18, 32);
+
+        // Lower visual fraction bar (denominator = 8)
+        const denom = 8;
+        const fracNorm = Math.max(0.125, Math.min(1, (pP.x - trackLeft) / (trackRight - trackLeft)));
+        const numer = Math.max(1, Math.min(denom, Math.round(fracNorm * denom)));
+        const barY = 235;
+        const barW = trackRight - trackLeft;
+        const cellW = barW / denom;
+        for (let i = 0; i < denom; i++) {
+          ctx.fillStyle = i < numer ? 'rgba(16, 185, 129, 0.72)' : 'rgba(100, 116, 139, 0.22)';
+          ctx.fillRect(trackLeft + i * cellW + 2, barY, cellW - 4, 42);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.4;
+          ctx.strokeRect(trackLeft + i * cellW + 2, barY, cellW - 4, 42);
+        }
+        const pct = ((numer / denom) * 100).toFixed(1);
+        ctx.fillStyle = isDark ? '#6ee7b7' : '#047857';
+        ctx.font = 'bold 12.5px "JetBrains Mono", monospace';
+        ctx.fillText(`Phân số trực quan: ${numer}/${denom} = ${(numer / denom).toFixed(3)} = ${pct}%  (Quy đồng ×3 = ${numer * 3}/${denom * 3})`, trackLeft, barY + 68);
+      } else if (activePreset === 'angles_parallel') {
+        const p1 = activePts.find((p) => p.id === 'P1') || { x: 240, y: 145 };
+        const p2 = activePts.find((p) => p.id === 'P2') || { x: 375, y: 345 };
+        const yTop = 145;
+        const yBot = 305;
+        const leftX = 45;
+        const rightX = Math.max(420, rect.width - 45);
+
+        // Two parallel lines a // b
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.8;
+        [yTop, yBot].forEach((yy, idx) => {
+          ctx.beginPath();
+          ctx.moveTo(leftX, yy);
+          ctx.lineTo(rightX, yy);
+          ctx.stroke();
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 12px "JetBrains Mono", monospace';
+          ctx.fillText(idx === 0 ? 'đường thẳng a' : 'đường thẳng b (a // b)', leftX + 6, yy - 10);
+        });
+
+        // Transversal line passing through p1 and p2
+        const dx = p2.x - p1.x;
+        const dy = Math.abs(p2.y - p1.y) < 35 ? 160 : p2.y - p1.y;
+        const tTop = (60 - p1.y) / dy;
+        const tBot = (rect.height - 45 - p1.y) / dy;
+        const tx1 = p1.x + dx * tTop;
+        const tx2 = p1.x + dx * tBot;
+
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(tx1, 60);
+        ctx.lineTo(tx2, rect.height - 45);
+        ctx.stroke();
+
+        // Intersection points A (on a) and B (on b)
+        const tA = (yTop - p1.y) / dy;
+        const tB = (yBot - p1.y) / dy;
+        const ax = p1.x + dx * tA;
+        const bx = p1.x + dx * tB;
+
+        const thetaRad = Math.atan2(dy, dx);
+        let acuteDeg = Math.abs((thetaRad * 180) / Math.PI);
+        if (acuteDeg > 90) acuteDeg = 180 - acuteDeg;
+        const obtuseDeg = 180 - acuteDeg;
+
+        // Angle arcs at A and B highlighting alternate interior & corresponding angles
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.38)';
+        ctx.beginPath();
+        ctx.moveTo(ax, yTop);
+        ctx.arc(ax, yTop, 28, 0, Math.atan2(dy, dx), dy < 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.35)';
+        ctx.beginPath();
+        ctx.moveTo(bx, yBot);
+        ctx.arc(bx, yBot, 28, Math.PI, Math.PI + Math.atan2(dy, dx), dy < 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+        ctx.font = 'bold 12px "JetBrains Mono", monospace';
+        ctx.fillText(`So le trong & Đồng vị bằng nhau: α = ${acuteDeg.toFixed(1)}° · Kề bù / Trong cùng phía: β = ${obtuseDeg.toFixed(1)}° (α + β = 180°)`, 18, 28);
+      } else if (activePreset === 'quadrilaterals_sym') {
+        const A = activePts.find((p) => p.id === 'A') || { x: 215, y: 150 };
+        const B = activePts.find((p) => p.id === 'B') || { x: 400, y: 150 };
+        const C = activePts.find((p) => p.id === 'C') || { x: 435, y: 330 };
+        const D = activePts.find((p) => p.id === 'D') || { x: 185, y: 330 };
+
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.14)';
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Diagonals AC & BD
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.stroke();
+        ctx.restore();
+
+        const angA = computeAngleDeg(D, A, B);
+        const angB = computeAngleDeg(A, B, C);
+        const angC = computeAngleDeg(B, C, D);
+        const angD = computeAngleDeg(C, D, A);
+        const sumDeg = angA + angB + angC + angD;
+
+        const lenAB = pxToCm(dist(A, B));
+        const lenBC = pxToCm(dist(B, C));
+        const lenCD = pxToCm(dist(C, D));
+        const lenDA = pxToCm(dist(D, A));
+        const diagAC = pxToCm(dist(A, C));
+        const diagBD = pxToCm(dist(B, D));
+
+        ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+        ctx.font = 'bold 11.5px "JetBrains Mono", monospace';
+        ctx.fillText(`Tổng 4 góc tứ giác: ∠A+∠B+∠C+∠D = ${sumDeg.toFixed(0)}° · Đường chéo AC=${diagAC}cm, BD=${diagBD}cm`, 16, 26);
+        ctx.fillStyle = isDark ? '#93c5fd' : '#1d4ed8';
+        ctx.fillText(`Cạnh: AB=${lenAB} · BC=${lenBC} · CD=${lenCD} · DA=${lenDA} cm`, 16, rect.height - 16);
+      } else if (activePreset === 'thales_similarity') {
+        const A = activePts.find((p) => p.id === 'A') || { x: 310, y: 95 };
+        const B = activePts.find((p) => p.id === 'B') || { x: 155, y: 355 };
+        const C = activePts.find((p) => p.id === 'C') || { x: 475, y: 355 };
+        const M = activePts.find((p) => p.id === 'M') || { x: 240, y: 212 };
+
+        const abLen = Math.max(1, dist(A, B));
+        const ratio = Math.max(0.2, Math.min(0.85, dist(A, M) / abLen));
+        const mx = A.x + (B.x - A.x) * ratio;
+        const my = A.y + (B.y - A.y) * ratio;
+        const nx = A.x + (C.x - A.x) * ratio;
+        const ny = A.y + (C.y - A.y) * ratio;
+
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.1)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Similar triangle AMN highlighted
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2.8;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(mx, my);
+        ctx.lineTo(nx, ny);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(nx, ny, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText('N', nx + 8, ny - 6);
+
+        ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+        ctx.font = 'bold 11.5px "JetBrains Mono", monospace';
+        ctx.fillText(`Định lí Thalès (MN // BC): AM/AB = AN/AC = MN/BC = ${ratio.toFixed(2)} · S(ΔAMN)/S(ΔABC) = k² = ${(ratio * ratio).toFixed(2)}`, 14, 28);
+      } else if (activePreset === 'stat_charts_2d') {
+        const vals = ['H1', 'H2', 'H3', 'H4'].map((id, i) => {
+          const pt = activePts.find((p) => p.id === id);
+          const rawY = pt ? pt.y : 180 + i * 20;
+          return Math.max(10, Math.min(100, Math.round(((350 - rawY) / 260) * 100)));
+        });
+        const total = vals.reduce((s, v) => s + v, 0);
+        const baseY = 345;
+        const cols = ['#38bdf8', '#10b981', '#f59e0b', '#a855f7'];
+        const labels = ['Nhóm A', 'Nhóm B', 'Nhóm C', 'Nhóm D'];
+
+        // Axis
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(110, 85);
+        ctx.lineTo(110, baseY);
+        ctx.lineTo(Math.max(490, rect.width - 170), baseY);
+        ctx.stroke();
+
+        vals.forEach((v, i) => {
+          const x = 150 + i * 90;
+          const bh = (v / 100) * 235;
+          ctx.fillStyle = cols[i];
+          ctx.fillRect(x, baseY - bh, 50, bh);
+          ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+          ctx.font = 'bold 11px "JetBrains Mono", monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${v} (${((v / total) * 100).toFixed(0)}%)`, x + 25, baseY - bh - 10);
+          ctx.fillText(labels[i], x + 25, baseY + 18);
+        });
+
+        // Mini Pie Chart on the right
+        const pieX = Math.max(545, rect.width - 95);
+        const pieY = 210;
+        let ang = -Math.PI / 2;
+        vals.forEach((v, i) => {
+          const span = (v / total) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(pieX, pieY);
+          ctx.arc(pieX, pieY, 64, ang, ang + span);
+          ctx.closePath();
+          ctx.fillStyle = cols[i];
+          ctx.fill();
+          ang += span;
+        });
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = isDark ? '#e2e8f0' : '#0f172a';
+        ctx.font = 'bold 12px "JetBrains Mono", monospace';
+        ctx.fillText(`Thống kê Cột & Quạt tròn · Tổng N = ${total} · Trung bình x̄ = ${(total / 4).toFixed(1)}`, 18, 28);
       }
 
       // Draw vertex handles for 2D presets
@@ -2072,6 +2388,22 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ initialPreset, o
               const b = Math.min(rect.height * 0.28, 115);
               const ang = Math.atan2((my - cy) / b, (mx - cx) / a);
               return { ...p, x: cx + a * Math.cos(ang), y: cy + b * Math.sin(ang) };
+            }
+            if (activePreset === 'number_fractions_2d') {
+              const trackLeft = 75;
+              const trackRight = Math.max(trackLeft + 260, rect.width - 75);
+              const clampedX = Math.max(trackLeft, Math.min(trackRight, mx));
+              return { ...p, x: clampedX, y: p.id === 'P' ? 240 : 120 };
+            }
+            if (activePreset === 'thales_similarity' && p.id === 'M') {
+              const A = curList.find((pt) => pt.id === 'A') || { x: 310, y: 95 };
+              const B = curList.find((pt) => pt.id === 'B') || { x: 155, y: 355 };
+              const ab2 = Math.pow(B.x - A.x, 2) + Math.pow(B.y - A.y, 2);
+              const tProj = ab2 > 1 ? Math.max(0.2, Math.min(0.85, ((mx - A.x) * (B.x - A.x) + (my - A.y) * (B.y - A.y)) / ab2)) : 0.5;
+              return { ...p, x: A.x + (B.x - A.x) * tProj, y: A.y + (B.y - A.y) * tProj };
+            }
+            if (activePreset === 'stat_charts_2d') {
+              return { ...p, x: p.x, y: Math.max(95, Math.min(320, my)) };
             }
             return { ...p, x: mx, y: my };
           }
@@ -2382,6 +2714,11 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ initialPreset, o
             {[
               { id: 'pythagoras' as GeoPreset, label: 'Định lý Pythagoras' },
               { id: 'triangle_explorer' as GeoPreset, label: 'Tam giác & Trọng tâm G' },
+              { id: 'number_fractions_2d' as GeoPreset, label: 'Trục số & Phân số 2D' },
+              { id: 'angles_parallel' as GeoPreset, label: 'Góc & Đường song song' },
+              { id: 'quadrilaterals_sym' as GeoPreset, label: 'Tứ giác & Đối xứng' },
+              { id: 'thales_similarity' as GeoPreset, label: 'Thalès & Đồng dạng' },
+              { id: 'stat_charts_2d' as GeoPreset, label: 'Biểu đồ Thống kê' },
               { id: 'circle_chords_angles' as GeoPreset, label: 'Dây cung & Góc đường tròn' },
               { id: 'circle_tangent' as GeoPreset, label: 'Đường tròn & 2 Tiếp tuyến' },
               { id: 'circle_secant_power' as GeoPreset, label: 'Cát tuyến & Phương tích' },
@@ -2867,6 +3204,61 @@ export const GeometryStudio: React.FC<GeometryStudioProps> = ({ initialPreset, o
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Kéo điểm z₁, z₂ để quan sát quy tắc hình bình hành (z₁+z₂) và phép nhân quay-co giãn (z₁·z₂).
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'number_fractions_2d' && (
+              <div className="space-y-2.5 text-xs">
+                <p className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  Trục Số Nguyên, Số Hữu Tỉ & Phân Số Trực Quan
+                </p>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Kéo hai điểm x₁, x₂ dọc trục số để đo khoảng cách đại số và kéo nút p/q phía dưới để quan sát tỉ lệ phân số, số thập phân và phần trăm.
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'angles_parallel' && (
+              <div className="space-y-2.5 text-xs">
+                <p className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  Góc Đối Đỉnh & Hai Đường Thẳng Song Song (a // b)
+                </p>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Kéo điểm T₁ hoặc T₂ để xoay đường cắt: các cặp góc so le trong và đồng vị luôn bằng nhau, hai góc trong cùng phía luôn bù nhau (180°).
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'quadrilaterals_sym' && (
+              <div className="space-y-2.5 text-xs">
+                <p className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  Tứ Giác Đặc Biệt, Hai Đường Chéo & Tổng 4 Góc (360°)
+                </p>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Kéo 4 đỉnh A, B, C, D để biến đổi qua lại giữa hình thang, hình bình hành, hình chữ nhật, hình thoi và hình vuông.
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'thales_similarity' && (
+              <div className="space-y-2.5 text-xs">
+                <p className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  Định Lí Thalès & Tam Giác Đồng Dạng ΔAMN ∽ ΔABC
+                </p>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Trượt điểm M dọc cạnh AB (với MN // BC) để kiểm nghiệm AM/AB = AN/AC = MN/BC = k và tỉ số diện tích k².
+                </p>
+              </div>
+            )}
+
+            {activePreset === 'stat_charts_2d' && (
+              <div className="space-y-2.5 text-xs">
+                <p className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  Biểu Đồ Cột, Quạt Tròn & Tỉ Lệ Phần Trăm Thống Kê
+                </p>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Kéo đỉnh các cột C₁–C₄ lên xuống để thấy ngay sự thay đổi số liệu, giá trị trung bình và góc cung trên biểu đồ hình quạt tròn.
                 </p>
               </div>
             )}

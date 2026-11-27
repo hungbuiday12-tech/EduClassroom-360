@@ -1438,14 +1438,26 @@ function resolveByStepContent(
     inTitleFirst ? titleNorm.includes(kw) : fullNorm.includes(kw);
 
   // 0. Middle School Grade 6-8 Labs
-  if (has('binh chia do', true) || has('gioi han do', true) || has('do chia nho nhat', true) || has('luc ke', true) || has('nhiet ke', true) || (has('do chieu dai', true) || has('do the tich', true) || has('do khoi luong', true))) {
+  if (has('binh chia do', true) || has('gioi han do', true) || has('do chia nho nhat', true) || has('nhiet ke', true) || (has('do chieu dai', true) || has('do the tich', true) || has('do khoi luong', true))) {
     return { simId: 'measurement_tools_2d', reason: 'Dụng cụ đo thực hành: Thước, Bình chia độ, Lực kế & Nhiệt kế' };
+  }
+  if (has('trong luong', true) || has('luc ke', true) || has('ma sat', true) || has('luc tiep xuc', true) || has('do dan lo xo', true) || (has('bien dang', true) && has('lo xo'))) {
+    return { simId: 'hooke_forces_2d', reason: 'Lực kế lò xo (P = 10m), biến dạng & lực ma sát trượt' };
+  }
+  if (has('truyen thang anh sang', true) || has('bong toi', true) || has('nhat thuc', true) || has('nguyet thuc', true)) {
+    return { simId: 'shadow_eclipse_2d', reason: 'Định luật truyền thẳng ánh sáng, vùng bóng tối & nhật/nguyệt thực' };
+  }
+  if (has('nam cham', true) || has('la ban', true) || has('tu pho', true) || has('tu truong trai dat', true)) {
+    return { simId: 'magnet_compass_2d', reason: 'Nam châm vĩnh cửu, đường sức từ & kim la bàn định hướng' };
+  }
+  if (has('dan nhiet', true) || has('doi luu', true) || has('buc xa nhiet', true) || has('nhiet nang', true)) {
+    return { simId: 'heat_transfer_2d', reason: 'Ba hình thức truyền nhiệt: Dẫn nhiệt, Đối lưu & Bức xạ nhiệt' };
   }
   if (has('no vi nhiet', true) || has('bang kep', true) || has('nhiet giai', true)) {
     return { simId: 'thermal_expansion_2d', reason: 'Sự nở vì nhiệt của Rắn – Lỏng – Khí & Băng kép' };
   }
-  if (has('guong phang', true) || has('phan xa anh sang', true) || has('anh ao qua guong', true) || has('tia toi', true)) {
-    return { simId: 'plane_mirror_2d', reason: 'Phản xạ ánh sáng trên gương phẳng (i\' = i) & Ảnh ảo đối xứng' };
+  if (has('guong phang', true) || has('guong cau', true) || has('phan xa anh sang', true) || has('anh ao qua guong', true) || has('tia toi', true)) {
+    return { simId: 'plane_mirror_2d', reason: 'Phản xạ ánh sáng trên gương (i\' = i) & Ảnh qua gương' };
   }
   if (has('may co don gian', true) || has('rong roc dong', true) || (has('don bay', true) && has('rong roc'))) {
     return { simId: 'simple_machines_2d', reason: 'Máy cơ đơn giản: Đòn bẩy, Ròng rọc động & Mặt phẳng nghiêng' };

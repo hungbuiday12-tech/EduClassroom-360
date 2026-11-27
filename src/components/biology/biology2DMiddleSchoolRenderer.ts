@@ -1,6 +1,11 @@
 import { BiologySimType } from '../../types';
 import { PerformanceMode } from '../../context/BackgroundContext';
 import { BioSimTelemetry } from './biology2DEngine';
+import {
+  drawStudioGlassVessel,
+  drawStudioThermometerProbe,
+  getStudioBenchY
+} from '../common/studio2DCanvasKit';
 
 function round(v: number, d = 2): number {
   const f = Math.pow(10, d);
@@ -15,12 +20,13 @@ export function renderMiddleSchool2DBioSim(
   params: Record<string, number>,
   t: number,
   dark: boolean,
-  _perfMode: PerformanceMode
+  perfMode: PerformanceMode
 ): BioSimTelemetry {
+  const benchY = getStudioBenchY(h, h < 310);
   const fg = dark ? '#e2e8f0' : '#0f172a';
   const muted = dark ? '#94a3b8' : '#64748b';
   const cx = w * 0.5;
-  const cy = h * 0.54;
+  const cy = Math.min(h * 0.52, benchY - 125);
 
   switch (simType) {
     case 'microscope_cell_compare_2d': {
@@ -30,24 +36,35 @@ export function renderMiddleSchool2DBioSim(
       const totalMag = 10 * objX;
       const blur = Math.abs(focus);
 
-      // Left: Optical Microscope schematic
+      // Left: Optical Microscope schematic seated flush on benchY
       const mx = w * 0.22;
-      const baseY = h - 42;
-      ctx.fillStyle = dark ? '#334155' : '#475569';
-      ctx.fillRect(mx - 48, baseY - 14, 96, 14); // Foot
-      // Arm
+      const baseY = benchY - 2;
+      const baseGrad = ctx.createLinearGradient(mx - 48, baseY - 14, mx + 48, baseY);
+      baseGrad.addColorStop(0, '#1e293b');
+      baseGrad.addColorStop(0.5, '#475569');
+      baseGrad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = baseGrad;
+      ctx.beginPath();
+      ctx.roundRect(mx - 48, baseY - 14, 96, 14, [4, 4, 1, 1]);
+      ctx.fill();
+
+      // Brushed metallic arm
       ctx.strokeStyle = dark ? '#94a3b8' : '#475569';
       ctx.lineWidth = 10;
       ctx.beginPath();
       ctx.moveTo(mx - 22, baseY - 14);
-      ctx.quadraticCurveTo(mx - 42, cy, mx - 8, cy - 82);
+      ctx.quadraticCurveTo(mx - 44, cy, mx - 8, cy - 82);
       ctx.stroke();
 
-      // Eyepiece & body tube
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(mx - 14, cy - 118, 28, 42);
+      // Eyepiece & brushed body tube
+      const tubeGrad = ctx.createLinearGradient(mx - 14, 0, mx + 14, 0);
+      tubeGrad.addColorStop(0, '#1e293b');
+      tubeGrad.addColorStop(0.35, '#64748b');
+      tubeGrad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = tubeGrad;
+      ctx.fillRect(mx - 14, cy - 118, 28, 44);
       ctx.fillStyle = '#38bdf8';
-      ctx.fillRect(mx - 11, cy - 124, 22, 8);
+      ctx.fillRect(mx - 11, cy - 124, 22, 7);
 
       // Objective nosepiece highlighting active lens
       const activeIdx = objX <= 10 ? 0 : objX <= 40 ? 1 : 2;
@@ -56,12 +73,16 @@ export function renderMiddleSchool2DBioSim(
         ctx.fillRect(mx + ox - 4, cy - 72, 8, idx === activeIdx ? 26 : 18);
       });
 
-      // Mechanical stage + glass slide + mirror light cone
+      // Mechanical stage + glass slide + illuminated condenser cone
       ctx.fillStyle = '#1e293b';
       ctx.fillRect(mx - 40, cy - 22 - focus * 2, 80, 8);
-      ctx.fillStyle = 'rgba(56,189,248,0.65)';
-      ctx.fillRect(mx - 20, cy - 26 - focus * 2, 40, 4);
-      ctx.fillStyle = 'rgba(250,204,21,0.22)';
+      ctx.fillStyle = 'rgba(56,189,248,0.72)';
+      ctx.fillRect(mx - 22, cy - 26 - focus * 2, 44, 4);
+      const beamAlpha = perfMode === 'ultra' ? 0.34 : perfMode === 'balanced' ? 0.24 : 0.16;
+      const condGrad = ctx.createLinearGradient(mx, baseY - 22, mx, cy - 24);
+      condGrad.addColorStop(0, `rgba(250, 204, 21, ${beamAlpha * 1.2})`);
+      condGrad.addColorStop(1, `rgba(56, 189, 248, ${beamAlpha * 0.45})`);
+      ctx.fillStyle = condGrad;
       ctx.beginPath();
       ctx.moveTo(mx - 14, baseY - 22);
       ctx.lineTo(mx + 14, baseY - 22);
@@ -81,8 +102,8 @@ export function renderMiddleSchool2DBioSim(
 
       // Right: Circular eyepiece FOV showing cell structure
       const vx = w * 0.66;
-      const vy = cy + 4;
-      const vRad = Math.min(w * 0.24, h * 0.34);
+      const vy = cy + 6;
+      const vRad = Math.min(w * 0.24, (benchY - 36) * 0.38);
 
       ctx.save();
       ctx.beginPath();
@@ -584,6 +605,409 @@ export function renderMiddleSchool2DBioSim(
       };
     }
 
+    case 'kingdoms_invertebrates_2d': {
+      const groupId = Math.max(1, Math.min(4, Math.round(params.invertebrateGroup ?? 4)));
+      const viewMode = Math.round(params.viewMode ?? 1);
+      const envMoisture = params.envMoisture ?? 75;
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(
+        viewMode === 2
+          ? 'Hệ thống 5 Giới Sinh vật (Whittaker) & Khóa Lưỡng phân Thực hành'
+          : 'Đa dạng Động vật Không xương sống (Ruột khoang → Giun → Thân mềm → Chân khớp)',
+        18,
+        28
+      );
+
+      if (viewMode === 2) {
+        const kingdoms = [
+          { name: '1. Khởi sinh', sub: 'Vi khuẩn (Nhân sơ)', col: '#f59e0b', x: w * 0.13 },
+          { name: '2. Nguyên sinh', sub: 'Trùng roi, Trùng giày, Tảo', col: '#38bdf8', x: w * 0.31 },
+          { name: '3. Nấm', sub: 'Nấm men, Nấm rơm (Dị dưỡng)', col: '#a855f7', x: w * 0.5 },
+          { name: '4. Thực vật', sub: 'Rêu, Dương xỉ, Hạt trần/kín', col: '#22c55e', x: w * 0.69 },
+          { name: '5. Động vật', sub: 'Không XS & Có xương sống', col: '#ef4444', x: w * 0.87 }
+        ];
+        kingdoms.forEach((k, idx) => {
+          const yBox = cy - 58;
+          ctx.fillStyle = k.col;
+          ctx.beginPath();
+          ctx.roundRect(k.x - 56, yBox, 112, 54, 10);
+          ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 11.5px sans-serif';
+          ctx.fillText(k.name, k.x - 46, yBox + 21);
+          ctx.font = '10px sans-serif';
+          ctx.fillText(k.sub, k.x - 50, yBox + 38);
+          if (idx === groupId || (groupId === 4 && idx === 4)) {
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(k.x - 58, yBox - 2, 116, 58);
+          }
+        });
+
+        // Dichotomous key tree
+        ctx.fillStyle = fg;
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('Khóa Lưỡng phân (Dichotomous Key) phân loại 4 ngành Không xương sống:', 24, cy + 28);
+        ctx.font = '11.5px sans-serif';
+        ctx.fillStyle = groupId === 1 ? '#38bdf8' : muted;
+        ctx.fillText('• Bước 1a: Cơ thể đối xứng tỏa tròn, có tế bào gai (Thủy tức, Sứa, San hô) → Ngành Ruột khoang', 32, cy + 54);
+        ctx.fillStyle = groupId === 2 ? '#f472b6' : muted;
+        ctx.fillText('• Bước 2a: Cơ thể đối xứng hai bên, phân đốt mềm không vỏ đá vôi (Giun đất, Đỉa) → Ngành Giun', 32, cy + 78);
+        ctx.fillStyle = groupId === 3 ? '#f59e0b' : muted;
+        ctx.fillText('• Bước 3a: Thân mềm không phân đốt, có áo tiết vỏ đá vôi (Trai sông, Ốc sên, Mực) → Thân mềm', 32, cy + 102);
+        ctx.fillStyle = groupId === 4 ? '#10b981' : muted;
+        ctx.fillText('• Bước 3b: Có bộ xương ngoài bằng kitin và các chân phân đốt (Tôm, Nhện, Châu chấu) → Chân khớp', 32, cy + 126);
+
+        return {
+          metrics: [
+            { label: 'Hệ thống phân loại', value: '5 Giới Sinh vật (Whittaker)' },
+            { label: 'Thứ tự bậc phân loại', value: 'Loài → Chi → Họ → Bộ → Lớp → Ngành → Giới' },
+            { label: 'Quy tắc tên khoa học', value: 'Tên Chi (viết hoa) + Tên loài (in nghiêng)' }
+          ],
+          statusNote: 'Khóa lưỡng phân luôn chia một tập hợp sinh vật thành 2 nhánh đối lập dựa trên 1 đặc điểm hình thái dễ quan sát.'
+        };
+      }
+
+      const phyla = [
+        { id: 1, title: '1. Ruột khoang', sub: 'Thủy tức, Sứa · Tỏa tròn', x: w * 0.16, col: '#38bdf8' },
+        { id: 2, title: '2. Giun (Đốt/Dẹp/Tròn)', sub: 'Giun đất · Hô hấp qua da', x: w * 0.39, col: '#f472b6' },
+        { id: 3, title: '3. Thân mềm', sub: 'Trai, Ốc, Mực · Vỏ đá vôi', x: w * 0.62, col: '#f59e0b' },
+        { id: 4, title: '4. Chân khớp', sub: 'Tôm, Châu chấu · Vỏ kitin', x: w * 0.85, col: '#10b981' }
+      ];
+
+      phyla.forEach((p) => {
+        const isSel = p.id === groupId;
+        const sc = isSel ? 1.12 : 0.9;
+        ctx.save();
+        ctx.translate(p.x, cy - 10);
+        ctx.scale(sc, sc);
+        if (isSel) {
+          ctx.strokeStyle = '#facc15';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(-62, -66, 124, 128);
+        }
+
+        if (p.id === 1) {
+          // Hydra with swaying tentacles
+          ctx.fillStyle = '#0ea5e9';
+          ctx.beginPath();
+          ctx.roundRect(-14, -18, 28, 64, 10);
+          ctx.fill();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3.5;
+          for (let i = -2; i <= 2; i++) {
+            const sway = Math.sin(t * 3 + i) * 8;
+            ctx.beginPath();
+            ctx.moveTo(i * 4, -18);
+            ctx.quadraticCurveTo(i * 14 + sway, -44, i * 18 + sway, -56);
+            ctx.stroke();
+          }
+        } else if (p.id === 2) {
+          // Segmented earthworm with clitellum
+          for (let s = 0; s < 8; s++) {
+            const sx = -42 + s * 12;
+            const sy = Math.sin(t * 4 + s * 0.7) * 5;
+            ctx.fillStyle = s === 3 || s === 4 ? '#fda4af' : '#ec4899';
+            ctx.beginPath();
+            ctx.arc(sx, sy, s === 3 || s === 4 ? 13 : 10, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (p.id === 3) {
+          // Spiral mollusk shell + soft muscular foot
+          ctx.fillStyle = '#fde68a';
+          ctx.beginPath();
+          ctx.ellipse(0, 22, 42, 14, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#d97706';
+          ctx.beginPath();
+          ctx.arc(-4, -8, 28, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fef3c7';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(-4, -8, 16, 0, Math.PI * 1.6);
+          ctx.stroke();
+        } else {
+          // Arthropod grasshopper/shrimp with jointed legs & exoskeleton
+          ctx.fillStyle = '#10b981';
+          ctx.beginPath();
+          ctx.ellipse(-26, -6, 16, 12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(0, -4, 20, 14, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(28, 0, 22, 10, 0.15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#059669';
+          ctx.lineWidth = 3;
+          [-18, 0, 14].forEach((lx, idx) => {
+            const kick = idx === 2 ? Math.sin(t * 4) * 5 : 0;
+            ctx.beginPath();
+            ctx.moveTo(lx, 6);
+            ctx.lineTo(lx - 8, 28 + kick);
+            ctx.lineTo(lx + 8, 42);
+            ctx.stroke();
+          });
+        }
+        ctx.restore();
+
+        ctx.fillStyle = fg;
+        ctx.font = 'bold 11.5px sans-serif';
+        ctx.fillText(p.title, p.x - 52, cy + 76);
+        ctx.fillStyle = muted;
+        ctx.font = '10px sans-serif';
+        ctx.fillText(p.sub, p.x - 56, cy + 93);
+      });
+
+      const active = phyla[groupId - 1];
+      return {
+        metrics: [
+          { label: 'Ngành đang chọn', value: active.title },
+          { label: 'Đặc trưng cơ bản', value: active.sub },
+          { label: 'Độ ẩm môi trường', value: envMoisture, unit: '%' }
+        ],
+        statusNote:
+          groupId === 1
+            ? 'Ruột khoang có đối xứng tỏa tròn, tế bào gai tự vệ (Thủy tức, Sứa, Hải quỳ, San hô).'
+            : groupId === 2
+            ? 'Giun đất có cơ thể phân đốt, di chuyển bằng hệ cơ thành cơ thể và vòng tơ, giúp làm tơi xốp đất.'
+            : groupId === 3
+            ? 'Thân mềm có thân không phân đốt, khoang áo và thường có vỏ đá vôi bảo vệ (Trai, Ốc, Mực).'
+            : 'Chân khớp chiếm ~80% số loài động vật nhờ bộ xương ngoài kitin và các phần phụ phân đốt linh hoạt.'
+      };
+    }
+
+    case 'human_skeleton_senses_2d': {
+      const mode = Math.max(1, Math.min(3, Math.round(params.organMode ?? 1)));
+      const intensity = params.stimulusLevel ?? 65;
+      const lensBias = params.lensCorrection ?? 0;
+
+      ctx.fillStyle = fg;
+      ctx.font = 'bold 13px sans-serif';
+      const titles = [
+        '1. Hệ Vận Động: Đòn bẩy Xương – Khớp – Cơ Nhị Đầu / Tam Đầu Đối Kháng',
+        '2. Cơ Quan Thị Giác: Điều Tiết Thủy Tinh Thể, Cận Thị & Viễn Thị',
+        '3. Cơ Quan Thính Giác & Cung Phản Xạ: Màng Nhĩ → Xương Con → Ốc Tai'
+      ];
+      ctx.fillText(titles[mode - 1], 18, 28);
+
+      if (mode === 1) {
+        // Upper arm + rotating forearm lever
+        const sx = cx - 95;
+        const sy = cy - 46;
+        const ex = sx;
+        const ey = cy + 44;
+        const flexAng = 0.25 + (intensity / 100) * 1.35; // radians upward from horizontal
+        const len = 140;
+        const hx = ex + Math.cos(-flexAng) * len;
+        const hy = ey + Math.sin(-flexAng) * len;
+
+        // Humerus bone
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 14;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+
+        // Forearm radius/ulna bone
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(hx, hy);
+        ctx.stroke();
+
+        // Joint capsule
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(ex, ey, 11, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Biceps muscle belly (thickens when flexing!)
+        const bicepsThick = 14 + (intensity / 100) * 15;
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.ellipse(sx + 16, (sy + ey) / 2, bicepsThick, 38, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Triceps muscle (relaxes when flexing)
+        const tricepsThick = 24 - (intensity / 100) * 10;
+        ctx.fillStyle = '#fb7185';
+        ctx.beginPath();
+        ctx.ellipse(sx - 16, (sy + ey) / 2, tricepsThick, 38, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Load weight in hand
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(hx, hy, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = fg;
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`Cơ nhị đầu: ${intensity >= 50 ? 'CO rút ngắn' : 'Giãn'}`, sx + 48, cy - 22);
+        ctx.fillText(`Cơ tam đầu: ${intensity >= 50 ? 'GIÃN đối kháng' : 'Co duỗi tay'}`, sx + 48, cy + 2);
+        ctx.fillText('Khớp khuỷu là khớp động (sụn trơn + dịch khớp)', sx + 48, cy + 64);
+
+        return {
+          metrics: [
+            { label: 'Lực co cơ nhị đầu', value: intensity, unit: '%' },
+            { label: 'Góc gấp khuỷu tay', value: round((flexAng * 180) / Math.PI, 0), unit: '°' },
+            { label: 'Loại đòn bẩy sinh học', value: 'Đòn bẩy loại 3 (Linh hoạt tốc độ)' }
+          ],
+          statusNote: 'Cơ nhị đầu co thì cơ tam đầu giãn (cặp cơ đối kháng) kéo xương cẳng tay quay quanh điểm tựa khớp khuỷu.'
+        };
+      }
+
+      if (mode === 2) {
+        // Eyeball cross-section + incoming parallel rays + corrective lens
+        const ex = cx + 45;
+        const ey = cy + 4;
+        const eyeR = 72;
+
+        // Eyeball outer sclera + retina back arc
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(ex, ey, eyeR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(ex, ey, eyeR - 4, -Math.PI * 0.38, Math.PI * 0.38);
+        ctx.stroke();
+
+        // Crystalline lens inside front of eye
+        const lx = ex - 44;
+        ctx.fillStyle = 'rgba(56,189,248,0.6)';
+        ctx.beginPath();
+        ctx.ellipse(lx, ey, 11, 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Optional glasses lens at cx - 105
+        const gx = ex - 110;
+        if (Math.abs(lensBias) >= 1) {
+          ctx.strokeStyle = lensBias < 0 ? '#38bdf8' : '#10b981';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(gx, ey - 38);
+          ctx.quadraticCurveTo(gx + (lensBias < 0 ? 10 : -12), ey, gx, ey + 38);
+          ctx.stroke();
+        }
+
+        // Focal point calculation: stimulusLevel acts as refraction error (50 = normal, >60 = myopia in front of retina, <40 = hyperopia behind)
+        const baseError = (intensity - 50) * 1.1; // + means focus too short (myopia)
+        const netError = baseError + lensBias * 14;
+        const focusX = ex + eyeR - 4 - netError;
+
+        // Light rays
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 2.2;
+        [-24, 24].forEach((ry) => {
+          ctx.beginPath();
+          ctx.moveTo(cx - 210, ey + ry);
+          ctx.lineTo(lx, ey + ry);
+          ctx.lineTo(focusX, ey);
+          ctx.stroke();
+        });
+
+        ctx.fillStyle = Math.abs(netError) <= 8 ? '#22c55e' : '#ef4444';
+        ctx.beginPath();
+        ctx.arc(focusX, ey, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = fg;
+        ctx.font = '12px sans-serif';
+        const defectText =
+          Math.abs(netError) <= 8
+            ? 'Ảnh hội tụ ĐÚNG trên Võng mạc (Điểm vàng) → Nhìn rõ!'
+            : netError > 8
+            ? 'CẬN THỊ: Ảnh hội tụ TRƯỚC võng mạc (Cần kính phân kì -)'
+            : 'VIỄN THỊ: Ảnh hội tụ SAU võng mạc (Cần kính hội tụ +)';
+        ctx.fillText(defectText, 24, h - 28);
+
+        return {
+          metrics: [
+            { label: 'Trạng thái khúc xạ', value: Math.abs(netError) <= 8 ? 'Chuẩn (Chính thị)' : netError > 8 ? 'Cận thị' : 'Viễn thị' },
+            { label: 'Kính điều chỉnh', value: lensBias === 0 ? 'Không đeo kính' : lensBias < 0 ? 'Thấu kính phân kì (-)' : 'Thấu kính hội tụ (+)' },
+            { label: 'Vị trí điểm ảnh', value: round(-netError, 1), unit: 'mm so với võng mạc' }
+          ],
+          statusNote: 'Người cận thị đeo kính phân kì để đẩy ảnh lùi ra đúng võng mạc; người viễn thị đeo kính hội tụ để kéo ảnh về võng mạc.'
+        };
+      }
+
+      // Mode 3: Ear pathway & Acoustic waves
+      const waveAmp = 6 + (intensity / 100) * 20;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      for (let i = 0; i < 3; i++) {
+        const rx = cx - 180 + ((t * 95 + i * 32) % 90);
+        ctx.beginPath();
+        ctx.arc(rx - 20, cy, 18 + i * 8, -0.7, 0.7);
+        ctx.stroke();
+      }
+      // Ear canal + Eardrum
+      const drumX = cx - 65;
+      ctx.strokeStyle = muted;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx - 170, cy - 26);
+      ctx.lineTo(drumX, cy - 18);
+      ctx.moveTo(cx - 170, cy + 26);
+      ctx.lineTo(drumX, cy + 18);
+      ctx.stroke();
+
+      const vib = Math.sin(t * 24) * (waveAmp * 0.25);
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(drumX + vib, cy - 20);
+      ctx.lineTo(drumX - vib, cy + 20);
+      ctx.stroke();
+
+      // Ossicles chain (Malleus - Incus - Stapes)
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(drumX + vib, cy);
+      ctx.lineTo(drumX + 36, cy - 18 + vib * 0.8);
+      ctx.lineTo(drumX + 68, cy - 6);
+      ctx.lineTo(drumX + 95, cy + vib * 0.5);
+      ctx.stroke();
+
+      // Spiral Cochlea
+      const cochX = cx + 82;
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      for (let a = 0; a < Math.PI * 4.5; a += 0.2) {
+        const r = 46 - a * 3;
+        const px = cochX + Math.cos(a) * r;
+        const py = cy + Math.sin(a) * r;
+        if (a === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = fg;
+      ctx.font = '12px sans-serif';
+      ctx.fillText('Màng nhĩ', drumX - 24, cy + 44);
+      ctx.fillText('Chuỗi xương tai (Búa-Đe-Bàn đạp)', drumX + 10, cy - 36);
+      ctx.fillText('Ốc tai (Tế bào thụ cảm âm thanh → Dây thần kinh VIII)', cochX - 75, cy + 72);
+
+      return {
+        metrics: [
+          { label: 'Cường độ âm thanh', value: round(35 + (intensity / 100) * 65, 0), unit: 'dB' },
+          { label: 'Mức an toàn thính giác', value: intensity > 80 ? 'Nguy cơ hại tế bào lông ốc tai!' : 'An toàn (< 85 dB)' },
+          { label: 'Đường truyền âm', value: 'Vành tai → Màng nhĩ → Xương tai → Ốc tai' }
+        ],
+        statusNote: 'Sóng âm làm rung màng nhĩ và chuỗi xương tai khuếch đại dao động truyền vào dịch ốc tai, tạo xung thần kinh lên não.'
+      };
+    }
+
+    case 'digestion_enzymes_2d':
     default: {
       // digestion_enzymes_2d
       const zone = Math.max(1, Math.min(3, Math.round(params.organZone ?? 2)));
@@ -624,12 +1048,23 @@ export function renderMiddleSchool2DBioSim(
       }
       ctx.stroke();
 
-      // Right: Enzyme Zoom Panel
-      const px = w * 0.69;
-      const py = cy + 8;
-      ctx.strokeStyle = muted;
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(w * 0.45, 56, w * 0.5, h - 86);
+      // Right: Enzyme Zoom Reactor Vessel + Thermal Probe (37°C physiological optimum)
+      const px = w * 0.68;
+      const py = cy + 4;
+      const vesselX = w * 0.44;
+      const vesselY = 54;
+      const vesselW = Math.max(190, w * 0.44);
+      const vesselH = Math.max(120, benchY - vesselY - 8);
+      drawStudioGlassVessel(ctx, vesselX, vesselY, vesselW, vesselH, {
+        fillFraction: 0.72,
+        liquidColor: zone === 2 ? 'rgba(244, 63, 94, 0.14)' : zone === 1 ? 'rgba(250, 204, 21, 0.12)' : 'rgba(16, 185, 129, 0.14)',
+        liquidTopColor: zone === 2 ? 'rgba(251, 113, 133, 0.32)' : 'rgba(52, 211, 153, 0.3)',
+        maxMl: 60,
+        perfMode,
+        dark,
+        rimGlowColor: '#38bdf8'
+      });
+      drawStudioThermometerProbe(ctx, vesselX + vesselW + 18, vesselY + 8, vesselH - 16, 37, dark, 0, 80);
 
       const enzRate = chew / 100;
       if (zone === 1) {

@@ -65,6 +65,12 @@ const get3DModeLabel = (mode?: Math3DMode): string => {
       return 'Chuông Phân Phối & Xác Suất 3D';
     case 'geometric_transform_3d':
       return 'Phép Biến Hình & Tọa Độ Không Gian 3D';
+    case 'arithmetic_prism_3d':
+      return 'Khối Lập Phương ƯCLN / BCNN & Tỉ Số 3D';
+    case 'solid_prism_nets_3d':
+      return 'Hình Hộp, Lăng Trụ & Khai Triển Khối 3D';
+    case 'angle_thales_3d':
+      return 'Góc Song Song, Tam Giác & Định Lý Thalès 3D';
     default:
       return 'Hệ Trục Oxyz 3D';
   }

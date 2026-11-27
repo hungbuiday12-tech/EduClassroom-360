@@ -87,6 +87,12 @@ export const SIM_PRESETS: Record<string, SimBinding> = {
   measurement_tools: makePreset('measurement_tools_2d', 'measurement_bench_3d'),
   thermal_expansion: makePreset('thermal_expansion_2d', 'thermal_expansion_3d'),
   plane_mirror: makePreset('plane_mirror_2d', 'plane_mirror_3d'),
+  spherical_mirror: makePreset('plane_mirror_2d', 'curved_mirror_3d'),
   simple_machines: makePreset('simple_machines_2d', 'lever_pulley_3d'),
   fluid_pressure: makePreset('fluid_pressure_2d', 'hydraulic_press_3d'),
+  hooke_forces: makePreset('hooke_forces_2d', 'hooke_forces_3d'),
+  shadow_eclipse: makePreset('shadow_eclipse_2d', 'shadow_eclipse_3d'),
+  magnet_compass: makePreset('magnet_compass_2d', 'magnet_compass_3d'),
+  electromagnet_bell: makePreset('magnet_compass_2d', 'electromagnet_bell_3d'),
+  heat_transfer: makePreset('heat_transfer_2d', 'heat_transfer_3d'),
 };

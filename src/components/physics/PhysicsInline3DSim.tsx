@@ -96,7 +96,16 @@ const STEP_2D_TO_3D_MAP: Partial<Record<AnyStepSimId, Physics3DMode>> = {
   thermal_conduction_bar: 'calorimetry_beaker_3d',
   nuclear_decay: 'nuclear_fission_3d',
   nuclear_fission: 'nuclear_fission_3d',
-  binding_energy_curve: 'tokamak_fusion_3d'
+  binding_energy_curve: 'tokamak_fusion_3d',
+  measurement_tools_2d: 'measurement_bench_3d',
+  thermal_expansion_2d: 'thermal_expansion_3d',
+  plane_mirror_2d: 'plane_mirror_3d',
+  simple_machines_2d: 'lever_pulley_3d',
+  fluid_pressure_2d: 'hydraulic_press_3d',
+  hooke_forces_2d: 'hooke_forces_3d',
+  shadow_eclipse_2d: 'shadow_eclipse_3d',
+  magnet_compass_2d: 'magnet_compass_3d',
+  heat_transfer_2d: 'heat_transfer_3d'
 };
 
 export function resolveStep3DMode(

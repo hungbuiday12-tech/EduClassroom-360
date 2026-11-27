@@ -775,6 +775,46 @@ export const BIOLOGY_2D_SIMS: Biology2DSimSpec[] = [
       { label: '2. Dạ dày (Acid HCl pH 2 + Pepsin)', description: 'Co bóp nhào trộn và phân giải sơ bộ chuỗi Protein', params: { organZone: 2, mealFat: 55, chewingTime: 70 } },
       { label: '3. Ruột non (Dịch mật + Tụy · Lông ruột)', description: 'Tiêu hóa triệt để và hấp thụ dinh dưỡng vào máu', params: { organZone: 3, mealFat: 45, chewingTime: 80 } }
     ]
+  },
+  {
+    id: 'kingdoms_invertebrates_2d',
+    domainId: 'evolution_population',
+    grades: ['Lớp 6', 'Lớp 7'],
+    title: '5 Giới Sinh Vật, Khóa Lưỡng Phân & Động Vật Không Xương Sống',
+    subtitle: 'So sánh 5 giới Whittaker, thực hành khóa lưỡng phân và giải phẫu hình thái Ruột khoang – Giun – Thân mềm – Chân khớp',
+    formula: '\\text{Giới} \\to \\text{Ngành} \\to \\text{Lớp} \\to \\text{Bộ} \\to \\text{Họ} \\to \\text{Chi} \\to \\text{Loài}',
+    linkedLessonId: 'bio-6-b3',
+    defaultParams: { invertebrateGroup: 4, viewMode: 1, envMoisture: 75 },
+    paramBounds: {
+      invertebrateGroup: { min: 1, max: 4, step: 1, unit: '', label: 'Ngành (1:Ruột khoang 2:Giun 3:Thân mềm 4:Chân khớp)' },
+      viewMode: { min: 1, max: 2, step: 1, unit: '', label: 'Chế độ (1:Hình thái 4 Ngành 2:5 Giới & Khóa Lưỡng phân)' },
+      envMoisture: { min: 20, max: 100, step: 10, unit: '%', label: 'Độ ẩm môi trường sống' }
+    },
+    presets: [
+      { label: '5 Giới & Khóa lưỡng phân', description: 'Phân biệt nhanh các ngành theo đặc điểm đối lập', params: { invertebrateGroup: 4, viewMode: 2, envMoisture: 75 } },
+      { label: 'Ngành Chân khớp (Kitin)', description: 'Tôm, Nhện, Châu chấu chiếm 80% số loài động vật', params: { invertebrateGroup: 4, viewMode: 1, envMoisture: 70 } },
+      { label: 'Ngành Giun đất & Ruột khoang', description: 'Quan sát phân đốt, hô hấp qua da và tế bào gai', params: { invertebrateGroup: 2, viewMode: 1, envMoisture: 90 } }
+    ]
+  },
+  {
+    id: 'human_skeleton_senses_2d',
+    domainId: 'physiology_organism',
+    grades: ['Lớp 8'],
+    title: 'Hệ Vận Động (Xương – Khớp – Cơ) & Giác Quan (Mắt – Tai)',
+    subtitle: 'Phân tích đòn bẩy cơ nhị đầu/tam đầu ở tay, tật cận thị/viễn thị của thủy tinh thể và đường truyền âm qua màng nhĩ – ốc tai',
+    formula: '\\text{Cơ co} \\to \\text{Kéo xương quanh khớp} \\quad|\\quad \\text{Cận thị (Kính }-) \\quad \\text{Viễn thị (Kính }+)',
+    linkedLessonId: 'bio-8-b1',
+    defaultParams: { organMode: 1, stimulusLevel: 65, lensCorrection: 0 },
+    paramBounds: {
+      organMode: { min: 1, max: 3, step: 1, unit: '', label: 'Cơ quan (1:Vận động Xương-Cơ 2:Mắt & Tật khúc xạ 3:Tai & Thính giác)' },
+      stimulusLevel: { min: 10, max: 100, step: 5, unit: '%', label: 'Cường độ co cơ / Độ khúc xạ / Âm lượng' },
+      lensCorrection: { min: -3, max: 3, step: 1, unit: 'dp', label: 'Kính điều chỉnh (- Phân kì | + Hội tụ)' }
+    },
+    presets: [
+      { label: '1. Đòn bẩy Cơ nhị đầu – Tam đầu', description: 'Gấp duỗi cẳng tay quanh khớp khuỷu', params: { organMode: 1, stimulusLevel: 75, lensCorrection: 0 } },
+      { label: '2. Tật Cận thị & Đeo kính phân kì', description: 'Sửa ảnh hội tụ trước võng mạc về đúng điểm vàng', params: { organMode: 2, stimulusLevel: 85, lensCorrection: -2 } },
+      { label: '3. Màng nhĩ → Chuỗi xương tai → Ốc tai', description: 'Khuếch đại rung động âm thanh vào dịch ốc tai', params: { organMode: 3, stimulusLevel: 60, lensCorrection: 0 } }
+    ]
   }
 ];
 
@@ -802,5 +842,8 @@ export const BIOLOGY_3D_SIMS: Biology3DSimSpec[] = [
   { id: 'gene_linkage_3d', domainId: 'genetics_molecular', grades: ['Lớp 12'], title: 'Cặp NST Tương Đồng Tiếp Hợp & Hoán Vị Gen Chiasmata Morgan 3D', subtitle: 'Hai crômatit khác nguồn gốc trao đổi chéo đoạn DNA tại điểm bắt chéo tạo giao tử hoán vị AB, ab, Ab, aB', formula: 'f_{\\text{hoán vị}} = \\frac{\\text{Giao tử tái tổ hợp}}{\\text{Tổng giao tử}} \\le 50\\%', linkedLessonId: 'bio-12-4' },
   { id: 'plant_flower_seed_3d', domainId: 'physiology_organism', grades: ['Lớp 6', 'Lớp 7'], title: 'Cấu Tạo Hoa Lưỡng Tính, Thụ Tinh & Tạo Quả – Hạt 3D', subtitle: 'Tách lớp Đài hoa, Tràng cánh hoa, Nhị (bao phấn) và Nhụy (bầu chứa noãn) cùng hạt phấn nảy ống phấn thụ tinh', formula: '\\text{Bầu nhụy} \\to \\text{Quả} \\quad|\\quad \\text{Noãn} \\to \\text{Hạt}', linkedLessonId: 'bio-2006-6-1' },
   { id: 'comparative_hearts_3d', domainId: 'evolution_population', grades: ['Lớp 7', 'Lớp 8'], title: 'Tiến Hóa Tim Động Vật Có Xương Sống (2 → 3 → 4 Ngăn) 3D', subtitle: 'Đặt cạnh nhau để so sánh Tim Cá 2 ngăn, Tim Lưỡng cư 3 ngăn (máu pha) và Tim Chim/Thú 4 ngăn hoàn chỉnh', formula: '\\text{2 ngăn (Cá)} \\to \\text{3 ngăn (Ếch)} \\to \\text{4 ngăn (Chim, Thú)}', linkedLessonId: 'bio-2006-7-1' },
-  { id: 'digestive_tract_3d', domainId: 'physiology_organism', grades: ['Lớp 8'], title: 'Ống Tiêu Hóa Người (Thực Quản – Dạ Dày – Ruột Non & Lông Ruột) 3D', subtitle: 'Quan sát thức ăn đi qua dạ dày co bóp tiết HCl/Pepsin xuống tá tràng nhận dịch mật và hấp thụ ở vi nhung mao ruột non', formula: '\\text{Tinh bột} \\to \\text{Glucozơ} \\quad|\\quad \\text{Protein} \\to \\text{Axit amin}', linkedLessonId: 'bio-8-b1' }
+  { id: 'digestive_tract_3d', domainId: 'physiology_organism', grades: ['Lớp 8'], title: 'Ống Tiêu Hóa Người (Thực Quản – Dạ Dày – Ruột Non & Lông Ruột) 3D', subtitle: 'Quan sát thức ăn đi qua dạ dày co bóp tiết HCl/Pepsin xuống tá tràng nhận dịch mật và hấp thụ ở vi nhung mao ruột non', formula: '\\text{Tinh bột} \\to \\text{Glucozơ} \\quad|\\quad \\text{Protein} \\to \\text{Axit amin}', linkedLessonId: 'bio-8-b1' },
+  { id: 'invertebrate_biodiversity_3d', domainId: 'evolution_population', grades: ['Lớp 6', 'Lớp 7'], title: 'Đa Dạng 4 Ngành Động Vật Không Xương Sống 3D', subtitle: 'Đặt cạnh nhau Thủy tức (Ruột khoang), Giun đất (Giun đốt), Ốc (Thân mềm) và Châu chấu/Tôm (Chân khớp kitin)', formula: '\\text{Ruột khoang} \\to \\text{Giun} \\to \\text{Thân mềm} \\to \\text{Chân khớp}', linkedLessonId: 'bio-6-b3' },
+  { id: 'plant_tropism_germination_3d', domainId: 'physiology_organism', grades: ['Lớp 7'], title: 'Hạt Đậu Nảy Mầm, Hướng Sáng (Auxin) & Hướng Trọng Lực 3D', subtitle: 'Xoay góc chiếu ánh sáng mặt trời và điều chỉnh độ ẩm đất để thấy thân uốn về phía sáng, rễ đâm xuống đất', formula: '\\text{Thân: Hướng sáng (+)} \\quad|\\quad \\text{Rễ: Hướng đất (+)}', linkedLessonId: 'bio-7-b5' },
+  { id: 'skeleton_senses_3d', domainId: 'physiology_organism', grades: ['Lớp 8'], title: 'Đòn Bẩy Xương–Cơ Tay & Điều Tiết Thủy Tinh Thể Mắt 3D', subtitle: 'Mô phỏng đồng thời khớp khuỷu – cơ nhị đầu co rút nâng cẳng tay và mắt người điều chỉnh tiêu điểm về võng mạc', formula: '\\text{Cơ nhị đầu co} \\to \\text{Gấp khuỷu} \\quad|\\quad \\text{Điểm ảnh đúng võng mạc}', linkedLessonId: 'bio-8-b1' }
 ];

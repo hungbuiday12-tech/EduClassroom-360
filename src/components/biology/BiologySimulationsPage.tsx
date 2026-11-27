@@ -27,6 +27,8 @@ import { FormattedText } from '../common/MathRenderer';
 import { useLanguage } from '../../context/LanguageContext';
 import { useNavigation } from '../../context/NavigationContext';
 import { useBackgroundTheme } from '../../context/BackgroundContext';
+import { getStudioDpr } from '../common/studio2DCanvasKit';
+import { useCanvasModelDrag } from '../../hooks/useCanvasModelDrag';
 
 export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { language } = useLanguage();
@@ -118,6 +120,10 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
   const speedRef = useRef(speed);
   speedRef.current = speed;
 
+  const { dragRef, isMoved, resetDrag } = useCanvasModelDrag(canvasRef, {
+    resetKey: `${zone}-${active2DSpec.id}`
+  });
+
   const recorder = useCanvasRecorder(() => canvasRef.current, `bio-hub-${active2DSpec.id}`);
 
   useEffect(() => {
@@ -138,7 +144,7 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
       if (canvas) {
         const rect = canvas.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
-          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const dpr = getStudioDpr(perfModeRef.current);
           if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
             canvas.width = Math.round(rect.width * dpr);
             canvas.height = Math.round(rect.height * dpr);
@@ -156,7 +162,8 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
               paramsRef.current,
               simTimeRef.current,
               dark,
-              perfModeRef.current
+              perfModeRef.current,
+              dragRef.current
             );
             ctx.restore();
             count++;
@@ -391,8 +398,22 @@ export const BiologySimulationsPage: React.FC<{ onBack?: () => void }> = ({ onBa
                 </div>
               </div>
 
-              <div className="p-2.5 bg-slate-950">
-                <canvas ref={canvasRef} className="w-full h-[500px] sm:h-[580px] block rounded-lg" />
+              <div className="relative p-2.5 bg-slate-950">
+                <canvas
+                  ref={canvasRef}
+                  title="Kéo thả mô hình trên sàn • Nhấp đúp để đặt lại"
+                  className="w-full h-[500px] sm:h-[580px] block rounded-lg"
+                />
+                {isMoved && (
+                  <button
+                    type="button"
+                    onClick={resetDrag}
+                    className="absolute bottom-14 left-5 z-20 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900/90 hover:bg-teal-600 border border-teal-500/40 text-[11px] font-semibold text-teal-200 hover:text-white cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Đặt lại vị trí</span>
+                  </button>
+                )}
               </div>
 
               <div className="p-4 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">

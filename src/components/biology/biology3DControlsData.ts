@@ -807,5 +807,98 @@ export const BIOLOGY_3D_CONFIGS: Record<Biology3DMode, Bio3DModeConfig> = {
         metricsSummary: `Zone=${pos.toFixed(1)}, Enz=${p.enzymeAct ?? 80}%`
       };
     }
+  ),
+
+  invertebrate_biodiversity_3d: makeBioCfg(
+    'invertebrate_biodiversity_3d',
+    'Đa Dạng Động Vật Không Xương Sống (4 Ngành Chủ Lực) 3D',
+    'Đối chiếu trực tiếp cấu trúc Thủy tức (Ruột khoang), Giun đất (Giun đốt), Ốc (Thân mềm) và Châu chấu/Tôm (Chân khớp).',
+    '\\text{Ruột khoang} \\to \\text{Giun đốt} \\to \\text{Thân mềm} \\to \\text{Chân khớp (Kitin)}',
+    [
+      { key: 'phylumId', label: 'Ngành chọn (1:Ruột khoang 2:Giun 3:Thân mềm 4:Chân khớp)', unit: '', min: 1, max: 4, step: 1, defaultVal: 4, accentClass: 'accent-emerald-500' },
+      { key: 'moisture', label: 'Độ ẩm sinh cảnh', unit: '%', min: 20, max: 100, step: 10, defaultVal: 75, accentClass: 'accent-sky-500' }
+    ],
+    [
+      { label: '1. Ruột khoang (Thủy tức)', description: 'Đối xứng tỏa tròn, sống bám hoặc bơi bằng tua miệng', params: { phylumId: 1, moisture: 95 }, flags: { showAll: true } },
+      { label: '2. Giun đất (Giun đốt)', description: 'Cơ thể phân đốt đều, hô hấp qua da ẩm', params: { phylumId: 2, moisture: 85 }, flags: { showAll: true } },
+      { label: '4. Chân khớp (Vỏ Kitin)', description: 'Số lượng loài đông đảo nhất nhờ chân khớp linh hoạt', params: { phylumId: 4, moisture: 65 }, flags: { showAll: true } }
+    ],
+    [
+      { id: 'all_toggle', label: 'Hiển thị cả 4 mẫu vật đối chiếu', kind: 'toggle', flagKey: 'showAll', accent: 'teal' },
+      { id: 'reset_bio', label: 'Về mặc định Chân khớp', kind: 'reset', accent: 'rose' }
+    ],
+    { showAll: true },
+    (p) => {
+      const id = Math.round(p.phylumId ?? 4);
+      const names = ['Ruột khoang (Thủy tức, Sứa)', 'Giun đốt (Giun đất, Rươi)', 'Thân mềm (Ốc, Trai, Mực)', 'Chân khớp (Tôm, Nhện, Côn trùng)'];
+      return {
+        equationText: `Ngành đang nổi bật: ${names[id - 1]}`,
+        statusNote: 'Động vật không xương sống đóng vai trò mắt xích thức ăn, thụ phấn và làm tơi xốp đất tự nhiên.',
+        metricsSummary: `Phylum=${id}, Moisture=${p.moisture ?? 75}%`
+      };
+    }
+  ),
+
+  plant_tropism_germination_3d: makeBioCfg(
+    'plant_tropism_germination_3d',
+    'Nảy Mầm, Hướng Sáng (Auxin) & Hướng Trọng Lực 3D',
+    'Xoay góc chiếu mặt trời và độ ẩm đất để thấy thân non hướng về ánh sáng dương còn rễ mầm hướng đất dương.',
+    '\\text{Auxin tích tụ phía tối} \\implies \\text{Thân uốn về sáng} \\quad|\\quad \\text{Rễ đâm xuống đất}',
+    [
+      { key: 'lightAngle', label: 'Góc chiếu ánh sáng mặt trời', unit: '°', min: -65, max: 65, step: 5, defaultVal: 40, accentClass: 'accent-amber-500' },
+      { key: 'moisture', label: 'Độ ẩm đất', unit: '%', min: 10, max: 100, step: 10, defaultVal: 75, accentClass: 'accent-sky-500' }
+    ],
+    [
+      { label: 'Chiếu sáng lệch phải (+50°)', description: 'Thân non uốn cong rõ rệt về phía nguồn sáng', params: { lightAngle: 50, moisture: 80 }, flags: { sprouted: true } },
+      { label: 'Chiếu sáng lệch trái (−50°)', description: 'Ngọn cây đổi hướng ngược lại', params: { lightAngle: -50, moisture: 80 }, flags: { sprouted: true } },
+      { label: 'Đất khô hạn (<30%)', description: 'Thiếu nước làm hạt không thể nảy mầm', params: { lightAngle: 20, moisture: 25 }, flags: { sprouted: false } }
+    ],
+    [
+      { id: 'sprout_toggle', label: 'Kích hoạt / Tạm dừng nảy mầm', kind: 'toggle', flagKey: 'sprouted', accent: 'emerald' },
+      { id: 'reset_bio', label: 'Đặt lại cây non chuẩn', kind: 'reset', accent: 'rose' }
+    ],
+    { sprouted: true },
+    (p, f) => {
+      const ang = p.lightAngle ?? 40;
+      const moist = p.moisture ?? 75;
+      return {
+        equationText:
+          f.sprouted !== false && moist >= 40
+            ? `Độ ẩm ${moist}% · Góc sáng ${ang}° → Thân hướng sáng (+) · Rễ hướng đất (+)`
+            : 'Thiếu độ ẩm (< 40%) → Hạt đang ở trạng thái ngủ nghỉ',
+        statusNote: 'Cảm ứng giúp thực vật hướng tới ánh sáng để quang hợp và rễ tìm nước, muối khoáng trong đất.',
+        metricsSummary: `Angle=${ang}°, Moist=${moist}%`
+      };
+    }
+  ),
+
+  skeleton_senses_3d: makeBioCfg(
+    'skeleton_senses_3d',
+    'Hệ Vận Động (Xương–Cơ Tay) & Điều Tiết Mắt Người 3D',
+    'Gấp cẳng tay để xem cơ nhị đầu co phồng, đồng thời thử điều chỉnh tiêu điểm thủy tinh thể về đúng võng mạc vàng.',
+    '\\text{Cơ nhị đầu co} \\to \\text{Nâng cẳng tay} \\quad|\\quad \\text{Kính } (-) \\text{ sửa Cận thị}',
+    [
+      { key: 'muscleFlex', label: 'Mức co cơ nhị đầu gấp tay', unit: '%', min: 0, max: 100, step: 10, defaultVal: 60, accentClass: 'accent-rose-500' },
+      { key: 'eyeError', label: 'Độ lệch tật khúc xạ mắt (+Cận / -Viễn)', unit: 'dp', min: -5, max: 5, step: 1, defaultVal: 0, accentClass: 'accent-sky-500' }
+    ],
+    [
+      { label: 'Tay gấp + Mắt chính thị', description: 'Ảnh hội tụ chuẩn xanh trên võng mạc', params: { muscleFlex: 80, eyeError: 0 }, flags: { myopiaLens: false } },
+      { label: 'Mắt Cận thị chưa đeo kính', description: 'Tiêu điểm đỏ rơi phía trước võng mạc', params: { muscleFlex: 40, eyeError: 5 }, flags: { myopiaLens: false } },
+      { label: 'Đeo kính phân kì sửa Cận', description: 'Đưa tiêu điểm lùi về đúng võng mạc (xanh)', params: { muscleFlex: 40, eyeError: 5 }, flags: { myopiaLens: true } }
+    ],
+    [
+      { id: 'myopia_lens', label: 'Đeo thấu kính phân kì (−) sửa Cận', kind: 'toggle', flagKey: 'myopiaLens', accent: 'sky' },
+      { id: 'reset_bio', label: 'Về mắt chính thị & tay thư giãn', kind: 'reset', accent: 'rose' }
+    ],
+    { myopiaLens: false },
+    (p, f) => {
+      const flex = p.muscleFlex ?? 60;
+      const err = (p.eyeError ?? 0) + (f.myopiaLens ? -5 : 0);
+      return {
+        equationText: `Co cơ nhị đầu = ${flex}% · Điểm ảnh: ${Math.abs(err) <= 2 ? 'ĐÚNG trên Võng mạc' : err > 2 ? 'TRƯỚC võng mạc (Cận)' : 'SAU võng mạc (Viễn)'}`,
+        statusNote: 'Hệ xương là khung nâng đỡ thụ động; hệ cơ co giãn tạo lực kéo quanh khớp động; mắt điều tiết thủy tinh thể.',
+        metricsSummary: `Flex=${flex}%, Lens=${f.myopiaLens ? 'Concave' : 'None'}`
+      };
+    }
   )
 };

@@ -77,8 +77,8 @@ export const CHEMISTRY_MS_2018_LESSONS: ChemistryLesson[] = [
     keyFormulas: [
       '\\text{Không khí} \\approx 78\\%\\,\\text{N}_2 + 21\\%\\,\\text{O}_2 + 1\\%\\,\\text{khí khác}'
     ],
-    sim2d: 'states_of_matter_2d',
-    sim3d: 'matter_states_3d',
+    sim2d: 'oxygen_combustion_2d',
+    sim3d: 'combustion_reactor_3d',
     mcq1: {
       source: 'KHTN 6 · Không khí',
       question: 'Trong thành phần không khí khô sạch, khí nào chiếm khoảng 78% thể tích?',
@@ -594,8 +594,8 @@ export const CHEMISTRY_MS_2018_LESSONS: ChemistryLesson[] = [
       '\\sum m_{\\text{tham gia}} = \\sum m_{\\text{sản phẩm}}',
       'aA + bB \\longrightarrow cC + dD'
     ],
-    sim2d: 'stoichiometry_gas_2d',
-    sim3d: 'equilibrium_piston_3d',
+    sim2d: 'mass_conservation_2d',
+    sim3d: 'mass_balance_3d',
     mcq1: {
       source: 'KHTN 8 · Bảo toàn khối lượng',
       question: 'Nung nóng hoàn toàn $10\\text{ g}$ đá vôi ($\\text{CaCO}_3$) thu được $5{,}6\\text{ g}$ vôi sống ($\\text{CaO}$) và khí $\\text{CO}_2$ bay ra. Khối lượng khí $\\text{CO}_2$ thu được là:',
@@ -692,8 +692,8 @@ export const CHEMISTRY_MS_2018_LESSONS: ChemistryLesson[] = [
       'C\\% = \\frac{m_{\\text{ct}}}{m_{\\text{dd}}} \\cdot 100\\%, \\quad C_M = \\frac{n}{V_{\\text{lít}}}',
       'm_{\\text{dd}} = m_{\\text{ct}} + m_{\\text{dm}}'
     ],
-    sim2d: 'reaction_kinetics_2d',
-    sim3d: 'activation_surface_3d',
+    sim2d: 'solution_solubility_2d',
+    sim3d: 'solution_mixing_3d',
     mcq1: {
       source: 'KHTN 8 · Dung dịch',
       question: 'Để pha $1000\\text{ g}$ nước muối sinh lí có nồng độ $0{,}9\\%$, cần cân bao nhiêu gam muối ăn nguyên chất hòa tan vào nước?',

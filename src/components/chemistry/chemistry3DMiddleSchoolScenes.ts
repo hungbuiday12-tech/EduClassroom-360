@@ -340,8 +340,7 @@ export function buildMiddleSchool3DChemScene(ctx: MiddleSchoolChem3DContext): Ch
       };
     }
 
-    default: {
-      // indicator_bench_3d
+    case 'indicator_bench_3d': {
       accentPoint.color.setHex(0xf43f5e);
       const beakerGlass = new THREE.Mesh(
         new THREE.CylinderGeometry(1.15, 1.15, 2.2, 32, 1, true),
@@ -411,6 +410,164 @@ export function buildMiddleSchool3DChemScene(ctx: MiddleSchoolChem3DContext): Ch
             0xe2e8f0
           );
         }
+      };
+    }
+
+    case 'combustion_reactor_3d': {
+      accentPoint.color.setHex(0xf97316);
+      const jar = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.15, 1.15, 2.7, 32, 1, true),
+        glassMat(0xbae6fd, 0.3)
+      );
+      jar.position.y = -0.25;
+      registerPart(jar, 'Bình thủy tinh thu khí Oxygen O₂', [0, 0, 0.9], true);
+
+      const ironCoil = new THREE.Mesh(
+        new THREE.TorusKnotGeometry(0.32, 0.06, 48, 8, 2, 3),
+        new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.78, roughness: 0.3 })
+      );
+      ironCoil.position.y = -0.35;
+      registerPart(ironCoil, 'Dây Sắt / Tàn đóm cháy tạo Fe₃O₄', [0, -0.3, 0]);
+
+      const flameMat = new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.85 });
+      const flameCore = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 18), flameMat);
+      flameCore.position.y = -0.35;
+      registerPart(flameCore, 'Ngọn lửa cháy rực trong O₂ tinh khiết', [0, 0.2, 0]);
+
+      addLabel('Đốt Sắt / Than trong O₂ · 3Fe + 2O₂ → Fe₃O₄', [0, 1.55, 0], 0xfdba74);
+      let sparkCd = 0;
+
+      return (t, dt, params, flags) => {
+        const o2 = params.o2Pct ?? 95;
+        const active = flags.ignited !== false;
+        const scale = active ? (0.45 + (o2 / 100) * 0.85) * (1 + Math.sin(t * 14) * 0.1) : 0.01;
+        flameCore.scale.setScalar(scale);
+        flameMat.opacity = active ? 0.82 : 0;
+
+        sparkCd -= dt;
+        if (active && o2 > 35 && sparkCd <= 0) {
+          sparkCd = Math.max(0.04, 0.14 - (o2 / 100) * 0.1);
+          gpuPool.spawn(
+            (Math.random() - 0.5) * 0.3,
+            -0.35,
+            (Math.random() - 0.5) * 0.3,
+            (Math.random() - 0.5) * 2.2,
+            (Math.random() - 0.2) * 2.0,
+            (Math.random() - 0.5) * 2.2,
+            0.55,
+            0.9,
+            0xfde047
+          );
+        }
+      };
+    }
+
+    case 'mass_balance_3d': {
+      accentPoint.color.setHex(0x10b981);
+      const basePillar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.28, 1.4, 20),
+        new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.72, roughness: 0.3 })
+      );
+      basePillar.position.y = -1.0;
+      registerPart(basePillar, 'Trụ cân Roberval chính giữa', [0, -0.7, 0]);
+
+      const beamGroup = new THREE.Group();
+      beamGroup.position.y = -0.35;
+      const beam = new THREE.Mesh(
+        new THREE.BoxGeometry(3.8, 0.12, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.2 })
+      );
+      const panL = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.75, 0.65, 0.08, 24),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.75 })
+      );
+      panL.position.set(-1.6, -0.35, 0);
+      const panR = panL.clone();
+      panR.position.set(1.6, -0.35, 0);
+
+      const flaskL = new THREE.Mesh(
+        new THREE.ConeGeometry(0.55, 1.0, 20),
+        glassMat(0x38bdf8, 0.45)
+      );
+      flaskL.position.set(-1.6, 0.18, 0);
+      const flaskR = new THREE.Mesh(
+        new THREE.ConeGeometry(0.55, 1.0, 20),
+        glassMat(0x34d399, 0.52)
+      );
+      flaskR.position.set(1.6, 0.18, 0);
+      const stopperR = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.13, 0.22, 16),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.45 })
+      );
+      stopperR.position.set(1.6, 0.72, 0);
+
+      beamGroup.add(beam, panL, panR, flaskL, flaskR, stopperR);
+      registerPart(beamGroup, 'Cân đòn kiểm chứng ĐLBTKL (Trước vs Sau PƯ)', [0, 0.3, 0]);
+      addLabel('Σm (Chất tham gia) = Σm (Sản phẩm)', [0, 1.45, 0], 0x6ee7b7);
+
+      let gasCd = 0;
+      return (_t, dt, params, flags) => {
+        const closed = flags.closedSystem !== false;
+        const loss = closed ? 0 : (params.gasEscape ?? 0.22);
+        stopperR.visible = closed;
+        const targetTilt = closed ? 0 : -Math.min(0.28, loss * 0.45);
+        beamGroup.rotation.z = THREE.MathUtils.damp(beamGroup.rotation.z, targetTilt, 6, dt);
+
+        gasCd -= dt;
+        if (!closed && gasCd <= 0) {
+          gasCd = 0.12;
+          gpuPool.spawn(1.6, 0.35, 0, (Math.random() - 0.5) * 0.3, 1.5, 0, 0.9, 1.0, 0xcbd5e1);
+        }
+      };
+    }
+
+    case 'solution_mixing_3d':
+    default: {
+      accentPoint.color.setHex(0x0ea5e9);
+      const beaker = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.25, 1.25, 2.35, 32, 1, true),
+        glassMat(0xe0f2fe, 0.32)
+      );
+      beaker.position.y = -0.35;
+      registerPart(beaker, 'Cốc pha dung dịch & Đun độ tan', [0, 0, 0.9], true);
+
+      const liqMat = new THREE.MeshPhysicalMaterial({
+        color: 0x0284c7,
+        transparent: true,
+        opacity: 0.58,
+        roughness: 0.15
+      });
+      const liq = new THREE.Mesh(new THREE.CylinderGeometry(1.18, 1.18, 1.65, 30), liqMat);
+      liq.position.y = -0.68;
+      registerPart(liq, 'Dung dịch nước muối / CuSO₄', [0, -0.4, 0]);
+
+      const stirBar = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.08, 0.55, 6, 12),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2 })
+      );
+      stirBar.rotation.z = Math.PI / 2;
+      stirBar.position.y = -1.35;
+      dynamicSpinners.push(stirBar);
+      registerPart(stirBar, 'Con từ khuấy hòa tan', [0, -0.8, 0]);
+
+      const crystalMound = new THREE.Mesh(
+        new THREE.ConeGeometry(0.62, 0.42, 16),
+        new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.35 })
+      );
+      crystalMound.position.y = -1.3;
+      registerPart(crystalMound, 'Tinh thể chất tan dư khi bão hòa', [0.3, -0.7, 0]);
+
+      addLabel('Độ tan S(t°C) & Nồng độ C%, C_M', [0, 1.35, 0], 0x7dd3fc);
+
+      return (_t, dt, params) => {
+        const tempC = params.tempC ?? 25;
+        const soluteG = params.soluteG ?? 45;
+        const sMax = 20 + 0.65 * tempC;
+        const excess = Math.max(0, soluteG - sMax);
+        const targetScale = excess > 0.5 ? Math.min(1.4, 0.25 + excess / 30) : 0.01;
+        crystalMound.scale.y = THREE.MathUtils.damp(crystalMound.scale.y, targetScale, 6, dt);
+        crystalMound.visible = excess > 0.5;
+        liqMat.opacity = Math.min(0.84, 0.28 + Math.min(1, soluteG / 80) * 0.52);
       };
     }
   }

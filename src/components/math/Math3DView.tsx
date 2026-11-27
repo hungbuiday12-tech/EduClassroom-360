@@ -59,7 +59,8 @@ export type Math3DMode =
   | 'probability_bell_3d'
   | 'geometric_transform_3d'
   | 'arithmetic_prism_3d'
-  | 'solid_prism_nets_3d';
+  | 'solid_prism_nets_3d'
+  | 'angle_thales_3d';
 
 interface Math3DViewProps {
   initialMode?: Math3DMode;
@@ -157,6 +158,10 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
   // Solid Prism & Pyramid Nets 3D mode (Hình hộp · Lăng trụ · Chóp đều & Khai triển Lớp 7-8)
   const [solidKind, setSolidKind] = useState<'box' | 'prism' | 'pyramid'>('box');
   const [unfoldRatio, setUnfoldRatio] = useState(0.25);
+
+  // Angle & Thales Similarity 3D mode (Góc song song · Tam giác · Định lý Thalès Lớp 7-8)
+  const [thalesRatio3D, setThalesRatio3D] = useState(0.55);
+  const [thalesAngleDeg, setThalesAngleDeg] = useState(58);
 
   // Animation & hardware cutaway state
   const [isAnimating, setIsAnimating] = useState(true);
@@ -2091,8 +2096,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
       outerBox.position.set(0, totalH / 2, 0);
       group.add(outerBox);
 
-      addLabel(`Khối ${gcdA} × ${gcdB} × ${gcdC}`, [0, totalH + 0.75, 0], 0xfde047, 0.3);
-      addLabel(`Xếp khít ${idx} khối cạnh ƯCLN = ${d}`, [0, -0.45, totalD / 2 + 0.6], 0x38bdf8, 0.26);
+      addLabel(`Khối ${gcdA} × ${gcdB} × ${gcdC}`, 0, totalH + 0.75, 0, 0xfde047, 0.3);
+      addLabel(`Xếp khít ${idx} khối cạnh ƯCLN = ${d}`, 0, -0.45, totalD / 2 + 0.6, 0x38bdf8, 0.26);
 
       mathTickRef.current = (_dt, elapsed) => {
         const exp = showCutaway ? cutawayOffset * 1.4 : 0.08 * (0.5 + 0.5 * Math.sin(elapsed * 1.4));
@@ -2171,7 +2176,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
         leftFlap.add(lidPiv);
         pivots.push({ group: lidPiv, axis: 'z', maxAngle: -Math.PI / 2 });
 
-        addLabel(`Hình Hộp Chữ Nhật (V = a·b·h)`, [0, 2.55, 0], 0x7dd3fc, 0.28);
+        addLabel(`Hình Hộp Chữ Nhật (V = a·b·h)`, 0, 2.55, 0, 0x7dd3fc, 0.28);
       } else if (solidKind === 'prism') {
         const s = 2.0;
         const hPrism = 2.2;
@@ -2194,7 +2199,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
         stripGroup.scale.setScalar(Math.max(0.001, unfoldRatio));
         stripGroup.visible = unfoldRatio > 0.05;
         group.add(stripGroup);
-        addLabel(`Lăng Trụ Đứng Tam Giác (S_xq = C·h)`, [0, hPrism + 0.75, 0], 0x6ee7b7, 0.28);
+        addLabel(`Lăng Trụ Đứng Tam Giác (S_xq = C·h)`, 0, hPrism + 0.75, 0, 0x6ee7b7, 0.28);
       } else {
         // Regular square pyramid with 4 unfolding triangular faces
         const B = 2.2;
@@ -2232,7 +2237,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
           group.add(piv);
           pivots.push({ group: piv, axis: fc.axis, maxAngle: fc.sign * (Math.PI - foldAngle) });
         });
-        addLabel(`Hình Chóp Tứ Giác Đều & Khai Triển`, [0, 2.7, 0], 0xf9a8d4, 0.28);
+        addLabel(`Hình Chóp Tứ Giác Đều & Khai Triển`, 0, 2.7, 0, 0xf9a8d4, 0.28);
       }
 
       let curFold = foldTarget;
@@ -2242,6 +2247,112 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
           if (pv.axis === 'x') pv.group.rotation.x = curFold * pv.maxAngle;
           else pv.group.rotation.z = curFold * pv.maxAngle;
         });
+      };
+    }
+
+    // -------------------------------------------------------------
+    // MODE 14: Parallel Angles & Thales Similarity 3D (Lớp 7–8)
+    // -------------------------------------------------------------
+    else if (mode === 'angle_thales_3d') {
+      const k = Math.max(0.25, Math.min(0.85, thalesRatio3D));
+      const rad = (thalesAngleDeg * Math.PI) / 180;
+      const apex = new THREE.Vector3(Math.cos(rad) * 1.4 - 0.6, 3.6, 0);
+      const bLeft = new THREE.Vector3(-2.4, 0.25, -1.2);
+      const bRight = new THREE.Vector3(2.4, 0.25, 1.2);
+      const bBack = new THREE.Vector3(0.2, 0.25, -2.0);
+
+      // Base plane & pyramid frame (A-BCD) demonstrating 3D parallel slice MNP // BCD
+      const makePt = (v: THREE.Vector3, r: number, col: number) => {
+        const s = new THREE.Mesh(
+          new THREE.SphereGeometry(r, 16, 16),
+          new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.28 })
+        );
+        s.position.copy(v);
+        group.add(s);
+      };
+
+      const addEdge = (p1: THREE.Vector3, p2: THREE.Vector3, col: number, width = 3) => {
+        group.add(createCrispLine2([p1, p2], { color: col, linewidth: width }));
+      };
+
+      // Base triangle BCD
+      const baseTriGeo = new THREE.BufferGeometry().setFromPoints([bLeft, bRight, bBack]);
+      baseTriGeo.computeVertexNormals();
+      group.add(
+        new THREE.Mesh(
+          baseTriGeo,
+          new THREE.MeshPhysicalMaterial({
+            color: 0x0ea5e9,
+            transparent: true,
+            opacity: 0.26,
+            side: THREE.DoubleSide
+          })
+        )
+      );
+      addEdge(bLeft, bRight, 0x38bdf8, 3.5);
+      addEdge(bRight, bBack, 0x38bdf8, 3.5);
+      addEdge(bBack, bLeft, 0x38bdf8, 3.5);
+
+      // Slant edges A->B, A->C, A->D
+      addEdge(apex, bLeft, 0xe2e8f0, 3);
+      addEdge(apex, bRight, 0xe2e8f0, 3);
+      addEdge(apex, bBack, 0xe2e8f0, 3);
+
+      // Thales parallel slice M, N, P at ratio k from apex A
+      const mPt = new THREE.Vector3().lerpVectors(apex, bLeft, k);
+      const nPt = new THREE.Vector3().lerpVectors(apex, bRight, k);
+      const pPt = new THREE.Vector3().lerpVectors(apex, bBack, k);
+
+      const sliceGeo = new THREE.BufferGeometry().setFromPoints([mPt, nPt, pPt]);
+      sliceGeo.computeVertexNormals();
+      const sliceMesh = new THREE.Mesh(
+        sliceGeo,
+        new THREE.MeshPhysicalMaterial({
+          color: 0xf59e0b,
+          transparent: true,
+          opacity: 0.56,
+          side: THREE.DoubleSide
+        })
+      );
+      group.add(sliceMesh);
+      addEdge(mPt, nPt, 0xfacc15, 4);
+      addEdge(nPt, pPt, 0xfacc15, 4);
+      addEdge(pPt, mPt, 0xfacc15, 4);
+
+      // Parallel angle arc rings showing corresponding angles (đồng vị bằng nhau)
+      const angleArc1 = new THREE.Mesh(
+        new THREE.TorusGeometry(0.45, 0.03, 10, 24, Math.PI * 0.45),
+        new THREE.MeshBasicMaterial({ color: 0x34d399 })
+      );
+      angleArc1.position.copy(mPt);
+      const angleArc2 = angleArc1.clone();
+      angleArc2.position.copy(bLeft);
+      group.add(angleArc1, angleArc2);
+
+      makePt(apex, 0.11, 0xf43f5e);
+      makePt(bLeft, 0.09, 0x38bdf8);
+      makePt(bRight, 0.09, 0x38bdf8);
+      makePt(bBack, 0.09, 0x38bdf8);
+      makePt(mPt, 0.1, 0xfacc15);
+      makePt(nPt, 0.1, 0xfacc15);
+      makePt(pPt, 0.1, 0xfacc15);
+
+      addLabel('A', apex.x, apex.y + 0.35, apex.z, 0xfda4af, 0.28);
+      addLabel('B', bLeft.x - 0.25, bLeft.y, bLeft.z + 0.25, 0x7dd3fc, 0.26);
+      addLabel('C', bRight.x + 0.25, bRight.y, bRight.z + 0.25, 0x7dd3fc, 0.26);
+      addLabel('M', mPt.x - 0.28, mPt.y + 0.1, mPt.z + 0.2, 0xfde047, 0.26);
+      addLabel('N', nPt.x + 0.28, nPt.y + 0.1, nPt.z + 0.2, 0xfde047, 0.26);
+      addLabel(
+        `MN // BC · AM/AB = MN/BC = ${k.toFixed(2)}`,
+        0,
+        4.3,
+        0,
+        0xfde047,
+        0.26
+      );
+
+      mathTickRef.current = (_dt, elapsed) => {
+        sliceMesh.material.opacity = 0.46 + 0.16 * Math.sin(elapsed * 2.2);
       };
     }
 
@@ -2287,7 +2398,9 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
     gcdB,
     gcdC,
     solidKind,
-    unfoldRatio
+    unfoldRatio,
+    thalesRatio3D,
+    thalesAngleDeg
   ]);
 
   // Derived math calculations for display
@@ -2353,6 +2466,7 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
               {mode === 'geometric_transform_3d' && 'Phép Biến Hình & Tọa Độ Không Gian Oxyz 3D'}
               {mode === 'arithmetic_prism_3d' && 'Khối Lập Phương ƯCLN / BCNN & Tỉ Số 3D'}
               {mode === 'solid_prism_nets_3d' && 'Hình Hộp, Lăng Trụ & Khai Triển Hình Chóp 3D'}
+              {mode === 'angle_thales_3d' && 'Góc Song Song, Tam Giác & Định Lý Thalès 3D'}
             </span>
           </div>
 
@@ -2372,7 +2486,8 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
                 { id: 'integral_disks_3d' as Math3DMode, label: 'Đĩa Tích Phân' },
                 { id: 'geometric_transform_3d' as Math3DMode, label: 'Biến Hình 3D' },
                 { id: 'arithmetic_prism_3d' as Math3DMode, label: 'Khối ƯCLN/BCNN' },
-                { id: 'solid_prism_nets_3d' as Math3DMode, label: 'Khai Triển Khối' }
+                { id: 'solid_prism_nets_3d' as Math3DMode, label: 'Khai Triển Khối' },
+                { id: 'angle_thales_3d' as Math3DMode, label: 'Góc & Thalès 3D' }
               ]
                 .filter((m) => !allowedModes || allowedModes.length === 0 || allowedModes.includes(m.id))
                 .map((m) => (
@@ -3242,6 +3357,47 @@ export const Math3DView: React.FC<Math3DViewProps> = ({
                       onChange={(e) => setUnfoldRatio(Number(e.target.value))}
                       className="w-full accent-sky-400 h-1.5"
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Controls for Parallel Angles & Thales 3D */}
+              {mode === 'angle_thales_3d' && (
+                <div className="space-y-2 text-xs">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-300">Tỉ số Thalès AM / AB:</span>
+                        <span className="font-mono font-bold text-amber-400">{thalesRatio3D.toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.25"
+                        max="0.85"
+                        step="0.05"
+                        value={thalesRatio3D}
+                        onChange={(e) => setThalesRatio3D(Number(e.target.value))}
+                        className="w-full accent-amber-400 h-1.5"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-300">Góc nghiêng cát tuyến:</span>
+                        <span className="font-mono font-bold text-emerald-400">{thalesAngleDeg}°</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="30"
+                        max="130"
+                        step="2"
+                        value={thalesAngleDeg}
+                        onChange={(e) => setThalesAngleDeg(Number(e.target.value))}
+                        className="w-full accent-emerald-400 h-1.5"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-[11px] font-mono text-sky-300">
+                    (MNP) // (BCD) ⇒ AM/AB = AN/AC = MN/BC = {thalesRatio3D.toFixed(2)} · Tỉ số diện tích = {(thalesRatio3D * thalesRatio3D).toFixed(3)}
                   </div>
                 </div>
               )}

@@ -56,6 +56,7 @@ import {
   updateBillboardLabels
 } from '../../lib/three3DEnhancements';
 import { buildMiddleSchool3DChemScene } from './chemistry3DMiddleSchoolScenes';
+import { attachThreeFloorDrag, ThreeFloorDragHandle } from '../../lib/threeFloorDragController';
 
 interface Chemistry3DViewProps {
   mode: Chemistry3DMode;
@@ -326,6 +327,8 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dockOpen, setDockOpen] = useState(true);
   const [selectedPart, setSelectedPart] = useState<string>('');
+  const [floorModelMoved, setFloorModelMoved] = useState(false);
+  const floorDragRef = useRef<ThreeFloorDragHandle | null>(null);
   const [placedTools, setPlacedTools] = useState<PlacedChemApparatusInstance[]>([]);
   const [simClock, setSimClock] = useState(0);
   const [isSoftwareGl] = useState(() => detectSoftwareGl());
@@ -1821,7 +1824,10 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
       case 'matter_states_3d':
       case 'separation_lab_3d':
       case 'ionic_covalent_3d':
-      case 'indicator_bench_3d': {
+      case 'indicator_bench_3d':
+      case 'combustion_reactor_3d':
+      case 'mass_balance_3d':
+      case 'solution_mixing_3d': {
         onLiveUpdate = buildMiddleSchool3DChemScene({
           mode,
           root,
@@ -1872,20 +1878,30 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
       }
     }
 
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-    const onPointerDown = (ev: PointerEvent) => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(root.children, true);
-      if (hits.length > 0) {
-        const lbl = hits[0].object.userData?.partLabel || '';
+    const floorDrag = attachThreeFloorDrag({
+      domElement: renderer.domElement,
+      camera,
+      controls,
+      scene,
+      modelGroup: root,
+      apparatusGroup,
+      floorY: -2.1,
+      maxRadius: 4.9,
+      accentColor: 0x10b981,
+      onPartClick: (hitObj) => {
+        const lbl = hitObj.userData?.partLabel || '';
         if (lbl) setSelectedPart(lbl);
+      },
+      onApparatusMoved: (uid, lx, lz) => {
+        const nextX = Math.max(4, Math.min(96, Number((((lx / 8.4) * 100) + 50).toFixed(1))));
+        const nextY = Math.max(4, Math.min(96, Number((((lz / 6.8) * 100) + 50).toFixed(1))));
+        setPlacedTools((prev) => prev.map((t) => (t.uid === uid ? { ...t, xPct: nextX, yPct: nextY } : t)));
+      },
+      onDragStatusChange: ({ moved }) => {
+        setFloorModelMoved(moved);
       }
-    };
-    renderer.domElement.addEventListener('pointerdown', onPointerDown);
+    });
+    floorDragRef.current = floorDrag;
 
     const onResize = () => {
       if (!container) return;
@@ -1934,6 +1950,19 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
       const now = performance.now();
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
+
+      // Graphics-tier-aware incoming studio light sweep animation
+      const wallT = now * 0.001;
+      if (!isSmooth) {
+        rimLight.position.x = -6 + Math.sin(wallT * 0.45) * 1.4;
+        rimLight.position.z = -5 + Math.cos(wallT * 0.35) * 1.2;
+        accentPoint.intensity = (isUltra ? 1.8 : 1.1) + Math.sin(wallT * 1.3) * (isUltra ? 0.32 : 0.14);
+        if (isUltra) {
+          keyLight.position.x = 6 + Math.sin(wallT * 0.38) * 1.6;
+          keyLight.position.z = 6 + Math.cos(wallT * 0.32) * 1.1;
+          (rimRing.material as THREE.MeshBasicMaterial).opacity = 0.58 + 0.18 * Math.sin(wallT * 1.6);
+        }
+      }
 
       const stepped = lastStepTrigger !== stepTriggerRef.current;
       if (!pausedRef.current || stepped) {
@@ -2034,7 +2063,8 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
       window.removeEventListener('resize', onResize);
       ro?.disconnect();
       controls.removeEventListener('start', cancelCamLerp);
-      renderer.domElement.removeEventListener('pointerdown', onPointerDown);
+      floorDrag.dispose();
+      floorDragRef.current = null;
       disposeObjectTree(root);
       disposeObjectTree(labelGroup);
       apparatusMapRef.current.forEach((inst) => inst.dispose());
@@ -2068,12 +2098,17 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
 
     placedTools.forEach((tool, idx) => {
       let instance = map.get(tool.uid);
+      const spec = CHEM_APPARATUS_BY_ID[tool.toolId];
       if (!instance) {
-        const spec = CHEM_APPARATUS_BY_ID[tool.toolId];
         if (!spec) return;
         instance = createChem3DApparatusModel(tool.toolId, spec);
+        instance.group.userData.apparatusUid = tool.uid;
+        instance.group.userData.partLabel = spec.name;
         map.set(tool.uid, instance);
         appGroup.add(instance.group);
+      } else {
+        instance.group.userData.apparatusUid = tool.uid;
+        if (spec) instance.group.userData.partLabel = spec.name;
       }
       const wx = ((tool.xPct - 50) / 100) * 8.4;
       const wz = ((tool.yPct - 50) / 100) * 6.8 + (Math.abs(wx) < 2.2 ? (idx % 2 === 0 ? 2.5 : -2.5) : 0);
@@ -2273,6 +2308,16 @@ export const Chemistry3DView: React.FC<Chemistry3DViewProps> = ({
           <div className="absolute top-3 left-3 z-10 rounded-lg bg-slate-900/95 border border-sky-500/40 px-3 py-1.5 text-xs text-sky-200 font-semibold">
             {isEn ? 'Selected component:' : 'Thành phần đã chọn:'} {selectedPart}
           </div>
+        )}
+        {floorModelMoved && (
+          <button
+            type="button"
+            onClick={() => floorDragRef.current?.resetPosition()}
+            className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900/90 hover:bg-emerald-600 border border-emerald-500/40 text-[11px] font-semibold text-emerald-200 hover:text-white cursor-pointer"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>{isEn ? 'Reset floor position' : 'Đặt lại vị trí sàn 3D'}</span>
+          </button>
         )}
       </div>
 

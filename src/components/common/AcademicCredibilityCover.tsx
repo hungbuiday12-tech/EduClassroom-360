@@ -201,7 +201,7 @@ export const AcademicCredibilityCover: React.FC<AcademicCredibilityCoverProps> =
           <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed space-y-1.5">
             <p>
               <strong className="text-slate-900 dark:text-white">Nhóm 5 HS lớp 9/4 · Trường THCS Bến Tre:</strong>{' '}
-              Bùi Tấn Hưng (Nhóm trưởng), Huỳnh Thị Quyên Như, Võ Anh Kiệt, Lê Thiện Nhân, Nguyễn Hoàng Long.
+              Bùi Tấn Hưng (Nhóm trưởng), Huỳnh Thị Quyên Như, Võ Anh Kiệt, Lê Thiện Nhân, Lê Hoàng Long.
             </p>
             <p className="text-[11px] text-slate-600 dark:text-slate-400">
               <strong className="text-slate-800 dark:text-slate-200">Giáo viên hướng dẫn:</strong> Khung cố vấn chuyên môn THCS–THPT đang để mở cập nhật trực tiếp cùng đội ngũ giáo viên bộ môn.

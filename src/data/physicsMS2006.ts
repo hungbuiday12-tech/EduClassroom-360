@@ -94,7 +94,7 @@ export const PHYSICS_MS_2006_LESSONS: PhysicsLesson[] = [
       '\\text{Hai lực cân bằng: } F_1 = F_2,\\ \\text{cùng phương, ngược chiều}',
       'P = 10 \\cdot m \\quad (\\text{N})'
     ],
-    ...SIM_PRESETS.spring,
+    ...SIM_PRESETS.hooke_forces,
     practiceExercises: [
       {
         source: SRC_2006_6,
@@ -409,7 +409,7 @@ export const PHYSICS_MS_2006_LESSONS: PhysicsLesson[] = [
       '\\text{Nhật thực: Mặt Trời} \\to \\mathbf{\\text{Mặt Trăng}} \\to \\text{Trái Đất}',
       '\\text{Nguyệt thực: Mặt Trời} \\to \\mathbf{\\text{Trái Đất}} \\to \\text{Mặt Trăng}'
     ],
-    ...SIM_PRESETS.refraction,
+    ...SIM_PRESETS.shadow_eclipse,
     practiceExercises: [
       {
         source: SRC_2006_7,
@@ -537,7 +537,7 @@ export const PHYSICS_MS_2006_LESSONS: PhysicsLesson[] = [
       '\\text{Gương lồi: Ảnh ảo } < \\text{ Vật (vùng nhìn RỘNG)}',
       '\\text{Gương lõm (vật gần): Ảnh ảo } > \\text{ Vật (hội tụ tia song song)}'
     ],
-    ...SIM_PRESETS.lens_single,
+    ...SIM_PRESETS.spherical_mirror,
     practiceExercises: [
       {
         source: SRC_2006_7,
@@ -1075,7 +1075,7 @@ export const PHYSICS_MS_2006_LESSONS: PhysicsLesson[] = [
       'Q_{\\text{tỏa}} = Q_{\\text{thu}} \\iff m_1 c_1 (t_1 - t) = m_2 c_2 (t - t_2)',
       'Q_{\\text{đốt nhiên liệu}} = q \\cdot m'
     ],
-    ...SIM_PRESETS.calorimetry,
+    ...SIM_PRESETS.heat_transfer,
     practiceExercises: [
       {
         source: SRC_2006_8,

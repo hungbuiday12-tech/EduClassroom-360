@@ -472,6 +472,344 @@ export function buildMiddleSchool3DScene(
       };
     }
 
+    // 6. HOOKE FORCES & FRICTION 3D (Lực kế lò xo & Khối trượt có ma sát)
+    case 'hooke_forces_3d': {
+      const bench = new THREE.Mesh(
+        new THREE.BoxGeometry(7.0, 0.24, 3.2),
+        new THREE.MeshPhysicalMaterial({ color: 0x0f172a, roughness: 0.72, metalness: 0.2 })
+      );
+      bench.position.set(0, 0.12, 0);
+      group.add(bench);
+
+      // Left: Vertical dynamometer gantry + coil spring + hanging mass
+      const standMat = new THREE.MeshPhysicalMaterial({ color: 0x64748b, metalness: 0.7, roughness: 0.3 });
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 3.6, 16), standMat);
+      post.position.set(-2.0, 2.0, -0.5);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.1, 0.12), standMat);
+      arm.position.set(-1.55, 3.75, -0.25);
+      group.add(post, arm);
+
+      const springMat = new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, metalness: 0.8, roughness: 0.2 });
+      const springPts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 72; i++) {
+        const u = i / 72;
+        const a = u * Math.PI * 2 * 6;
+        springPts.push(new THREE.Vector3(Math.cos(a) * 0.16, -u * 1.0, Math.sin(a) * 0.16));
+      }
+      const springCoil = new THREE.Mesh(
+        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(springPts), 64, 0.032, 8, false),
+        springMat
+      );
+      springCoil.position.set(-1.25, 3.68, 0);
+      const hangBox = new THREE.Mesh(
+        new THREE.BoxGeometry(0.65, 0.65, 0.65),
+        new THREE.MeshPhysicalMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.25 })
+      );
+      hangBox.position.set(-1.25, 2.2, 0);
+      group.add(springCoil, hangBox);
+
+      // Right: Wooden/Ice friction ramp & sliding block
+      const track = new THREE.Mesh(
+        new THREE.BoxGeometry(3.4, 0.16, 1.3),
+        new THREE.MeshPhysicalMaterial({ color: 0x78350f, roughness: 0.75 })
+      );
+      track.position.set(1.65, 0.32, 0);
+      const slideBlock = new THREE.Mesh(
+        new THREE.BoxGeometry(0.75, 0.55, 0.75),
+        new THREE.MeshPhysicalMaterial({ color: 0x6366f1, roughness: 0.35 })
+      );
+      slideBlock.position.set(1.65, 0.68, 0);
+      group.add(track, slideBlock);
+
+      group.add(
+        createTroikaLabel({ text: 'Lực kế lò xo (P = 10m)', position: [-1.25, 4.15, 0], fontSize: 0.24, color: 0x7dd3fc }),
+        createTroikaLabel({ text: 'Lực ma sát trượt F_ms', position: [1.65, 1.75, 0], fontSize: 0.24, color: 0xfda4af })
+      );
+
+      return (effDt) => {
+        const { p1: massKg, p2: muVal } = getParams();
+        const t = getElapsed();
+        const stretch = 0.75 + (massKg / 5.0) * 1.15;
+        springCoil.scale.y = THREE.MathUtils.damp(springCoil.scale.y, stretch, 8, effDt);
+        hangBox.scale.setScalar(0.72 + (massKg / 5.0) * 0.52);
+        hangBox.position.y = 3.68 - springCoil.scale.y - 0.32 * hangBox.scale.y;
+
+        const ampSlide = Math.max(0.18, 1.0 - muVal * 1.4);
+        slideBlock.position.x = 1.65 + Math.sin(t * 1.8) * ampSlide;
+      };
+    }
+
+    // 7. SHADOW & ECLIPSE 3D (Truyền thẳng ánh sáng, Bóng tối – Nửa tối, Nhật thực – Nguyệt thực)
+    case 'shadow_eclipse_3d': {
+      const bench = new THREE.Mesh(
+        new THREE.BoxGeometry(7.6, 0.22, 3.2),
+        new THREE.MeshPhysicalMaterial({ color: 0x090e1c, roughness: 0.8 })
+      );
+      bench.position.set(0, 0.11, 0);
+      group.add(bench);
+
+      const sunSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.65, 24, 24),
+        new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xfacc15, emissiveIntensity: 0.9 })
+      );
+      sunSphere.position.set(-2.8, 1.65, 0);
+
+      const obstacleSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.45, 24, 24),
+        new THREE.MeshPhysicalMaterial({ color: 0x3b82f6, roughness: 0.45 })
+      );
+      obstacleSphere.position.set(0, 1.65, 0);
+
+      const screenPlane = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, 2.7, 2.5),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.8 })
+      );
+      screenPlane.position.set(2.95, 1.65, 0);
+
+      const umbraSpot = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.48, 0.48, 0.04, 24),
+        new THREE.MeshBasicMaterial({ color: 0x020617 })
+      );
+      umbraSpot.rotation.z = Math.PI / 2;
+      umbraSpot.position.set(2.86, 1.65, 0);
+
+      const penumbraRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.48, 0.95, 28),
+        new THREE.MeshBasicMaterial({ color: 0x334155, side: THREE.DoubleSide, transparent: true, opacity: 0.65 })
+      );
+      penumbraRing.rotation.y = Math.PI / 2;
+      penumbraRing.position.set(2.85, 1.65, 0);
+
+      const rayCone = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.55, 1.25, 5.7, 24, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.12, side: THREE.DoubleSide })
+      );
+      rayCone.rotation.z = Math.PI / 2;
+      rayCone.position.set(0.05, 1.65, 0);
+
+      group.add(sunSphere, obstacleSphere, screenPlane, umbraSpot, penumbraRing, rayCone);
+      group.add(
+        createTroikaLabel({ text: 'Nguồn sáng (Mặt Trời)', position: [-2.8, 2.65, 0], fontSize: 0.23, color: 0xfde047 }),
+        createTroikaLabel({ text: 'Vật cản sáng', position: [0, 2.5, 0], fontSize: 0.23, color: 0x7dd3fc }),
+        createTroikaLabel({ text: 'Vùng Bóng tối & Nửa tối', position: [2.75, 3.25, 0], fontSize: 0.23, color: 0xf8fafc })
+      );
+
+      return (effDt) => {
+        const { p1: objOffset, p2: sunScale } = getParams();
+        obstacleSphere.position.x = THREE.MathUtils.damp(obstacleSphere.position.x, objOffset, 8, effDt);
+        sunSphere.scale.setScalar(0.65 + sunScale * 0.45);
+        const distRatio = Math.max(0.3, (2.95 - obstacleSphere.position.x) / 3.0);
+        const uSize = Math.max(0.15, 1.25 - sunScale * 0.45 - distRatio * 0.25);
+        umbraSpot.scale.set(uSize, 1, uSize);
+        penumbraRing.scale.setScalar(0.8 + distRatio * 0.45);
+      };
+    }
+
+    // 8. MAGNET & COMPASS 3D (Nam châm, Đường sức từ không gian & Kim la bàn)
+    case 'magnet_compass_3d': {
+      const bench = new THREE.Mesh(
+        new THREE.BoxGeometry(6.8, 0.22, 3.6),
+        new THREE.MeshPhysicalMaterial({ color: 0x0f172a, roughness: 0.72, metalness: 0.2 })
+      );
+      bench.position.set(0, 0.11, 0);
+      group.add(bench);
+
+      const magN = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 0.45, 0.6),
+        new THREE.MeshPhysicalMaterial({ color: 0xef4444, roughness: 0.35 })
+      );
+      magN.position.set(-0.7, 0.85, 0);
+      const magS = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 0.45, 0.6),
+        new THREE.MeshPhysicalMaterial({ color: 0x2563eb, roughness: 0.35 })
+      );
+      magS.position.set(0.7, 0.85, 0);
+      group.add(magN, magS);
+
+      // 3D magnetic field loops around the bar magnet
+      const loopMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 });
+      [0, Math.PI / 2, Math.PI, -Math.PI / 2].forEach((rotX) => {
+        const torus = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.025, 8, 36, Math.PI), loopMat);
+        torus.position.set(0, 0.85, 0);
+        torus.rotation.x = rotX;
+        group.add(torus);
+      });
+
+      // Compass needles arranged around magnet
+      const compassGroup = new THREE.Group();
+      const needleGeo = new THREE.ConeGeometry(0.11, 0.42, 8);
+      const needles: { g: THREE.Group; baseYaw: number }[] = [];
+      const spots: [number, number, number][] = [
+        [0, 1.45, 0],
+        [0, -1.45, 0],
+        [-2.3, 0, Math.PI],
+        [2.3, 0, Math.PI]
+      ];
+      spots.forEach(([sx, sz, yaw]) => {
+        const ng = new THREE.Group();
+        ng.position.set(sx, 0.55, sz);
+        const nTip = new THREE.Mesh(needleGeo, new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+        nTip.rotation.z = -Math.PI / 2;
+        nTip.position.x = 0.21;
+        const sTip = new THREE.Mesh(needleGeo, new THREE.MeshStandardMaterial({ color: 0x94a3b8 }));
+        sTip.rotation.z = Math.PI / 2;
+        sTip.position.x = -0.21;
+        ng.add(nTip, sTip);
+        compassGroup.add(ng);
+        needles.push({ g: ng, baseYaw: yaw });
+      });
+      group.add(compassGroup);
+
+      group.add(
+        createTroikaLabel({ text: 'Cực Bắc (N)', position: [-0.9, 1.55, 0], fontSize: 0.24, color: 0xfca5a5 }),
+        createTroikaLabel({ text: 'Cực Nam (S)', position: [0.9, 1.55, 0], fontSize: 0.24, color: 0x93c5fd }),
+        createTroikaLabel({ text: 'Kim La Bàn & Từ Phổ 3D', position: [0, 2.55, 0], fontSize: 0.25, color: 0x7dd3fc })
+      );
+
+      return (effDt) => {
+        const { p1: flip, p2: strength } = getParams();
+        const t = getElapsed();
+        const flipped = flip < 0;
+        magN.position.x = flipped ? 0.7 : -0.7;
+        magS.position.x = flipped ? -0.7 : 0.7;
+        needles.forEach((n, idx) => {
+          const targetYaw = n.baseYaw + (flipped ? Math.PI : 0) + Math.sin(t * 2 + idx) * (0.08 / Math.max(0.4, strength));
+          n.g.rotation.y = THREE.MathUtils.damp(n.g.rotation.y, targetYaw, 6, effDt);
+        });
+      };
+    }
+
+    // 9. ELECTROMAGNET & ELECTRIC BELL 3D (Nam châm điện & Chuông điện)
+    case 'electromagnet_bell_3d': {
+      const bench = new THREE.Mesh(
+        new THREE.BoxGeometry(6.8, 0.22, 3.2),
+        new THREE.MeshPhysicalMaterial({ color: 0x0f172a, roughness: 0.72, metalness: 0.2 })
+      );
+      bench.position.set(0, 0.11, 0);
+      group.add(bench);
+
+      // Solenoid coil + Iron core
+      const core = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.24, 1.9, 18),
+        new THREE.MeshPhysicalMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.25 })
+      );
+      core.rotation.z = Math.PI / 2;
+      core.position.set(-0.6, 1.45, 0);
+      const coil = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.42, 0.42, 1.4, 24),
+        new THREE.MeshPhysicalMaterial({ color: 0xd97706, metalness: 0.65, roughness: 0.25 })
+      );
+      coil.rotation.z = Math.PI / 2;
+      coil.position.set(-0.6, 1.45, 0);
+
+      // Armature hammer & brass gong bell
+      const hammerArm = new THREE.Group();
+      hammerArm.position.set(0.85, 0.45, 0);
+      const armRod = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 1.55, 0.08),
+        new THREE.MeshPhysicalMaterial({ color: 0xe2e8f0, metalness: 0.8 })
+      );
+      armRod.position.y = 0.78;
+      const striker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 16, 16),
+        new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, roughness: 0.25 })
+      );
+      striker.position.set(0, 1.55, 0);
+      hammerArm.add(armRod, striker);
+
+      const gong = new THREE.Mesh(
+        new THREE.SphereGeometry(0.75, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        new THREE.MeshPhysicalMaterial({ color: 0xfacc15, metalness: 0.85, roughness: 0.18, side: THREE.DoubleSide })
+      );
+      gong.rotation.z = -Math.PI / 2;
+      gong.position.set(2.0, 1.95, 0);
+
+      group.add(core, coil, hammerArm, gong);
+      group.add(
+        createTroikaLabel({ text: 'Cuộn dây lõi sắt (Nam châm điện)', position: [-0.7, 2.3, 0], fontSize: 0.23, color: 0xfbbf24 }),
+        createTroikaLabel({ text: 'Chuông điện rung liên hồi', position: [1.85, 2.95, 0], fontSize: 0.23, color: 0xfde047 })
+      );
+
+      return (effDt) => {
+        const { p1: currentA, p2: turns } = getParams();
+        const t = getElapsed();
+        const power = (currentA * turns) / 150;
+        const targetRot = currentA > 0.2 ? Math.sin(t * (10 + power * 8)) * 0.28 : 0.15;
+        hammerArm.rotation.z = THREE.MathUtils.damp(hammerArm.rotation.z, targetRot, 14, effDt);
+        gong.scale.setScalar(1 + Math.abs(Math.sin(t * 20)) * (currentA > 0.2 ? 0.03 : 0));
+      };
+    }
+
+    // 10. HEAT TRANSFER 3D (Dẫn nhiệt – Đối lưu – Bức xạ nhiệt)
+    case 'heat_transfer_3d': {
+      const bench = new THREE.Mesh(
+        new THREE.BoxGeometry(7.2, 0.22, 3.2),
+        new THREE.MeshPhysicalMaterial({ color: 0x0f172a, roughness: 0.72, metalness: 0.2 })
+      );
+      bench.position.set(0, 0.11, 0);
+      group.add(bench);
+
+      // Left: Conduction copper bar with glowing heat gradient
+      const bar = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 0.22, 0.26),
+        new THREE.MeshPhysicalMaterial({ color: 0xd97706, metalness: 0.7, roughness: 0.25 })
+      );
+      bar.position.set(-1.75, 1.55, 0);
+      const flame = new THREE.Mesh(
+        new THREE.ConeGeometry(0.24, 0.55, 14),
+        new THREE.MeshBasicMaterial({ color: 0xf97316 })
+      );
+      flame.position.set(-2.75, 1.05, 0);
+      group.add(bar, flame);
+
+      // Right: Convection glass beaker + circulating thermal spheres
+      const glassBeaker = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.95, 0.95, 1.9, 24, 1, true),
+        new THREE.MeshPhysicalMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.34, depthWrite: false })
+      );
+      glassBeaker.position.set(1.5, 1.35, 0);
+      const waterCyl = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.88, 0.88, 1.5, 22),
+        new THREE.MeshPhysicalMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.42 })
+      );
+      waterCyl.position.set(1.5, 1.15, 0);
+      group.add(waterCyl, glassBeaker);
+
+      const convDots: THREE.Mesh[] = [];
+      for (let i = 0; i < 10; i++) {
+        const d = new THREE.Mesh(
+          new THREE.SphereGeometry(0.08, 10, 10),
+          new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0xef4444 : 0x38bdf8 })
+        );
+        convDots.push(d);
+        group.add(d);
+      }
+
+      group.add(
+        createTroikaLabel({ text: 'Dẫn nhiệt (Thanh kim loại)', position: [-1.75, 2.3, 0], fontSize: 0.23, color: 0xfdba74 }),
+        createTroikaLabel({ text: 'Đối lưu chất lỏng 3D', position: [1.5, 2.65, 0], fontSize: 0.23, color: 0x7dd3fc })
+      );
+
+      return () => {
+        const { p1: heatPct, p2: modeVal } = getParams();
+        const t = getElapsed();
+        const rate = 0.6 + (heatPct / 100) * 1.8;
+        flame.scale.setScalar(0.75 + (heatPct / 100) * 0.55 + Math.sin(t * 10) * 0.06);
+        convDots.forEach((dot, idx) => {
+          const ang = t * rate + (idx / convDots.length) * Math.PI * 2;
+          const side = idx % 2 === 0 ? 1 : -1;
+          dot.position.set(
+            1.5 + side * Math.sin(ang) * 0.58,
+            1.15 - Math.cos(ang) * 0.58,
+            Math.sin(ang * 2 + idx) * 0.25
+          );
+          (dot.material as THREE.MeshBasicMaterial).color.setHex(
+            Math.cos(ang) > 0 ? 0x38bdf8 : modeVal >= 2.5 ? 0xfacc15 : 0xef4444
+          );
+        });
+      };
+    }
+
     default:
       return null;
   }

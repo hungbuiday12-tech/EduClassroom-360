@@ -929,5 +929,84 @@ export const CHEMISTRY_3D_CONFIGS: Record<Chemistry3DMode, Chem3DModeConfig> = {
         probeParams: { tempC: p.tempC ?? 25, conc: 0.5, ph }
       };
     }
+  ),
+
+  combustion_reactor_3d: makeDefaultModeConfig(
+    'combustion_reactor_3d',
+    'Bình Phản Ứng Đốt Cháy Trong Khí Oxygen (O₂) 3D',
+    'Thay đổi nồng độ khí O₂ để thấy sự khác biệt giữa cháy chậm trong không khí (21% O₂) và cháy sáng rực trong O₂ tinh khiết.',
+    '3\\text{Fe} + 2\\text{O}_2 \\xrightarrow{t^\\circ} \\text{Fe}_3\\text{O}_4',
+    [
+      { key: 'o2Pct', label: 'Nồng độ khí O₂', unit: '%', min: 15, max: 100, step: 5, defaultVal: 95, accentClass: 'accent-amber-500' },
+      { key: 'tempC', label: 'Nhiệt độ phản ứng', unit: '°C', min: 300, max: 900, step: 50, defaultVal: 650, accentClass: 'accent-rose-500' }
+    ],
+    [
+      { label: 'Trong khí O₂ tinh khiết (95%)', description: 'Tàn đóm bùng cháy, dây sắt bắn tia sáng chói', params: { o2Pct: 95, tempC: 700 }, flags: { ignited: true } },
+      { label: 'Trong không khí (21% O₂)', description: 'Cháy êm dịu hơn do có 78% N₂ làm loãng', params: { o2Pct: 21, tempC: 500 }, flags: { ignited: true } }
+    ],
+    [
+      { id: 'ignite_toggle', label: 'Bật / Tắt mồi lửa', kind: 'toggle', flagKey: 'ignited', accent: 'amber' },
+      { id: 'reset_exp', label: 'Nạp lại bình khí O₂', kind: 'reset', accent: 'rose' }
+    ],
+    { ignited: true },
+    (p, f) => ({
+      equationText: f.ignited !== false ? `Đang cháy trong ${p.o2Pct ?? 95}% O₂ ở ${p.tempC ?? 650}°C` : 'Đã tắt ngọn lửa đốt trong bình',
+      statusNote: 'Khí O₂ không tự cháy nhưng là chất duy trì sự cháy và sự sống.',
+      probeParams: { tempC: p.tempC ?? 650, conc: (p.o2Pct ?? 95) / 100 }
+    })
+  ),
+
+  mass_balance_3d: makeDefaultModeConfig(
+    'mass_balance_3d',
+    'Cân Đòn Kiểm Chứng Định Luật Bảo Toàn Khối Lượng 3D',
+    'So sánh bình phản ứng đậy nút kín (cân thăng bằng hoàn toàn) và bình mở nắp để khí thoát ra ngoài.',
+    '\\sum m_{\\text{tham gia}} = \\sum m_{\\text{sản phẩm}}',
+    [
+      { key: 'gasEscape', label: 'Lượng khí thoát (khi mở nút)', unit: '×', min: 0.1, max: 0.6, step: 0.1, defaultVal: 0.25, accentClass: 'accent-sky-500' },
+      { key: 'tempC', label: 'Nhiệt độ bình phản ứng', unit: '°C', min: 20, max: 60, step: 5, defaultVal: 25, accentClass: 'accent-amber-500' }
+    ],
+    [
+      { label: 'Hệ kín (Đậy nút cao su)', description: 'Σm_trước = Σm_sau → Cân thăng bằng tuyệt đối', params: { gasEscape: 0.25, tempC: 25 }, flags: { closedSystem: true } },
+      { label: 'Hệ hở (Mở nút thoát khí CO₂)', description: 'Đĩa cân bên phải nhẹ dần do khí bay ra ngoài', params: { gasEscape: 0.4, tempC: 25 }, flags: { closedSystem: false } }
+    ],
+    [
+      { id: 'seal_toggle', label: 'Đậy kín / Mở nút bình', kind: 'toggle', flagKey: 'closedSystem', accent: 'emerald' },
+      { id: 'reset_exp', label: 'Cân bằng lại hai đĩa cân', kind: 'reset', accent: 'rose' }
+    ],
+    { closedSystem: true },
+    (p, f) => ({
+      equationText: f.closedSystem !== false ? 'Hệ kín: Σm trước PƯ = Σm sau PƯ (Cân thăng bằng!)' : `Hệ hở: Khí thoát ra làm cân lệch về bên đối chứng`,
+      statusNote: 'Định luật Bảo toàn Khối lượng nghiệm đúng cho mọi phản ứng khi tính đủ cả chất khí.',
+      probeParams: { tempC: p.tempC ?? 25, conc: 0.5 }
+    })
+  ),
+
+  solution_mixing_3d: makeDefaultModeConfig(
+    'solution_mixing_3d',
+    'Cốc Khuấy Từ Pha Dung Dịch, Độ Tan & Kết Tinh 3D',
+    'Thay đổi lượng chất tan và nhiệt độ để quan sát dung dịch chưa bão hòa và ngưỡng bão hòa kết tinh đáy cốc.',
+    'S = \\frac{m_{\\text{ct max}}}{m_{\\text{H}_2\\text{O}}}\\cdot 100 \\quad|\\quad C\\% = \\frac{m_{\\text{ct}}}{m_{\\text{dd}}}\\cdot 100\\%',
+    [
+      { key: 'soluteG', label: 'Lượng chất tan (g/100g H₂O)', unit: 'g', min: 10, max: 90, step: 5, defaultVal: 45, accentClass: 'accent-sky-500' },
+      { key: 'tempC', label: 'Nhiệt độ nước', unit: '°C', min: 10, max: 95, step: 5, defaultVal: 25, accentClass: 'accent-rose-500' }
+    ],
+    [
+      { label: 'Dung dịch bão hòa dư tinh thể', description: '45 g ở 25°C (Độ tan S = 36,3 g) → phần dư lắng đáy', params: { soluteG: 45, tempC: 25 }, flags: {} },
+      { label: 'Đun nóng lên 70°C hòa tan hết', description: 'Tăng nhiệt độ làm tăng độ tan S lên 65,5 g', params: { soluteG: 45, tempC: 70 }, flags: {} }
+    ],
+    [
+      { id: 'reset_exp', label: 'Đặt lại mẫu chuẩn 25°C', kind: 'reset', accent: 'rose' }
+    ],
+    {},
+    (p) => {
+      const t = p.tempC ?? 25;
+      const g = p.soluteG ?? 45;
+      const sMax = 20 + 0.65 * t;
+      return {
+        equationText: `T = ${t}°C ⇒ Độ tan S = ${sMax.toFixed(1)} g · Đã cho ${g} g (${g > sMax ? 'BÃO HÒA - Có kết tinh' : 'TAN HẾT'})`,
+        statusNote: 'Nhiệt độ tăng thường giúp hòa tan thêm nhiều chất rắn hơn vào cùng một lượng nước.',
+        probeParams: { tempC: t, conc: Math.min(1, g / 90) }
+      };
+    }
   )
 };

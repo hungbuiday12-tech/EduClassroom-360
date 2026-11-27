@@ -104,6 +104,10 @@ const MODE_3D_LABELS: Record<Math3DMode, { title: string; subtitle: string }> = 
   solid_prism_nets_3d: {
     title: 'Hình Hộp, Lăng Trụ Đứng & Khai Triển Hình Chóp 3D',
     subtitle: 'Kéo thanh gập/mở khai triển từ lưới 2D thành hình hộp chữ nhật, lăng trụ tam giác hoặc hình chóp đều 3D.'
+  },
+  angle_thales_3d: {
+    title: 'Góc Song Song, Tam Giác & Định Lý Thalès 3D',
+    subtitle: 'Trực quan hóa hai đường song song bị cắt bởi cát tuyến, các góc so le trong/đồng vị và mặt cắt tỉ lệ Thalès trên khối chóp.'
   }
 };
 
@@ -139,7 +143,9 @@ export function resolveMathStepSim(
     mode3d = 'probability_bell_3d';
   } else if (/duong tron|goc noi tiep|tu giac noi tiep|cung|day/.test(combined)) {
     mode3d = 'circle_theorems_3d';
-  } else if (/bien hinh|tinh tien|vi tu|phep quay|doi xung|tam giac|tu giac|thales|pytago|pythagore/.test(combined)) {
+  } else if (/thales|tal[eé]t|dong dang|song song|so le trong|dong vi|tia phan giac|goc o vi tri dac biet|tong ba goc|hai tam giac bang nhau|hinh thang|binh hanh|hinh thoi|hinh chu nhat|hinh vuong/.test(combined)) {
+    mode3d = 'angle_thales_3d';
+  } else if (/bien hinh|tinh tien|vi tu|phep quay|doi xung|tam giac|tu giac|pytago|pythagore/.test(combined)) {
     mode3d = 'geometric_transform_3d';
   }
 
@@ -149,6 +155,7 @@ export function resolveMathStepSim(
   if (mode3d === 'oxyz_vector') allowedSet.add('line_plane_oxyz');
   if (mode3d === 'circle_theorems_3d') allowedSet.add('sphere_plane');
   if (mode3d === 'solid_prism_nets_3d') allowedSet.add('pyramid_section');
+  if (mode3d === 'angle_thales_3d') allowedSet.add('pyramid_section');
   const allowed3dModes = Array.from(allowedSet);
 
   const m3 = MODE_3D_LABELS[mode3d];

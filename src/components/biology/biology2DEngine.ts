@@ -8,6 +8,14 @@ import {
   getTerrariumHerbivoreSpec,
   getTrophicTierSprite
 } from './pixelSpriteEngine';
+import {
+  drawStudioFloorReticle,
+  drawStudioGlassVessel,
+  drawStudioIncomingLight,
+  drawStudioLabBackdrop,
+  Studio2DDragState,
+  ZERO_STUDIO_DRAG
+} from '../common/studio2DCanvasKit';
 
 export interface BioSimTelemetry {
   metrics: { label: string; value: number | string; unit?: string }[];
@@ -42,34 +50,6 @@ function drawBioGlow(
   ctx.restore();
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, dark: boolean, perfMode: PerformanceMode = 'balanced') {
-  ctx.save();
-  ctx.fillStyle = dark ? '#08101c' : '#f8fafc';
-  ctx.fillRect(0, 0, w, h);
-  if (perfMode !== 'smooth') {
-    const amb = ctx.createRadialGradient(w * 0.5, h * 0.45, 24, w * 0.5, h * 0.45, Math.max(w, h) * 0.65);
-    amb.addColorStop(0, dark ? 'rgba(20,184,166,0.09)' : 'rgba(13,148,136,0.05)');
-    amb.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = amb;
-    ctx.fillRect(0, 0, w, h);
-  }
-  ctx.strokeStyle = dark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.06)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x <= w; x += 32) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, h);
-    ctx.stroke();
-  }
-  for (let y = 0; y <= h; y += 32) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
 function drawPlotAxes(ctx: CanvasRenderingContext2D, padL: number, topY: number, padB: number, plotW: number, muted: string) {
   ctx.strokeStyle = muted;
   ctx.lineWidth = 1.5;
@@ -88,13 +68,38 @@ export function renderBiology2DSim(
   params: Record<string, number>,
   t: number,
   dark: boolean,
-  perfMode: PerformanceMode = 'balanced'
+  perfMode: PerformanceMode = 'balanced',
+  dragState: Studio2DDragState = ZERO_STUDIO_DRAG
 ): BioSimTelemetry {
-  drawGrid(ctx, w, h, dark, perfMode);
+  const benchY = drawStudioLabBackdrop(ctx, w, h, dark, perfMode, { subject: 'biology' });
+
+  ctx.save();
+  if (dragState.offsetX !== 0 || dragState.offsetY !== 0) {
+    ctx.translate(dragState.offsetX, dragState.offsetY);
+  }
+  const telemetry = renderBiology2DCore(ctx, w, h, benchY, simType, params, t, dark, perfMode);
+  ctx.restore();
+
+  drawStudioFloorReticle(ctx, w, h, dragState, dark, 'biology');
+  drawStudioIncomingLight(ctx, w, h, undefined, dark, perfMode, { subject: 'biology', benchY });
+  return telemetry;
+}
+
+function renderBiology2DCore(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  benchY: number,
+  simType: BiologySimType,
+  params: Record<string, number>,
+  t: number,
+  dark: boolean,
+  perfMode: PerformanceMode
+): BioSimTelemetry {
   const fg = dark ? '#e2e8f0' : '#0f172a';
   const muted = dark ? '#94a3b8' : '#64748b';
   const cx = w * 0.5;
-  const cy = h * 0.52;
+  const cy = Math.min(h * 0.5, benchY * 0.52);
 
   switch (simType) {
     case 'cell_organelles_2d': {
@@ -176,15 +181,34 @@ export function renderBiology2DSim(
       const rx = Math.max(46, Math.min(115, 86 - diff * 55));
       const ry = Math.max(36, Math.min(92, 68 - diff * 42));
 
+      // Optical glass immersion chamber seated cleanly on studio bench
+      const chamW = 286;
+      const chamH = Math.min(benchY - 36, 206);
+      const chamX = cx - chamW * 0.5;
+      const chamY = Math.max(34, benchY - chamH - 2);
+      const cellY = chamY + chamH * 0.54;
+
+      drawStudioGlassVessel(ctx, chamX, chamY, chamW, chamH, {
+        fillFraction: 0.84,
+        liquidColor: diff > 0.05 ? 'rgba(245, 158, 11, 0.14)' : 'rgba(14, 165, 233, 0.16)',
+        liquidTopColor: diff > 0.05 ? 'rgba(251, 191, 36, 0.35)' : 'rgba(56, 189, 248, 0.35)',
+        maxMl: 100,
+        perfMode,
+        dark,
+        rimGlowColor: '#2dd4bf'
+      });
+
       ctx.strokeStyle = '#10b981';
       ctx.lineWidth = 4;
-      ctx.strokeRect(cx - 122, cy - 88, 244, 176);
+      ctx.beginPath();
+      ctx.roundRect(cx - 120, cellY - 82, 240, 164, 18);
+      ctx.stroke();
 
-      ctx.fillStyle = diff > 0.05 ? 'rgba(245, 158, 11, 0.22)' : 'rgba(14, 165, 233, 0.25)';
+      ctx.fillStyle = diff > 0.05 ? 'rgba(245, 158, 11, 0.24)' : 'rgba(14, 165, 233, 0.26)';
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cellY, rx, ry, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
@@ -192,9 +216,10 @@ export function renderBiology2DSim(
       for (let i = 0; i < 14; i++) {
         const ang = (i / 14) * Math.PI * 2;
         const phase = ((t * (perm / 50) + i * 0.17) % 1) * dir;
-        const rDist = 75 + phase * 38;
+        const rDist = 72 + phase * 36;
         const mx = cx + Math.cos(ang) * rDist;
-        const my = cy + Math.sin(ang) * (rDist * 0.72);
+        const my = cellY + Math.sin(ang) * (rDist * 0.7);
+        drawBioGlow(ctx, mx, my, 9, 'rgba(56,189,248,0.45)', 'rgba(56,189,248,0)', perfMode);
         ctx.fillStyle = '#38bdf8';
         ctx.beginPath();
         ctx.arc(mx, my, 3.5, 0, Math.PI * 2);
@@ -204,7 +229,7 @@ export function renderBiology2DSim(
       ctx.fillStyle = fg;
       ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(stateLabel, cx, 24);
+      ctx.fillText(stateLabel, cx, Math.max(22, chamY - 10));
       ctx.textAlign = 'left';
       return {
         metrics: [

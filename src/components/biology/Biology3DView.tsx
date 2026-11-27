@@ -52,6 +52,7 @@ import {
   updateBillboardLabels
 } from '../../lib/three3DEnhancements';
 import { buildMiddleSchool3DBioScene } from './biology3DMiddleSchoolScenes';
+import { attachThreeFloorDrag, ThreeFloorDragHandle } from '../../lib/threeFloorDragController';
 
 interface Biology3DViewProps {
   mode: Biology3DMode;
@@ -244,11 +245,14 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
     ...BIOLOGY_3D_CONFIGS[mode].defaultFlags
   }));
   const [loggedSamples, setLoggedSamples] = useState<BioLoggedSample3D[]>([]);
+  const floorDragRef = useRef<ThreeFloorDragHandle | null>(null);
+  const [floorModelMoved, setFloorModelMoved] = useState(false);
 
   useEffect(() => {
     setModeParams(buildDefaultBioParams(mode));
     setExpFlags({ ...BIOLOGY_3D_CONFIGS[mode].defaultFlags });
     setSelectedPart('');
+    setFloorModelMoved(false);
   }, [mode]);
 
   useEffect(() => {
@@ -1647,7 +1651,10 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
 
       case 'plant_flower_seed_3d':
       case 'comparative_hearts_3d':
-      case 'digestive_tract_3d': {
+      case 'digestive_tract_3d':
+      case 'invertebrate_biodiversity_3d':
+      case 'plant_tropism_germination_3d':
+      case 'skeleton_senses_3d': {
         const res = buildMiddleSchool3DBioScene({
           mode,
           parts,
@@ -1707,27 +1714,24 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
       }
     }
 
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-    let downPos = { x: 0, y: 0 };
-    const onPointerDown = (ev: PointerEvent) => {
-      downPos = { x: ev.clientX, y: ev.clientY };
-    };
-    const handleClick = (ev: MouseEvent) => {
-      if (Math.hypot(ev.clientX - downPos.x, ev.clientY - downPos.y) > 6) return;
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(root.children, true);
-      if (hits.length > 0) {
-        let obj: THREE.Object3D | null = hits[0].object;
-        while (obj && !obj.userData.partLabel) obj = obj.parent;
-        if (obj?.userData.partLabel) setSelectedPart(obj.userData.partLabel);
+    const floorDrag = attachThreeFloorDrag({
+      domElement: renderer.domElement,
+      camera,
+      controls,
+      scene,
+      modelGroup: root,
+      floorY: -2.06,
+      maxRadius: 4.6,
+      accentColor: 0x10b981,
+      onPartClick: (hitObj) => {
+        const lbl = hitObj.userData?.partLabel || '';
+        if (lbl) setSelectedPart(lbl);
+      },
+      onDragStatusChange: ({ moved }) => {
+        setFloorModelMoved(moved);
       }
-    };
-    renderer.domElement.addEventListener('pointerdown', onPointerDown);
-    renderer.domElement.addEventListener('click', handleClick);
+    });
+    floorDragRef.current = floorDrag;
 
     const onResize = () => {
       const nw = container.clientWidth || 720;
@@ -1774,6 +1778,19 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
       const now = performance.now();
       const dt = Math.min(0.05, (now - lastTs) / 1000);
       lastTs = now;
+
+      // Graphics-tier-aware incoming studio light sweep animation
+      const wallT = now * 0.001;
+      if (!isSmooth) {
+        rimLight.position.x = -5 + Math.sin(wallT * 0.45) * 1.4;
+        rimLight.position.z = -5 + Math.cos(wallT * 0.36) * 1.2;
+        bioAccentLight.intensity = (isUltra ? 1.75 : 1.05) + Math.sin(wallT * 1.25) * (isUltra ? 0.34 : 0.14);
+        if (isUltra) {
+          keyLight.position.x = 5 + Math.sin(wallT * 0.38) * 1.5;
+          keyLight.position.z = 6 + Math.cos(wallT * 0.32) * 1.1;
+          (rimRing.material as THREE.MeshBasicMaterial).opacity = 0.58 + 0.18 * Math.sin(wallT * 1.55);
+        }
+      }
 
       const stepped = lastStepTrigger !== stepTriggerRef.current;
       if (!pausedRef.current || stepped) {
@@ -1874,8 +1891,8 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
       window.removeEventListener('resize', onResize);
       ro?.disconnect();
       controls.removeEventListener('start', cancelCamLerp);
-      renderer.domElement.removeEventListener('pointerdown', onPointerDown);
-      renderer.domElement.removeEventListener('click', handleClick);
+      floorDrag.dispose();
+      floorDragRef.current = null;
       disposeObjectTree(root);
       disposeObjectTree(labelGroup);
       anaglyphEffect.dispose();
@@ -2055,6 +2072,16 @@ export const Biology3DView: React.FC<Biology3DViewProps> = ({
           <div className="absolute top-3 left-3 z-10 rounded-lg bg-slate-900/95 border border-emerald-500/40 px-3 py-1.5 text-xs text-emerald-200 font-semibold">
             {isEn ? 'Selected structure:' : 'Cấu trúc đã chọn:'} {selectedPart}
           </div>
+        )}
+        {floorModelMoved && (
+          <button
+            type="button"
+            onClick={() => floorDragRef.current?.resetPosition()}
+            className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900/90 hover:bg-teal-600 border border-teal-500/40 text-[11px] font-semibold text-teal-200 hover:text-white cursor-pointer"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>{isEn ? 'Reset floor position' : 'Đặt lại vị trí sàn 3D'}</span>
+          </button>
         )}
       </div>
 

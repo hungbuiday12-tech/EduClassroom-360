@@ -124,8 +124,8 @@ export const BIOLOGY_MS_2018_LESSONS: BiologyLesson[] = [
     keyFormulas: [
       '\\text{Loài} \\to \\text{Chi} \\to \\text{Họ} \\to \\text{Bộ} \\to \\text{Lớp} \\to \\text{Ngành} \\to \\text{Giới}'
     ],
-    sim2d: 'vertebrate_taxonomy_2d',
-    sim3d: 'comparative_hearts_3d',
+    sim2d: 'kingdoms_invertebrates_2d',
+    sim3d: 'invertebrate_biodiversity_3d',
     mcq1: {
       source: 'KHTN 6 · 5 Giới',
       question: 'Nấm rơm và nấm linh chi được xếp vào giới riêng (Giới Nấm) chứ không phải Giới Thực vật vì sao?',
@@ -436,7 +436,7 @@ export const BIOLOGY_MS_2018_LESSONS: BiologyLesson[] = [
       '\\text{Mạch gỗ: Rễ} \\xrightarrow{\\text{Nước + Khoáng}} \\text{Thân} \\to \\text{Lá}',
       '\\text{Mạch rây: Lá} \\xrightarrow{\\text{Đường hữu cơ}} \\text{Thân, Củ, Quả, Rễ}'
     ],
-    sim2d: 'plant_organs_flowering_2d',
+    sim2d: 'plant_transpiration_2d',
     sim3d: 'plant_vascular_3d',
     mcq1: {
       source: 'KHTN 7 · Mạch dẫn ở cây',
@@ -541,7 +541,7 @@ export const BIOLOGY_MS_2018_LESSONS: BiologyLesson[] = [
       '\\text{Ngọn cây: Hướng sáng } (+) \\quad \\cdot \\quad \\text{Rễ cây: Hướng đất } (+),\\ \\text{Hướng nước } (+)'
     ],
     sim2d: 'phytohormone_tropism_2d',
-    sim3d: 'plant_vascular_3d',
+    sim3d: 'plant_tropism_germination_3d',
     mcq1: {
       source: 'KHTN 7 · Cảm ứng thực vật',
       question: 'Đặt một chậu cây nhỏ cạnh cửa sổ một phía có ánh nắng, sau vài ngày ngọn cây uốn cong về phía cửa sổ. Đây là hiện tượng gì?',

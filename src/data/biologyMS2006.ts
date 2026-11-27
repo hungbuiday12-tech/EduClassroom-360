@@ -393,8 +393,8 @@ export const BIOLOGY_MS_2006_LESSONS: BiologyLesson[] = [
     keyFormulas: [
       '\\text{Giun đũa: Vỏ cuticun} \\quad | \\quad \\text{Giun đất: Phân đốt + Hô hấp da}'
     ],
-    sim2d: 'vertebrate_taxonomy_2d',
-    sim3d: 'comparative_hearts_3d',
+    sim2d: 'kingdoms_invertebrates_2d',
+    sim3d: 'invertebrate_biodiversity_3d',
     mcq1: {
       source: 'SGK Sinh 7 (2006)',
       question: 'Tại sao con giun đũa sống kí sinh trong ruột non người chứa đầy enzyme tiêu hóa mà không bị tiêu hủy?',
@@ -445,8 +445,8 @@ export const BIOLOGY_MS_2006_LESSONS: BiologyLesson[] = [
     keyFormulas: [
       '\\text{Sâu bọ: 3 phần (Đầu–Ngực–Bụng), 6 chân, 1 đôi râu, Hô hấp ống khí}'
     ],
-    sim2d: 'vertebrate_taxonomy_2d',
-    sim3d: 'comparative_hearts_3d',
+    sim2d: 'kingdoms_invertebrates_2d',
+    sim3d: 'invertebrate_biodiversity_3d',
     mcq1: {
       source: 'SGK Sinh 7 (2006)',
       question: 'Nhện và Bọ cạp KHÔNG phải là Sâu bọ (Côn trùng) vì chúng thuộc lớp Hình nhện có đặc điểm nào?',
@@ -867,8 +867,8 @@ export const BIOLOGY_MS_2006_LESSONS: BiologyLesson[] = [
     keyFormulas: [
       '\\text{Tiểu não: Thăng bằng} \\quad | \\quad \\text{Trụ não: Tim mạch–Hô hấp} \\quad | \\quad \\text{Đại não: Tư duy, Ý thức}'
     ],
-    sim2d: 'action_potential_2d',
-    sim3d: 'neuron_synapse_3d',
+    sim2d: 'human_skeleton_senses_2d',
+    sim3d: 'skeleton_senses_3d',
     mcq1: {
       source: 'SGK Sinh 8 (2006)',
       question: 'Bộ phận nào của não bộ đóng vai trò chính trong việc ĐIỀU HÒA NHỊP THỞ VÀ NHỊP TIM tự động của con người?',

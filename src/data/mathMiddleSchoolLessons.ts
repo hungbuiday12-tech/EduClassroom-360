@@ -1,4 +1,5 @@
 import { MathLecture } from '../types';
+import { MATH_MS_EXTRA_LESSONS } from './mathMiddleSchoolExtraLessons';
 
 // Chương trình Toán THCS Lớp 6, 7, 8 — Đầy đủ 2 hệ:
 // 1. GDPT 2018 (khong_chuyen · Kết nối tri thức / Chân trời sáng tạo / Cánh Diều)
@@ -75,7 +76,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$A = 74$.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -133,7 +135,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: 'Sau ít nhất 12 ngày.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -193,7 +196,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$x = -6$.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -250,7 +254,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '40 học sinh.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -306,8 +311,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim2dPreset: 'triangle_explorer',
-    sim3dMode: 'geometric_transform_3d'
+    sim2dPreset: 'quadrilaterals_sym',
+    sim3dMode: 'solid_prism_nets_3d'
   },
   {
     id: 'math-6-b6',
@@ -362,7 +367,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$53\\,000\\,000$ đồng.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -417,7 +423,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$0{,}4$ (hay $40\\%$).'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'stat_charts_2d',
     sim3dMode: 'probability_bell_3d'
   },
   {
@@ -474,8 +481,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim2dPreset: 'triangle_explorer',
-    sim3dMode: 'line_plane_oxyz'
+    sim2dPreset: 'angles_parallel',
+    sim3dMode: 'angle_thales_3d'
   },
 
   // ==========================================================================
@@ -537,7 +544,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$x \\in \\{4; -1\\}$.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -594,7 +602,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '7A: 12; 7B: 16; 7C: 20 bạn.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -708,8 +717,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim2dPreset: 'triangle_explorer',
-    sim3dMode: 'geometric_transform_3d'
+    sim2dPreset: 'angles_parallel',
+    sim3dMode: 'angle_thales_3d'
   },
   {
     id: 'math-7-b5',
@@ -875,7 +884,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '40 học sinh.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'stat_charts_2d',
     sim3dMode: 'probability_bell_3d'
   },
 
@@ -1104,8 +1114,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim2dPreset: 'triangle_explorer',
-    sim3dMode: 'geometric_transform_3d'
+    sim2dPreset: 'thales_similarity',
+    sim3dMode: 'angle_thales_3d'
   },
   {
     id: 'math-8-b5',
@@ -1271,7 +1281,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$0{,}2$ ($20\\%$).'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'stat_charts_2d',
     sim3dMode: 'probability_bell_3d'
   },
 
@@ -1330,7 +1341,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$x = 4$.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -1385,7 +1397,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$180$ học sinh.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -1440,7 +1453,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$x = -6$.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -1495,7 +1509,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$300$ lít.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -1550,8 +1565,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim2dPreset: 'triangle_explorer',
-    sim3dMode: 'line_plane_oxyz'
+    sim2dPreset: 'angles_parallel',
+    sim3dMode: 'angle_thales_3d'
   },
   {
     id: 'math-2006-6-6',
@@ -1606,8 +1621,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim2dPreset: 'triangle_explorer',
-    sim3dMode: 'circle_theorems_3d'
+    sim2dPreset: 'angles_parallel',
+    sim3dMode: 'angle_thales_3d'
   },
 
   // ==========================================================================
@@ -1665,7 +1680,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$x = 20, y = 35$.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'number_fractions_2d',
     sim3dMode: 'arithmetic_prism_3d'
   },
   {
@@ -1775,7 +1791,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
         finalAnswer: '$\\bar{X} = 8{,}3$.'
       }
     ],
-    sim2dMode: 'grapher',
+    sim2dMode: 'geometry',
+    sim2dPreset: 'stat_charts_2d',
     sim3dMode: 'probability_bell_3d'
   },
   {
@@ -1885,8 +1902,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim2dPreset: 'pythagoras',
-    sim3dMode: 'geometric_transform_3d'
+    sim2dPreset: 'angles_parallel',
+    sim3dMode: 'angle_thales_3d'
   },
   {
     id: 'math-2006-7-6',
@@ -2220,7 +2237,7 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim2dPreset: 'pythagoras',
+    sim2dPreset: 'quadrilaterals_sym',
     sim3dMode: 'geometric_transform_3d'
   },
   {
@@ -2277,7 +2294,8 @@ export const MATH_MIDDLE_SCHOOL_LESSONS: MathLecture[] = [
       }
     ],
     sim2dMode: 'geometry',
-    sim2dPreset: 'spatial_pyramid',
-    sim3dMode: 'solid_prism_nets_3d'
-  }
+    sim2dPreset: 'thales_similarity',
+    sim3dMode: 'angle_thales_3d'
+  },
+  ...MATH_MS_EXTRA_LESSONS
 ];

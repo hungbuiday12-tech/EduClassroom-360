@@ -305,6 +305,9 @@ export interface LeaderArrowOptions {
   color?: number;
   fontSize?: number;
   maxWidth?: number;
+  dotRadius?: number;
+  arrowScale?: number;
+  trimStart?: number;
 }
 
 export class LeaderArrowLabel extends THREE.Group {
@@ -313,6 +316,8 @@ export class LeaderArrowLabel extends THREE.Group {
   private readonly dot: THREE.Mesh;
   private readonly arrow: THREE.Mesh;
   private readonly linePositions: Float32Array;
+  private readonly arrowScale: number;
+  private readonly customTrimStart?: number;
   private readonly tmpDir = new THREE.Vector3();
   private readonly upVec = new THREE.Vector3(0, 1, 0);
   private readonly aVec = new THREE.Vector3();
@@ -322,6 +327,9 @@ export class LeaderArrowLabel extends THREE.Group {
   constructor(options: LeaderArrowOptions) {
     super();
     const color = options.color ?? 0x7dd3fc;
+    const dotRadius = options.dotRadius ?? 0.048;
+    this.arrowScale = options.arrowScale ?? 1;
+    this.customTrimStart = options.trimStart;
 
     this.label = new BillboardTextLabel({
       text: options.text,
@@ -348,17 +356,20 @@ export class LeaderArrowLabel extends THREE.Group {
     this.add(this.line);
 
     this.dot = new THREE.Mesh(
-      new THREE.SphereGeometry(0.048, 12, 10),
+      new THREE.SphereGeometry(dotRadius, 12, 10),
       new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.95 })
     );
     this.dot.renderOrder = 20;
     this.add(this.dot);
 
     this.arrow = new THREE.Mesh(
-      new THREE.ConeGeometry(0.06, 0.17, 12),
+      new THREE.ConeGeometry(0.06 * Math.max(0.01, this.arrowScale), 0.17 * Math.max(0.01, this.arrowScale), 12),
       new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.96 })
     );
     this.arrow.renderOrder = 21;
+    if (this.arrowScale <= 0) {
+      this.arrow.visible = false;
+    }
     this.add(this.arrow);
 
     this.setEndpoints(options.labelPos, options.anchorPos);
@@ -382,11 +393,11 @@ export class LeaderArrowLabel extends THREE.Group {
     if (dist > 0.001) {
       this.tmpDir.divideScalar(dist);
       // Offset line start slightly away from text center so line emerges cleanly from badge rim
-      const trimStart = Math.min(0.32, dist * 0.25);
-      this.startVec.copy(this.lVec).addScaledVector(this.tmpDir, trimStart);
-      this.arrow.position.copy(this.aVec).addScaledVector(this.tmpDir, -0.09);
+      const trimStart = this.customTrimStart ?? Math.min(0.32, dist * 0.25);
+      this.startVec.copy(this.lVec).addScaledVector(this.tmpDir, Math.min(trimStart, dist * 0.6));
+      this.arrow.position.copy(this.aVec).addScaledVector(this.tmpDir, -0.09 * Math.max(0.1, this.arrowScale));
       this.arrow.quaternion.setFromUnitVectors(this.upVec, this.tmpDir);
-      this.arrow.visible = dist > 0.22;
+      this.arrow.visible = this.arrowScale > 0 && dist > 0.22;
     } else {
       this.startVec.copy(this.lVec);
       this.arrow.position.copy(this.aVec);

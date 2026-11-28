@@ -26,11 +26,12 @@ import {
   Zap
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { BiologyLesson, CurriculumTrack, LectureStep, SpecializedTier } from '../../types';
+import { Biology3DMode, BiologyLesson, CurriculumTrack, LectureStep, SpecializedTier } from '../../types';
 import { BIOLOGY_LESSONS } from '../../data/biologyLessonsData';
 import { BIOLOGY_2D_SIMS, BIOLOGY_3D_SIMS, BIOLOGY_DOMAINS } from '../../data/biologyDomainsData';
 import { renderBiology2DSim, BioSimTelemetry } from './biology2DEngine';
 import { Biology3DView } from './Biology3DView';
+import { getLesson3DModels } from './engine/bioLessonModelRegistry';
 import { FormattedText, MathFormula } from '../common/MathRenderer';
 import { InteractiveLectureRoom } from '../common/InteractiveLectureRoom';
 import { LectureThumbnail } from '../common/LectureThumbnail';
@@ -237,6 +238,13 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
   }, [location.biologyLessonId, filteredLessons]);
 
   const currentIndex = filteredLessons.findIndex((l) => l.id === lesson.id);
+
+  const lesson3DModels = useMemo(() => getLesson3DModels(lesson), [lesson]);
+  const [active3DMode, setActive3DMode] = useState<Biology3DMode>(lesson.sim3dType);
+
+  useEffect(() => {
+    setActive3DMode(lesson.sim3dType);
+  }, [lesson.id, lesson.sim3dType]);
 
   const active2DSpec = useMemo(
     () => BIOLOGY_2D_SIMS.find((s) => s.id === lesson.simulationType) || BIOLOGY_2D_SIMS[0],
@@ -1108,15 +1116,53 @@ export const BiologyLab: React.FC<{ onScoreEarned?: (xp: number) => void; onBack
 
       {activeTab === 'sim3d' && (
         <div className="space-y-4">
+          {lesson3DModels.length > 1 && (
+            <div
+              data-testid="lesson-3d-model-switcher"
+              className="rounded-xl border border-teal-500/30 bg-white dark:bg-slate-900 p-3 flex flex-wrap items-center gap-2"
+            >
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-700 dark:text-teal-300 mr-1 shrink-0">
+                <Layers className="w-3.5 h-3.5" />
+                <span>Cơ quan / Mô hình 3D trong bài ({lesson3DModels.length}):</span>
+              </span>
+              {lesson3DModels.map((opt) => {
+                const isActive = active3DMode === opt.mode;
+                return (
+                  <button
+                    key={opt.mode}
+                    type="button"
+                    data-testid={`lesson-3d-opt-${opt.mode}`}
+                    onClick={() => setActive3DMode(opt.mode)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
+                      isActive
+                        ? 'bg-teal-600 border-teal-500 text-white shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-teal-400'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {opt.isPrimary && (
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-teal-500/15 text-teal-700 dark:text-teal-300'
+                        }`}
+                      >
+                        Chính
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <Biology3DView
-            mode={lesson.sim3dType}
-            title={BIOLOGY_3D_SIMS.find((x) => x.id === lesson.sim3dType)?.title || lesson.title}
+            mode={active3DMode}
+            title={BIOLOGY_3D_SIMS.find((x) => x.id === active3DMode)?.title || lesson.title}
             heightClass="h-[460px]"
             isEn={isEn}
           />
           <SimAnalysisProBar
-            simKey={`bio-3d-${lesson.sim3dType}`}
-            title={BIOLOGY_3D_SIMS.find((x) => x.id === lesson.sim3dType)?.title || lesson.title}
+            simKey={`bio-3d-${active3DMode}`}
+            title={BIOLOGY_3D_SIMS.find((x) => x.id === active3DMode)?.title || lesson.title}
             formula={lesson.keyFormulas[0]}
             params={params}
             paramBounds={active2DSpec.paramBounds}

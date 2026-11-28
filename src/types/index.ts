@@ -871,6 +871,7 @@ export type BiologySimType =
   | 'biomolecules_2d';
 
 export type Biology3DMode =
+  | 'human_anatomy_3d'
   | 'eukaryotic_cell_3d'
   | 'mitochondria_atp_3d'
   | 'chloroplast_thylakoid_3d'
@@ -881,11 +882,16 @@ export type Biology3DMode =
   | 'enzyme_substrate_3d'
   | 'neuron_synapse_3d'
   | 'human_heart_3d'
+  | 'human_brain_3d'
+  | 'liver_digestive_3d'
   | 'alveoli_capillary_3d'
   | 'nephron_kidney_3d'
   | 'antibody_antigen_3d'
   | 'virus_bacteriophage_3d'
+  | 'bacteria_prokaryote_3d'
+  | 'fungi_microorganisms_3d'
   | 'plant_vascular_3d'
+  | 'plant_leaf_transpiration_3d'
   | 'ecosystem_biome_3d'
   | 'mendel_peas_3d'
   | 'population_genetics_3d'

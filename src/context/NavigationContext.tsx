@@ -177,7 +177,9 @@ function getInitialLocation(): NavLocation {
           'chem_reaction_3d',
           'chem_orbital_vsepr_3d',
           'bio_cell_atlas_3d',
-          'bio_dna_crispr_3d'
+          'bio_dna_crispr_3d',
+          'bio_anatomy_explorer_3d',
+          'bio_sandbox_suite'
         ].includes(rawFutureTab)
       ) {
         return {

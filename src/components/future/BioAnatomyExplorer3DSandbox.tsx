@@ -7,9 +7,12 @@ import {
   Bone,
   Brain,
   Camera,
+  Crosshair,
   Dna,
   Download,
   Eye,
+  EyeOff,
+  FolderUp,
   HeartPulse,
   Layers,
   Maximize2,
@@ -18,9 +21,12 @@ import {
   Pause,
   Play,
   RotateCcw,
+  RotateCw,
   Sparkles,
   Tag,
   Wind,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import {
   applyClipPlaneToObject,
@@ -39,9 +45,37 @@ import {
   updateBillboardLabels,
 } from '../../lib/three3DEnhancements';
 import { captureCanvasPng, MiniTelemetryChart } from '../common/SimProToolkit';
+import { applySphericalOrbitDelta } from '../../lib/remoteControlBus';
+import { BioMaterialVault } from '../biology/engine/bioMaterials';
+import {
+  AnatomyBuildResult,
+  AnatomySystemKey,
+  buildHumanAnatomyExplorer,
+} from '../biology/engine/bioAnatomyBuilder';
+import { buildSculptedHumanSubScene } from '../biology/engine/bioAnatomySubScenes';
+import { buildVertebrateAnimalScene } from '../biology/engine/bioVertebrateBuilders';
+import {
+  AnatomyGltfSlotSpec,
+  fetchAnatomyBundledManifest,
+  HUMAN_ANATOMY_ASSET_SLOTS,
+  loadAnatomyGltfSource,
+  normalizeAndBindGltfOrgan,
+  resolveSlotAvailability,
+  splitCompositeAnatomyGltf,
+} from '../biology/engine/bioAnatomyAssetSystem';
+import { AnatomyAssetManagerModal } from '../biology/AnatomyAssetManagerModal';
+import { disposeObjectTreeFull } from '../biology/engine/bioGltfLoader';
+import {
+  CameraPose,
+  computeFocusPoseFromBox3,
+  computeZoomStepPose,
+  resolveFocusBoxForPart,
+  resolveObjectWorldBox3,
+  stepSmoothCameraTransition,
+} from '../biology/engine/bioCameraFocus';
 
 type AnatomyRealm = 'human' | 'animal';
-type LayerKey = 'circulatory' | 'respiratory' | 'nervous' | 'digestive';
+type LayerKey = AnatomySystemKey;
 
 type AnatomySystemId =
   | 'human_full_layered'
@@ -89,82 +123,196 @@ interface SystemSpec {
   organs: OrganMeta[];
 }
 
+const ORGAN_TO_DETAILED_SYSTEM: Partial<Record<string, AnatomySystemId>> = {
+  heart_circulatory: 'human_heart_circulatory',
+  lungs_respiratory: 'human_respiratory',
+  brain_nervous: 'human_nervous',
+  liver_gallbladder: 'human_digestive_renal',
+  stomach_intestines: 'human_digestive_renal',
+  kidneys_urinary: 'human_digestive_renal',
+};
+
 const ANATOMY_SYSTEMS: SystemSpec[] = [
   {
     id: 'human_full_layered',
     realm: 'human',
-    titleVi: 'Bản Đồ Cơ Thể Người Đa Lớp',
-    subtitleVi: 'Bật/tắt 4 lớp: Tuần hoàn · Hô hấp · Thần kinh · Tiêu hóa',
-    badgeVi: 'BẢN ĐỒ ĐA LỚP · SINH LÍ SỐNG',
+    titleVi: 'Bản Đồ Cơ Thể Người 11 Hệ Cơ Quan',
+    subtitleVi:
+      '11 hệ: Xương · Cơ · Tuần hoàn · Hô hấp · Tiêu hóa · Thần kinh · Tiết niệu · Nội tiết · Miễn dịch · Sinh sản · Giác quan',
+    badgeVi: 'GIẢI PHẪU NGƯỜI 3D · 11 HỆ',
     telemetryLabel: 'Nhịp Tim & Xung Thần Kinh Đồng Bộ',
     telemetryUnit: 'mV/mmHg',
     telemetryColor: '#f43f5e',
     telemetryMin: -20,
     telemetryMax: 130,
-    defaultRateLabel: 'Nhịp Sinh Lí Chung',
+    defaultRateLabel: 'Nhịp Tim Cơ Bản',
     defaultRateMin: 45,
     defaultRateMax: 150,
     defaultRateVal: 72,
     defaultRateUnit: 'bpm',
     summaryVi:
-      'Quan sát toàn bộ 4 hệ cơ quan trọng yếu lồng ghép theo đúng vị trí giải phẫu trong thân người. Bật/tắt từng lớp độc lập để thấy sự phối hợp giữa tim bơm máu, phổi thông khí, tủy sống truyền xung và ống tiêu hóa.',
+      'Khám phá mô hình giải phẫu cơ thể người toàn thân với đầy đủ 11 hệ cơ quan chồng lớp theo đúng tỉ lệ giải phẫu. Bật/tắt từng hệ độc lập, điều chỉnh độ trong suốt lớp da–cơ–xương, ẩn/cô lập, tập trung camera chính xác và chuyển nhanh sang mô hình đơn chi tiết.',
     keyFactsVi: [
-      'Tim nằm hơi lệch trái giữa lồng ngực (khoang trung thất giữa), được hai lá phổi ôm sát hai bên.',
-      'Trung tâm hành não điều phối đồng thời nhịp tim (dây X & giao cảm) và nhịp hô hấp qua cơ hoành.',
-      'Máu giàu dinh dưỡng hấp thụ từ ruột non qua tĩnh mạch cửa về gan trước khi vào vòng tuần hoàn chung.',
+      'Tim nằm hơi lệch trái trong trung thất giữa, được lồng ngực xương sườn và hai lá phổi ôm sát.',
+      'Trung khu hành não điều phối nhịp tim, nhịp thở qua cơ hoành và cân bằng nội môi qua tuyến nội tiết.',
+      'Hệ miễn dịch (tuyến ức, lách, hạch bạch huyết), giác quan (mắt, tai trong) và sinh sản vùng chậu được tái hiện đồng bộ.',
     ],
     organs: [
       {
-        id: 'layer_nervous_brain_spine',
+        id: 'brain_nervous',
         layerKey: 'nervous',
-        nameVi: 'Lớp Thần Kinh (Não & Tủy Sống)',
-        latinName: 'Systema nervosum centrale',
+        nameVi: 'Não bộ & Tủy sống',
+        latinName: 'Encephalon et Medulla spinalis',
         colorHex: '#facc15',
-        roleVi: 'Phát xung điện thế hoạt động điều khiển nhịp tim, nhịp thở, vận động cơ xương và nhu động tiêu hóa.',
-        histologyVi: 'Chất xám vỏ não và bó dẫn truyền myelin dọc tủy sống truyền tín hiệu tới 120 m/s.',
-        evolutionNoteVi: 'Ống thần kinh lưng tập trung tạo não bộ lớn ở đầu (cephalization).',
-        explodeDir: [0, 0.3, -0.95],
-        anchorPos: [0, 1.48, -0.05],
-        labelPos: [-2.75, 1.68, 0],
+        roleVi: 'Trung tâm xử lí nhận thức, cảm giác, vận động và điều hòa phản xạ tự động toàn thân.',
+        histologyVi: 'Chất xám vỏ đại não gấp nếp hồi não và bó sợi trắng myelin dẫn truyền tới 120 m/s.',
+        evolutionNoteVi: 'Vỏ não mới (neocortex) và thùy trán phát triển vượt trội ở người.',
+        explodeDir: [0, 0.32, -0.2],
+        anchorPos: [0, 1.48, 0.05],
+        labelPos: [-1.24, 1.66, 0.1],
       },
       {
-        id: 'layer_respiratory_lungs',
-        layerKey: 'respiratory',
-        nameVi: 'Lớp Hô Hấp (Khí Quản & Hai Phổi)',
-        latinName: 'Systema respiratorium',
+        id: 'sensory_organs',
+        layerKey: 'sensory',
+        nameVi: 'Giác quan (Mắt & Tai trong)',
+        latinName: 'Organa sensuum',
         colorHex: '#38bdf8',
-        roleVi: 'Nhận O₂ từ khí quyển đưa vào máu tại phế nang và thải CO₂ nhờ nhịp hạ cơ hoành.',
-        histologyVi: 'Phổi phải 3 thùy, phổi trái 2 thùy bọc màng phổi mỏng.',
-        evolutionNoteVi: 'Phế nang tăng diện tích trao đổi khí lên tới ~80 m².',
-        explodeDir: [0.95, 0.2, 0.1],
-        anchorPos: [0.58, 0.48, 0.05],
-        labelPos: [2.75, 1.25, 0.1],
+        roleVi: 'Thu nhận ánh sáng hội tụ lên võng mạc và sóng âm – thăng bằng tại ốc tai, ống bán khuyên.',
+        histologyVi: 'Tế bào nón/que ở hoàng điểm và tế bào lông cảm giác trên màng cơ sở ốc tai.',
+        evolutionNoteVi: 'Thị giác hai mắt chồng trường nhìn giúp nhận thức chiều sâu 3D chính xác.',
+        explodeDir: [0.16, 0.24, 0.28],
+        anchorPos: [0.06, 1.44, 0.17],
+        labelPos: [1.24, 1.56, 0.14],
       },
       {
-        id: 'layer_circulatory_heart',
+        id: 'heart_circulatory',
         layerKey: 'circulatory',
-        nameVi: 'Lớp Tuần Hoàn (Tim & Động Mạch Chủ)',
-        latinName: 'Systema cardiovasculare',
+        nameVi: 'Tim 4 ngăn & Hệ mạch lớn',
+        latinName: 'Cor et Vasa sanguinea',
         colorHex: '#fb7185',
-        roleVi: 'Tim co bóp đẩy máu qua động mạch chủ đi khắp thân và bơm máu tĩnh mạch lên phổi.',
-        histologyVi: 'Cơ tim tự nhịp nút SA node đập liên tục ~100.000 lần mỗi ngày.',
-        evolutionNoteVi: 'Hệ tuần hoàn kép tách biệt hoàn toàn máu giàu O₂ và nghèo O₂.',
-        explodeDir: [-0.85, 0.15, 0.65],
-        anchorPos: [0.06, 0.42, 0.32],
-        labelPos: [-2.75, 0.35, 0.25],
+        roleVi: 'Co bóp bơm máu giàu O₂ qua động mạch chủ đi nuôi toàn thân và máu tĩnh mạch lên phổi.',
+        histologyVi: 'Cơ tim phân nhánh nối đĩa xen kẽ giàu ti thể, nút xoang nhĩ (SA node) tự phát nhịp.',
+        evolutionNoteVi: 'Hệ tuần hoàn kép 4 ngăn tách biệt hoàn toàn máu động mạch và tĩnh mạch.',
+        explodeDir: [0.3, 0.08, 0.25],
+        anchorPos: [0.06, 0.58, 0.16],
+        labelPos: [-1.26, 0.74, 0.18],
       },
       {
-        id: 'layer_digestive_gut',
+        id: 'lungs_respiratory',
+        layerKey: 'respiratory',
+        nameVi: 'Phổi 3 thùy/2 thùy & Khí quản',
+        latinName: 'Pulmones, Trachea et Diaphragma',
+        colorHex: '#38bdf8',
+        roleVi: 'Nhận O₂ và thải CO₂ qua hàng trăm triệu phế nang nhờ chuyển động cơ hoành.',
+        histologyVi: 'Phổi phải 3 thùy, phổi trái 2 thùy có khuyết tim; màng hô hấp mỏng 0,5 µm.',
+        evolutionNoteVi: 'Diện tích trao đổi khí đạt ~80 m² nhờ cấu trúc phân nhánh 23 thế hệ.',
+        explodeDir: [0, 0.16, 0.24],
+        anchorPos: [0.22, 0.68, 0.08],
+        labelPos: [1.26, 0.78, 0.1],
+      },
+      {
+        id: 'liver_gallbladder',
         layerKey: 'digestive',
-        nameVi: 'Lớp Tiêu Hóa (Gan, Dạ Dày & Ruột)',
-        latinName: 'Systema digestorium',
+        nameVi: 'Gan & Túi mật',
+        latinName: 'Hepar et Vesica biliaris',
+        colorHex: '#b91c1c',
+        roleVi: 'Giải độc, tổng hợp protein huyết tương, dự trữ glycogen và sản xuất dịch mật.',
+        histologyVi: 'Hàng trăm nghìn tiểu thùy gan lục giác bao quanh tĩnh mạch trung tâm.',
+        evolutionNoteVi: 'Tuyến tiêu hóa lớn nhất trong khoang bụng động vật có xương sống.',
+        explodeDir: [-0.34, 0, 0.22],
+        anchorPos: [-0.14, 0.25, 0.14],
+        labelPos: [-1.26, 0.28, 0.15],
+      },
+      {
+        id: 'stomach_intestines',
+        layerKey: 'digestive',
+        nameVi: 'Dạ dày, Ruột non & Ruột già',
+        latinName: 'Gaster, Intestinum tenue et crassum',
         colorHex: '#fb923c',
-        roleVi: 'Tiêu hóa cơ học & hóa học thức ăn thành glucozơ, axit amin, axit béo hấp thụ vào máu.',
-        histologyVi: 'Niêm mạc dạ dày tiết HCl/pepsin; ruột non có hàng triệu nhung mao.',
-        evolutionNoteVi: 'Phân hóa tuyến tiêu hóa chuyên biệt gan–tụy nối trực tiếp tá tràng.',
-        explodeDir: [0.65, -0.55, 0.4],
-        anchorPos: [0.05, -0.68, 0.18],
-        labelPos: [2.75, -0.78, 0.2],
+        roleVi: 'Tiêu hóa cơ học – enzyme, hấp thụ dinh dưỡng qua vi nhung mao ruột non và tái hấp thu nước.',
+        histologyVi: 'Niêm mạc dạ dày tiết HCl/pepsin; ruột non tăng diện tích hấp thụ gấp ~600 lần.',
+        evolutionNoteVi: 'Ống tiêu hóa phân hóa thành từng đoạn chuyên biệt dọc trục cơ thể.',
+        explodeDir: [0.16, -0.14, 0.28],
+        anchorPos: [0.08, 0.02, 0.12],
+        labelPos: [1.26, -0.02, 0.15],
+      },
+      {
+        id: 'kidneys_urinary',
+        layerKey: 'urinary',
+        nameVi: 'Thận, Niệu quản & Bàng quang',
+        latinName: 'Renes, Ureteres et Vesica urinaria',
+        colorHex: '#be123c',
+        roleVi: 'Siêu lọc huyết tương, cân bằng nước – điện giải – pH máu và đào thải urê.',
+        histologyVi: 'Mỗi quả thận chứa ~1 triệu nephron có cầu thận Malpighi và quai Henle.',
+        evolutionNoteVi: 'Quai Henle dài giúp động vật có vú cô đặc nước tiểu tiết kiệm nước.',
+        explodeDir: [0, -0.18, -0.28],
+        anchorPos: [0.14, 0.14, -0.04],
+        labelPos: [-1.24, -0.22, -0.06],
+      },
+      {
+        id: 'endocrine_glands',
+        layerKey: 'endocrine',
+        nameVi: 'Tuyến Nội tiết (Giáp · Thượng thận · Tụy)',
+        latinName: 'Systema endocrinum',
+        colorHex: '#f59e0b',
+        roleVi: 'Tiết hormone (Thyroxine, Adrenaline, Insulin, Glucagon) điều hòa chuyển hóa và nội môi.',
+        histologyVi: 'Các nang tuyến nội tiết không có ống dẫn, tiết thẳng hormone vào lưới mao mạch.',
+        evolutionNoteVi: 'Điều hòa thể dịch phối hợp chặt chẽ với hệ thần kinh qua trục hạ đồi – tuyến yên.',
+        explodeDir: [-0.22, 0.02, 0.12],
+        anchorPos: [0.02, 0.99, 0.07],
+        labelPos: [1.24, 1.14, 0.1],
+      },
+      {
+        id: 'lymphatic_immune',
+        layerKey: 'lymphatic',
+        nameVi: 'Hệ Miễn dịch (Tuyến ức · Lách · Hạch)',
+        latinName: 'Systema lymphoideum',
+        colorHex: '#34d399',
+        roleVi: 'Huấn luyện tế bào lympho T, lọc kháng nguyên trong máu/bạch huyết và đáp ứng miễn dịch đặc hiệu.',
+        histologyVi: 'Mô bạch huyết giàu đại thực bào, tế bào B sinh kháng thể và tế bào T gây độc.',
+        evolutionNoteVi: 'Miễn dịch thích ứng có trí nhớ miễn dịch đặc trưng ở động vật có hàm.',
+        explodeDir: [0.28, 0.1, 0.14],
+        anchorPos: [0.18, 0.3, 0.03],
+        labelPos: [1.28, 0.42, 0.12],
+      },
+      {
+        id: 'reproductive_pelvic',
+        layerKey: 'reproductive',
+        nameVi: 'Hệ Sinh sản vùng chậu',
+        latinName: 'Systema genitale',
+        colorHex: '#e879f9',
+        roleVi: 'Sản sinh giao tử, tiết hormone sinh dục và bảo vệ – nuôi dưỡng phôi thai trong khung chậu.',
+        histologyVi: 'Buồng trứng chứa nang noãn; thành tử cung gồm cơ trơn dày và lớp nội mạc chu kỳ.',
+        evolutionNoteVi: 'Thụ tinh trong và nuôi thai trong tử cung ở thú có nhau thai.',
+        explodeDir: [0, -0.22, 0.2],
+        anchorPos: [0, -0.16, 0.02],
+        labelPos: [1.24, -0.36, 0.08],
+      },
+      {
+        id: 'skeletal_frame',
+        layerKey: 'skeletal',
+        nameVi: 'Hệ Xương (Sọ – Cột sống – Lồng ngực)',
+        latinName: 'Systema skeletale',
+        colorHex: '#e2e8f0',
+        roleVi: 'Tạo khung nâng đỡ cơ thể, bảo vệ nội tạng quan trọng và dự trữ canxi – tủy tạo máu.',
+        histologyVi: 'Mô xương đặc gồm các ống Havers đồng tâm kết hợp xương xốp giàu tủy đỏ.',
+        evolutionNoteVi: 'Cột sống cong 4 đoạn chữ S giúp con người đi thẳng đứng thăng bằng.',
+        explodeDir: [0, 0, -0.26],
+        anchorPos: [-0.34, 0.54, 0.12],
+        labelPos: [1.24, -0.72, 0.08],
+      },
+      {
+        id: 'muscular_system',
+        layerKey: 'muscular',
+        nameVi: 'Hệ Cơ Vân (Ngực – Vai – Bụng – Chi)',
+        latinName: 'Systema musculare',
+        colorHex: '#c8484f',
+        roleVi: 'Co rút tạo lực kéo xương quanh khớp giúp vận động, giữ tư thế và sinh nhiệt.',
+        histologyVi: 'Sợi cơ vân đa nhân chứa tơ cơ actin và myosin xếp xen kẽ tạo vân ngang.',
+        evolutionNoteVi: 'Hệ cơ bám xương phát triển đối kháng đồng vận linh hoạt.',
+        explodeDir: [0, 0, 0.42],
+        anchorPos: [-0.24, -0.52, 0.12],
+        labelPos: [-1.24, -0.78, 0.12],
       },
     ],
   },
@@ -837,7 +985,7 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
   const isSoftwareGl = useMemo(() => detectSoftwareGl(), []);
 
   const [realm, setRealm] = useState<AnatomyRealm>('human');
-  const [systemId, setSystemId] = useState<AnatomySystemId>('human_heart_circulatory');
+  const [systemId, setSystemId] = useState<AnatomySystemId>('human_full_layered');
   const activeSystem = useMemo(
     () => ANATOMY_SYSTEMS.find((s) => s.id === systemId) || ANATOMY_SYSTEMS[0],
     [systemId]
@@ -853,11 +1001,23 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
   const [telemetryHistory, setTelemetryHistory] = useState<number[]>([72, 95, 118, 86, 65, 74, 112, 82]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [hiddenOrganIds, setHiddenOrganIds] = useState<string[]>([]);
+  const [skinOpacity, setSkinOpacity] = useState(0.24);
+  const [muscleOpacity, setMuscleOpacity] = useState(0.58);
+  const [boneOpacity, setBoneOpacity] = useState(0.92);
   const [layerVis, setLayerVis] = useState<Record<LayerKey, boolean>>({
+    skeletal: true,
+    muscular: true,
     circulatory: true,
     respiratory: true,
-    nervous: true,
     digestive: true,
+    nervous: true,
+    urinary: true,
+    endocrine: true,
+    lymphatic: true,
+    reproductive: true,
+    sensory: true,
   });
 
   // Pro Viewport Controls
@@ -871,13 +1031,23 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
-  const cameraLerpRef = useRef<{ pos: THREE.Vector3; target: THREE.Vector3 } | null>(null);
+  const cameraLerpRef = useRef<CameraPose | null>(null);
   const savedBookmarkRef = useRef<CameraBookmarkPose | null>(null);
 
   const specimenRootRef = useRef<THREE.Group | null>(null);
   const shellGroupRef = useRef<THREE.Group | null>(null);
   const labelGroupRef = useRef<THREE.Group | null>(null);
   const entriesRef = useRef<OrganSceneEntry[]>([]);
+  const fullAnatomyRef = useRef<AnatomyBuildResult | null>(null);
+  const fullAnatomyVaultRef = useRef<BioMaterialVault | null>(null);
+  const [assetModalOpen, setAssetModalOpen] = useState(false);
+  const [bundledAnatomyFiles, setBundledAnatomyFiles] = useState<string[]>([]);
+  const [sessionUploadedSlots, setSessionUploadedSlots] = useState<Map<string, string>>(() => new Map());
+  const sessionGltfCacheRef = useRef<Map<string, THREE.Group>>(new Map());
+  const anatomyAssetSummary = useMemo(
+    () => resolveSlotAvailability(bundledAnatomyFiles, sessionUploadedSlots),
+    [bundledAnatomyFiles, sessionUploadedSlots]
+  );
 
   // Live animation refs
   const systemRef = useRef<AnatomySystemId>(systemId);
@@ -887,11 +1057,16 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
   const isolateRef = useRef<boolean>(isolateSelected);
   const showLabelsRef = useRef<boolean>(showLabels);
   const pausedRef = useRef<boolean>(paused);
+  const autoRotateRef = useRef<boolean>(autoRotate);
   const rateRef = useRef<number>(rateValue);
   const sliceEnabledRef = useRef<boolean>(sliceEnabled);
   const sliceAxisRef = useRef<SliceAxis>(sliceAxis);
   const sliceOffsetRef = useRef<number>(sliceOffset);
   const layerVisRef = useRef<Record<LayerKey, boolean>>(layerVis);
+  const hiddenOrganIdsRef = useRef<ReadonlySet<string>>(new Set());
+  const skinOpacityRef = useRef<number>(skinOpacity);
+  const muscleOpacityRef = useRef<number>(muscleOpacity);
+  const boneOpacityRef = useRef<number>(boneOpacity);
 
   systemRef.current = systemId;
   selectedOrganRef.current = selectedOrganId;
@@ -900,16 +1075,107 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
   isolateRef.current = isolateSelected;
   showLabelsRef.current = showLabels;
   pausedRef.current = paused;
+  autoRotateRef.current = autoRotate;
   rateRef.current = rateValue;
   sliceEnabledRef.current = sliceEnabled;
   sliceAxisRef.current = sliceAxis;
   sliceOffsetRef.current = sliceOffset;
   layerVisRef.current = layerVis;
+  hiddenOrganIdsRef.current = useMemo(() => new Set(hiddenOrganIds), [hiddenOrganIds]);
+  skinOpacityRef.current = skinOpacity;
+  muscleOpacityRef.current = muscleOpacity;
+  boneOpacityRef.current = boneOpacity;
 
   const selectedOrgan = useMemo(
     () => activeSystem.organs.find((o) => o.id === selectedOrganId) || activeSystem.organs[0],
     [activeSystem, selectedOrganId]
   );
+
+  const focusOrganById = (organId: string) => {
+    const root = specimenRootRef.current;
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (!root || !camera || !controls || !organId) return;
+    if (systemRef.current === 'human_full_layered') {
+      if (organId === 'skeletal_frame') {
+        setBoneOpacity((v) => Math.max(v, 0.92));
+      } else if (organId === 'muscular_system') {
+        setMuscleOpacity((v) => Math.max(v, 0.72));
+      } else {
+        setSkinOpacity((v) => Math.min(v, 0.1));
+        setMuscleOpacity((v) => Math.min(v, 0.12));
+        setBoneOpacity((v) => Math.min(v, 0.25));
+      }
+    }
+    const found = resolveFocusBoxForPart(root, organId);
+    if (!found || found.box.isEmpty()) return;
+    const pose = computeFocusPoseFromBox3(found.box, {
+      fovDeg: camera.fov,
+      aspect: camera.aspect,
+      padding: 1.68,
+      minDistance: systemRef.current === 'human_full_layered' ? 1.65 : 2.15,
+      maxDistance: 12,
+      currentCameraPos: camera.position,
+      currentTarget: controls.target,
+    });
+    cameraLerpRef.current = pose;
+  };
+
+  const handleUploadAnatomyGltf = async (slot: AnatomyGltfSlotSpec, file: File) => {
+    const raw = await loadAnatomyGltfSource(file);
+    if (slot.organId === 'full_body_atlas') {
+      const splitMap = splitCompositeAnatomyGltf(raw);
+      if (splitMap.size === 0) {
+        throw new Error(
+          'Không tìm thấy tên lưới khớp cơ quan (ví dụ: Heart, Brain, Lung, Liver, Stomach, Kidney, Skeleton, Muscle).'
+        );
+      }
+      setSessionUploadedSlots((prev) => {
+        const next = new Map(prev);
+        next.set(slot.slotId, file.name);
+        splitMap.forEach((grp, orgId) => {
+          sessionGltfCacheRef.current.set(orgId, grp.clone(true));
+          fullAnatomyRef.current?.replaceOrganWithGltf(orgId, grp);
+          next.set(orgId, `${file.name} (${orgId})`);
+        });
+        return next;
+      });
+      return;
+    }
+
+    const bound = normalizeAndBindGltfOrgan(raw, slot);
+    sessionGltfCacheRef.current.set(slot.organId, bound.clone(true));
+    fullAnatomyRef.current?.replaceOrganWithGltf(slot.organId, bound);
+    setSessionUploadedSlots((prev) => {
+      const next = new Map(prev);
+      next.set(slot.organId, file.name);
+      return next;
+    });
+  };
+
+  const handleRestoreAnatomySlot = (organId: string) => {
+    sessionGltfCacheRef.current.delete(organId);
+    fullAnatomyRef.current?.restoreProceduralOrgan(organId);
+    setSessionUploadedSlots((prev) => {
+      const next = new Map(prev);
+      next.delete(organId);
+      return next;
+    });
+  };
+
+  const handleZoomStep = (zoomFactor: number) => {
+    const camera = cameraRef.current;
+    const controls = controlsRef.current;
+    if (!camera || !controls) return;
+    const nextPos = computeZoomStepPose(
+      camera.position,
+      controls.target,
+      zoomFactor,
+      controls.minDistance,
+      controls.maxDistance
+    );
+    cameraLerpRef.current = { position: nextPos, target: controls.target.clone() };
+  };
 
   // Switch system helper
   const handleSelectSystem = (nextId: AnatomySystemId) => {
@@ -920,6 +1186,7 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
     setSelectedOrganId(spec.organs[0].id);
     setRateValue(spec.defaultRateVal);
     setIsolateSelected(false);
+    setHiddenOrganIds([]);
     onEarnXP?.(4);
   };
 
@@ -994,8 +1261,8 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = !isSoftwareGl;
     controls.dampingFactor = 0.07;
-    controls.minDistance = 2.0;
-    controls.maxDistance = 12;
+    controls.minDistance = 0.85;
+    controls.maxDistance = 14;
     controls.target.set(0, 0.1, 0);
     controls.addEventListener('start', () => {
       cameraLerpRef.current = null;
@@ -1063,12 +1330,51 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
       pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
 
-      const candidateMeshes = entriesRef.current.flatMap((e) => e.meshes);
-      const hits = raycaster.intersectObjects(candidateMeshes, false);
+      const candidateRoots = fullAnatomyRef.current
+        ? fullAnatomyRef.current.interactables
+        : entriesRef.current.flatMap((e) => e.meshes);
+      const visibleCandidates = candidateRoots.filter((o) => {
+        let p: THREE.Object3D | null = o;
+        while (p) {
+          if (!p.visible) return false;
+          p = p.parent;
+        }
+        return true;
+      });
+      const hits = raycaster.intersectObjects(visibleCandidates, Boolean(fullAnatomyRef.current));
       if (hits.length > 0) {
-        const hitOrganId = hits[0].object.userData?.organId as string | undefined;
+        let cur: THREE.Object3D | null = hits[0].object;
+        let hitOrganId: string | undefined;
+        while (cur && !hitOrganId) {
+          if (cur.userData?.organId) hitOrganId = String(cur.userData.organId);
+          cur = cur.parent;
+        }
         if (hitOrganId) {
           setSelectedOrganId(hitOrganId);
+          if (systemRef.current === 'human_full_layered') {
+            if (hitOrganId === 'skeletal_frame') {
+              setBoneOpacity((v) => Math.max(v, 0.92));
+            } else if (hitOrganId === 'muscular_system') {
+              setMuscleOpacity((v) => Math.max(v, 0.72));
+            } else {
+              setSkinOpacity((v) => Math.min(v, 0.1));
+              setMuscleOpacity((v) => Math.min(v, 0.12));
+              setBoneOpacity((v) => Math.min(v, 0.25));
+            }
+          }
+          const found = resolveFocusBoxForPart(specimenRoot, hitOrganId);
+          if (found && !found.box.isEmpty()) {
+            const pose = computeFocusPoseFromBox3(found.box, {
+              fovDeg: camera.fov,
+              aspect: camera.aspect,
+              padding: 1.52,
+              minDistance: 0.9,
+              maxDistance: 12,
+              currentCameraPos: camera.position,
+              currentTarget: controls.target,
+            });
+            cameraLerpRef.current = pose;
+          }
         }
       }
     };
@@ -1095,60 +1401,96 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
       const selId = selectedOrganRef.current;
       const iso = isolateRef.current;
       const lblVisible = showLabelsRef.current;
+      const hiddenSet = hiddenOrganIdsRef.current;
 
       if (shellGroupRef.current) {
         shellGroupRef.current.visible = xrayRef.current;
       }
 
-      // Update each organ position, layer visibility, highlight/isolation, leader arrow label & animation
       const lv = layerVisRef.current;
       const isLayeredMap = systemRef.current === 'human_full_layered';
 
-      entriesRef.current.forEach((entry) => {
-        const layerVisible = !isLayeredMap || !entry.meta.layerKey || lv[entry.meta.layerKey];
-        entry.group.visible = layerVisible;
-
-        const [ex, ey, ez] = entry.meta.explodeDir;
-        const tx = entry.basePos.x + ex * expFrac * 1.15;
-        const ty = entry.basePos.y + ey * expFrac * 1.15;
-        const tz = entry.basePos.z + ez * expFrac * 1.15;
-        entry.group.position.lerp(new THREE.Vector3(tx, ty, tz), 0.16);
-
-        if (layerVisible && !pausedRef.current && entry.animate) {
-          entry.animate(elapsed, rateRef.current);
-        }
-
-        const isSel = entry.meta.id === selId;
-        entry.meshes.forEach((m) => {
-          const mat = m.material as THREE.MeshPhysicalMaterial | THREE.MeshStandardMaterial;
-          if (!mat) return;
-          if (!mat.userData.__origOpacity) {
-            mat.userData.__origOpacity = mat.opacity;
-            mat.userData.__origTransparent = mat.transparent;
-          }
-          if (iso && !isSel) {
-            mat.transparent = true;
-            mat.opacity = 0.13;
-            mat.depthWrite = false;
-          } else {
-            mat.transparent = Boolean(mat.userData.__origTransparent);
-            mat.opacity = Number(mat.userData.__origOpacity ?? 1);
-            mat.depthWrite = !mat.transparent;
-          }
-          if ('emissiveIntensity' in mat) {
-            const baseEmissive = Number(mat.userData.__baseEmissive ?? 0.06);
-            mat.emissiveIntensity = isSel ? baseEmissive + 0.28 + 0.1 * Math.sin(elapsed * 5) : baseEmissive;
-          }
-        });
-
-        entry.labelObj.visible = layerVisible && lblVisible && (!iso || isSel);
-        const [lx, ly, lz] = entry.meta.labelPos;
-        const [ax, ay, az] = entry.meta.anchorPos;
-        entry.labelObj.setEndpoints(
-          [lx + ex * expFrac * 0.45, ly + ey * expFrac * 0.45, lz + ez * expFrac * 0.45],
-          [ax + entry.group.position.x, ay + entry.group.position.y, az + entry.group.position.z]
+      if (isLayeredMap && fullAnatomyRef.current) {
+        fullAnatomyRef.current.applyState(
+          {
+            enabledSystems: lv,
+            skinOpacity: skinOpacityRef.current,
+            muscleOpacity: muscleOpacityRef.current,
+            boneOpacity: boneOpacityRef.current,
+            explode: expFrac,
+            xray: xrayRef.current,
+            hiddenPartIds: hiddenSet,
+            isolatedPartId: iso ? selId : null,
+          },
+          elapsed,
+          rateRef.current
         );
-      });
+        const camDist = camera.position.distanceTo(controls.target);
+        const closeZoom = camDist < 2.65;
+        const zoomedOrIso = camDist < 3.6 || iso;
+        entriesRef.current.forEach((entry) => {
+          const organGrp = fullAnatomyRef.current?.organGroups.get(entry.meta.id);
+          const orgVis = organGrp ? organGrp.visible : true;
+          const hideOnFocus = closeZoom || (zoomedOrIso && Boolean(selId) && entry.meta.id !== selId);
+          entry.labelObj.visible = orgVis && lblVisible && !hideOnFocus;
+          const [lx, ly, lz] = entry.meta.labelPos;
+          const [ax, ay, az] = entry.meta.anchorPos;
+          const [ex, ey, ez] = entry.meta.explodeDir;
+          entry.labelObj.setEndpoints(
+            [lx + ex * expFrac * 0.45, ly + ey * expFrac * 0.45, lz + ez * expFrac * 0.45],
+            [ax + ex * expFrac * 0.4, ay + ey * expFrac * 0.4, az + ez * expFrac * 0.4]
+          );
+        });
+      } else {
+        entriesRef.current.forEach((entry) => {
+          const layerVisible =
+            !hiddenSet.has(entry.meta.id) &&
+            (!isLayeredMap || !entry.meta.layerKey || lv[entry.meta.layerKey]);
+          entry.group.visible = layerVisible;
+
+          const [ex, ey, ez] = entry.meta.explodeDir;
+          const tx = entry.basePos.x + ex * expFrac * 1.15;
+          const ty = entry.basePos.y + ey * expFrac * 1.15;
+          const tz = entry.basePos.z + ez * expFrac * 1.15;
+          entry.group.position.lerp(new THREE.Vector3(tx, ty, tz), 0.16);
+
+          if (layerVisible && !pausedRef.current && entry.animate) {
+            entry.animate(elapsed, rateRef.current);
+          }
+
+          const isSel = entry.meta.id === selId;
+          entry.meshes.forEach((m) => {
+            const mat = m.material as THREE.MeshPhysicalMaterial | THREE.MeshStandardMaterial;
+            if (!mat) return;
+            if (mat.userData.__origOpacity === undefined) {
+              mat.userData.__origOpacity = mat.opacity;
+              mat.userData.__origTransparent = mat.transparent;
+            }
+            if (iso && !isSel) {
+              mat.transparent = true;
+              mat.opacity = 0.13;
+              mat.depthWrite = false;
+            } else {
+              mat.transparent = Boolean(mat.userData.__origTransparent);
+              mat.opacity = Number(mat.userData.__origOpacity ?? 1);
+              mat.depthWrite = !mat.transparent;
+            }
+            if ('emissiveIntensity' in mat) {
+              const baseEmissive = Number(mat.userData.__baseEmissive ?? 0.06);
+              mat.emissiveIntensity = isSel ? baseEmissive + 0.28 + 0.1 * Math.sin(elapsed * 5) : baseEmissive;
+            }
+          });
+
+          const camDist = camera.position.distanceTo(controls.target);
+          entry.labelObj.visible = layerVisible && lblVisible && camDist >= 2.75 && (!iso || isSel);
+          const [lx, ly, lz] = entry.meta.labelPos;
+          const [ax, ay, az] = entry.meta.anchorPos;
+          entry.labelObj.setEndpoints(
+            [lx + ex * expFrac * 0.45, ly + ey * expFrac * 0.45, lz + ez * expFrac * 0.45],
+            [ax + entry.group.position.x, ay + entry.group.position.y, az + entry.group.position.z]
+          );
+        });
+      }
 
       // Biological flow particles (blood/air/neural impulses)
       if (!pausedRef.current) {
@@ -1275,9 +1617,17 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
       }
 
       if (cameraLerpRef.current) {
-        camera.position.lerp(cameraLerpRef.current.pos, 0.14);
-        controls.target.lerp(cameraLerpRef.current.target, 0.14);
-        if (camera.position.distanceTo(cameraLerpRef.current.pos) < 0.04) cameraLerpRef.current = null;
+        const settled = stepSmoothCameraTransition(
+          camera,
+          controls.target,
+          cameraLerpRef.current,
+          isSoftwareGl ? Math.max(dt * 3, 0.14) : dt,
+          isSoftwareGl ? 14 : 7.5
+        );
+        if (settled) cameraLerpRef.current = null;
+      }
+      if (autoRotateRef.current) {
+        applySphericalOrbitDelta(camera, controls.target, dt * 0.36, 0, 0, controls.minDistance, controls.maxDistance);
       }
       controls.update();
       renderer.render(scene, camera);
@@ -1309,6 +1659,13 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);
       entriesRef.current.forEach((e) => e.labelObj.dispose());
+      if (fullAnatomyRef.current) {
+        specimenRoot.remove(fullAnatomyRef.current.root);
+        disposeObjectTreeFull(fullAnatomyRef.current.root);
+        fullAnatomyRef.current = null;
+      }
+      fullAnatomyVaultRef.current?.disposeAll();
+      fullAnatomyVaultRef.current = null;
       gpuPool.dispose();
       controls.dispose();
       envRT.dispose();
@@ -1324,58 +1681,28 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
     const lblGroup = labelGroupRef.current;
     if (!root || !shell || !lblGroup) return;
 
-    // Clear previous organs & shell safely
+    // Clear previous organs, full anatomy explorer & shell safely
+    if (fullAnatomyRef.current) {
+      root.remove(fullAnatomyRef.current.root);
+      disposeObjectTreeFull(fullAnatomyRef.current.root);
+      fullAnatomyRef.current = null;
+    }
+    fullAnatomyVaultRef.current?.disposeAll();
+    fullAnatomyVaultRef.current = null;
+
     entriesRef.current.forEach((e) => {
       e.labelObj.dispose();
       lblGroup.remove(e.labelObj);
       root.remove(e.group);
-      e.group.traverse((obj) => {
-        if (obj instanceof THREE.Mesh) {
-          obj.geometry.dispose();
-          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
-          else obj.material?.dispose();
-        }
-      });
+      disposeObjectTreeFull(e.group);
     });
     entriesRef.current = [];
 
     while (shell.children.length > 0) {
       const ch = shell.children[0];
       shell.remove(ch);
-      ch.traverse((obj) => {
-        if (obj instanceof THREE.Mesh) {
-          obj.geometry.dispose();
-          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
-          else obj.material?.dispose();
-        }
-      });
+      disposeObjectTreeFull(ch);
     }
-
-    const makeTissueMat = (hex: number, roughness = 0.34, clearcoat = 0.62, opacity = 1) => {
-      const mat = new THREE.MeshPhysicalMaterial({
-        color: hex,
-        emissive: hex,
-        emissiveIntensity: 0.06,
-        roughness,
-        metalness: 0.04,
-        clearcoat,
-        clearcoatRoughness: 0.25,
-        transparent: opacity < 1,
-        opacity,
-      });
-      mat.userData.__baseEmissive = 0.06;
-      return mat;
-    };
-
-    const makeXrayMat = (hex = 0x38bdf8, opacity = 0.12) =>
-      new THREE.MeshPhysicalMaterial({
-        color: hex,
-        transparent: true,
-        opacity,
-        roughness: 0.25,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-      });
 
     const registerOrgan = (
       id: string,
@@ -1384,10 +1711,14 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
     ) => {
       const meta = activeSystem.organs.find((o) => o.id === id);
       if (!meta) return;
+      group.userData.organId = id;
+      group.userData.partId = id;
+      group.userData.partLabel = meta.nameVi;
       const meshes: THREE.Mesh[] = [];
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
           obj.userData.organId = id;
+          obj.userData.partId = id;
           obj.castShadow = !isSoftwareGl;
           obj.receiveShadow = true;
           meshes.push(obj);
@@ -1398,8 +1729,11 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
         text: meta.nameVi.split('(')[0].trim(),
         labelPos: meta.labelPos,
         anchorPos: meta.anchorPos,
-        fontSize: 0.205,
+        fontSize: 0.13,
         color: new THREE.Color(meta.colorHex).getHex(),
+        dotRadius: 0.016,
+        arrowScale: 0,
+        trimStart: 0.22,
       });
       lblGroup.add(labelObj);
       entriesRef.current.push({
@@ -1412,590 +1746,157 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
       });
     };
 
-    const makeTube = (pts: [number, number, number][], radius: number, mat: THREE.Material, segs = 36) => {
-      const curve = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p)));
-      return new THREE.Mesh(new THREE.TubeGeometry(curve, segs, radius, 16, false), mat);
-    };
-
-    // ==================== 0. HUMAN FULL LAYERED PHYSIOLOGY MAP ====================
+    // ==================== 0. HUMAN FULL 11-SYSTEM ANATOMY EXPLORER ====================
     if (systemId === 'human_full_layered') {
-      // Translucent human head + torso X-ray silhouette
-      const headShell = new THREE.Mesh(new THREE.SphereGeometry(0.62, 26, 20), makeXrayMat(0x38bdf8, 0.09));
-      headShell.position.set(0, 1.52, 0);
-      headShell.scale.set(0.88, 1.05, 0.98);
-      const torsoShell = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 0.88, 2.35, 28, 1, true), makeXrayMat(0x38bdf8, 0.08));
-      torsoShell.position.set(0, -0.05, 0);
-      shell.add(headShell, torsoShell);
+      const vault = new BioMaterialVault(4, isSoftwareGl);
+      fullAnatomyVaultRef.current = vault;
+      const anatomy = buildHumanAnatomyExplorer(vault, isSoftwareGl);
+      fullAnatomyRef.current = anatomy;
+      root.add(anatomy.root);
 
-      // Layer 1: Nervous (Brain + Spinal Cord)
-      const nervG = new THREE.Group();
-      const brainMesh = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 18), makeTissueMat(0xfacc15, 0.36, 0.55));
-      brainMesh.scale.set(0.95, 0.82, 1.05);
-      brainMesh.position.set(0, 1.56, -0.04);
-      const spineMesh = makeTube([[0, 1.25, -0.18], [0, -1.1, -0.22]], 0.085, makeTissueMat(0xfef08a, 0.28, 0.72));
-      nervG.add(brainMesh, spineMesh);
-      registerOrgan('layer_nervous_brain_spine', nervG, (t, bpm) => {
-        const pulse = 0.06 + 0.16 * Math.abs(Math.sin((t * bpm) / 22));
-        (spineMesh.material as THREE.MeshPhysicalMaterial).emissiveIntensity = pulse;
+      sessionGltfCacheRef.current.forEach((cachedGrp, orgId) => {
+        anatomy.replaceOrganWithGltf(orgId, cachedGrp.clone(true));
       });
 
-      // Layer 2: Respiratory (Trachea + 2 Translucent Lungs)
-      const respG = new THREE.Group();
-      respG.add(makeTube([[0, 1.12, 0.08], [0, 0.56, 0.08]], 0.09, makeTissueMat(0xcbd5e1, 0.3, 0.5)));
-      const rLung = new THREE.Mesh(new THREE.SphereGeometry(0.46, 24, 18), makeTissueMat(0x38bdf8, 0.32, 0.6, 0.62));
-      rLung.scale.set(0.75, 1.25, 0.68);
-      rLung.position.set(-0.56, 0.42, 0.05);
-      const lLung = new THREE.Mesh(new THREE.SphereGeometry(0.44, 24, 18), makeTissueMat(0x38bdf8, 0.32, 0.6, 0.62));
-      lLung.scale.set(0.74, 1.2, 0.68);
-      lLung.position.set(0.56, 0.42, 0.05);
-      respG.add(rLung, lLung);
-      registerOrgan('layer_respiratory_lungs', respG, (t, bpm) => {
-        const inhale = 1 + 0.08 * Math.sin((t * bpm * Math.PI) / 140);
-        rLung.scale.set(0.75 * inhale, 1.25 * inhale, 0.68 * inhale);
-        lLung.scale.set(0.74 * inhale, 1.2 * inhale, 0.68 * inhale);
+      const manifestAbort = new AbortController();
+      void fetchAnatomyBundledManifest(manifestAbort.signal).then(async (bundled) => {
+        if (manifestAbort.signal.aborted) return;
+        setBundledAnatomyFiles(bundled);
+        if (bundled.length === 0) return;
+
+        const bundledLower = new Set(bundled.map((b) => b.toLowerCase()));
+        if (bundledLower.has('human_anatomy_full.glb')) {
+          try {
+            const rawFull = await loadAnatomyGltfSource('./assets/anatomy/human_anatomy_full.glb', manifestAbort.signal);
+            if (!manifestAbort.signal.aborted) {
+              const splitMap = splitCompositeAnatomyGltf(rawFull);
+              splitMap.forEach((grp, orgId) => {
+                if (!sessionGltfCacheRef.current.has(orgId)) {
+                  anatomy.replaceOrganWithGltf(orgId, grp);
+                }
+              });
+            }
+          } catch {
+            // ignore optional composite load failure
+          }
+        }
+        for (const slot of HUMAN_ANATOMY_ASSET_SLOTS) {
+          if (slot.organId === 'full_body_atlas') continue;
+          if (!bundledLower.has(slot.expectedFileName.toLowerCase())) continue;
+          if (sessionGltfCacheRef.current.has(slot.organId)) continue;
+          try {
+            const raw = await loadAnatomyGltfSource(slot.expectedPublicPath, manifestAbort.signal);
+            if (manifestAbort.signal.aborted) return;
+            anatomy.replaceOrganWithGltf(slot.organId, normalizeAndBindGltfOrgan(raw, slot));
+          } catch {
+            // keep procedural PBR fallback
+          }
+        }
       });
 
-      // Layer 3: Circulatory (Beating Heart + Aorta + Vessels)
-      const circG = new THREE.Group();
-      const heartCore = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 18), makeTissueMat(0xe11d48, 0.25, 0.8));
-      heartCore.scale.set(0.9, 1.18, 0.85);
-      heartCore.position.set(0.08, 0.36, 0.22);
-      circG.add(heartCore);
-      circG.add(makeTube([[0.08, 0.42, 0.22], [0.05, 0.92, 0.14], [-0.08, 0.85, -0.05], [-0.08, -0.95, -0.08]], 0.075, makeTissueMat(0xef4444)));
-      circG.add(makeTube([[-0.18, 1.1, 0.02], [-0.15, -0.95, 0.02]], 0.06, makeTissueMat(0x3b82f6)));
-      registerOrgan('layer_circulatory_heart', circG, (t, bpm) => {
-        const beat = Math.pow(Math.max(0, Math.sin((t * bpm * Math.PI) / 60)), 6);
-        heartCore.scale.set(0.9 * (1 - beat * 0.11), 1.18 * (1 - beat * 0.11), 0.85 * (1 - beat * 0.11));
-      });
-
-      // Layer 4: Digestive (Liver + J-Stomach + Intestines)
-      const digG = new THREE.Group();
-      const liverM = new THREE.Mesh(new THREE.SphereGeometry(0.38, 22, 16), makeTissueMat(0xb91c1c, 0.3, 0.68));
-      liverM.scale.set(1.25, 0.68, 0.72);
-      liverM.position.set(-0.34, -0.22, 0.18);
-      const stomM = makeTube([[0.04, 0.15, 0.06], [0.38, -0.26, 0.2], [0.1, -0.44, 0.16]], 0.14, makeTissueMat(0xf472b6, 0.34, 0.55));
-      const gutPts: [number, number, number][] = [];
-      for (let i = 0; i <= 20; i++) {
-        const u = i / 20;
-        gutPts.push([Math.sin(u * Math.PI * 4.5) * 0.42, -0.52 - u * 0.55, 0.15 + Math.cos(u * Math.PI * 4.5) * 0.1]);
-      }
-      const gutM = makeTube(gutPts, 0.08, makeTissueMat(0xfb923c, 0.38, 0.5), 48);
-      digG.add(liverM, stomM, gutM);
-      registerOrgan('layer_digestive_gut', digG, (t, bpm) => {
-        const wave = 1 + 0.03 * Math.sin(t * (bpm / 36));
-        gutM.scale.set(wave, 1, wave);
-      });
-    }
-
-    // ==================== 1. HUMAN HEART & CIRCULATORY ====================
-    else if (systemId === 'human_heart_circulatory') {
-      // Translucent pericardium shell
-      const peri = new THREE.Mesh(new THREE.SphereGeometry(1.42, 32, 24), makeXrayMat(0xf43f5e, 0.1));
-      peri.scale.set(0.95, 1.15, 0.82);
-      shell.add(peri);
-
-      const lvG = new THREE.Group();
-      const lvMesh = new THREE.Mesh(new THREE.SphereGeometry(0.62, 32, 24), makeTissueMat(0xe11d48, 0.3, 0.72));
-      lvMesh.scale.set(0.85, 1.32, 0.85);
-      lvMesh.position.set(0.28, -0.42, 0.05);
-      lvMesh.rotation.z = 0.25;
-      lvG.add(lvMesh);
-      registerOrgan('left_ventricle', lvG, (t, bpm) => {
-        const beat = Math.pow(Math.max(0, Math.sin((t * bpm * Math.PI) / 60)), 6);
-        lvG.scale.setScalar(1 - beat * 0.085);
-      });
-
-      const rvG = new THREE.Group();
-      const rvMesh = new THREE.Mesh(new THREE.SphereGeometry(0.55, 32, 24), makeTissueMat(0x2563eb, 0.32, 0.68));
-      rvMesh.scale.set(0.9, 1.2, 0.82);
-      rvMesh.position.set(-0.34, -0.34, 0.14);
-      rvMesh.rotation.z = 0.2;
-      rvG.add(rvMesh);
-      registerOrgan('right_ventricle', rvG, (t, bpm) => {
-        const beat = Math.pow(Math.max(0, Math.sin((t * bpm * Math.PI) / 60)), 6);
-        rvG.scale.setScalar(1 - beat * 0.075);
-      });
-
-      const laG = new THREE.Group();
-      const laMesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 28, 22), makeTissueMat(0xf43f5e, 0.32, 0.65));
-      laMesh.position.set(0.46, 0.42, -0.08);
-      laG.add(laMesh);
-      [-0.12, 0.12].forEach((dy) => {
-        laG.add(makeTube([[0.46, 0.42 + dy, -0.08], [1.05, 0.48 + dy * 1.4, -0.2]], 0.09, makeTissueMat(0xfb7185)));
-      });
-      registerOrgan('left_atrium', laG, (t, bpm) => {
-        const atrial = Math.pow(Math.max(0, Math.sin((t * bpm * Math.PI) / 60 + 0.9)), 6);
-        laG.scale.setScalar(1 - atrial * 0.06);
-      });
-
-      const raG = new THREE.Group();
-      const raMesh = new THREE.Mesh(new THREE.SphereGeometry(0.42, 28, 22), makeTissueMat(0x3b82f6, 0.34, 0.62));
-      raMesh.position.set(-0.48, 0.4, 0.02);
-      raG.add(raMesh);
-      registerOrgan('right_atrium', raG, (t, bpm) => {
-        const atrial = Math.pow(Math.max(0, Math.sin((t * bpm * Math.PI) / 60 + 0.9)), 6);
-        raG.scale.setScalar(1 - atrial * 0.06);
-      });
-
-      const aortaG = new THREE.Group();
-      const aortaMat = makeTissueMat(0xef4444, 0.28, 0.72);
-      aortaG.add(makeTube([[0.15, 0.2, 0], [0.22, 1.05, 0.05], [-0.15, 1.32, -0.15], [-0.3, 0.75, -0.45], [-0.25, -1.25, -0.4]], 0.17, aortaMat));
-      // 3 superior branches
-      aortaG.add(makeTube([[0.15, 1.18, 0.02], [0.24, 1.7, 0.04]], 0.065, aortaMat));
-      aortaG.add(makeTube([[-0.02, 1.3, -0.06], [-0.02, 1.75, -0.05]], 0.058, aortaMat));
-      aortaG.add(makeTube([[-0.18, 1.24, -0.16], [-0.28, 1.68, -0.18]], 0.06, aortaMat));
-      registerOrgan('aortic_arch', aortaG, (t, bpm) => {
-        const pulse = Math.pow(Math.max(0, Math.sin((t * bpm * Math.PI) / 60 - 0.3)), 6);
-        aortaG.scale.setScalar(1 + pulse * 0.035);
-      });
-
-      const pulmG = new THREE.Group();
-      const pulmMat = makeTissueMat(0x6366f1, 0.32, 0.6);
-      pulmG.add(makeTube([[-0.22, 0.05, 0.35], [-0.08, 0.75, 0.38], [0.02, 0.92, 0.12]], 0.14, pulmMat));
-      pulmG.add(makeTube([[0.02, 0.92, 0.12], [0.85, 0.98, -0.05]], 0.1, pulmMat));
-      pulmG.add(makeTube([[0.02, 0.92, 0.12], [-0.85, 0.98, -0.05]], 0.1, pulmMat));
-      registerOrgan('pulmonary_trunk', pulmG);
-
-      const vcG = new THREE.Group();
-      const vcMat = makeTissueMat(0x1d4ed8, 0.35, 0.55);
-      vcG.add(makeTube([[-0.65, 1.65, -0.15], [-0.58, 0.55, -0.12]], 0.14, vcMat));
-      vcG.add(makeTube([[-0.56, 0.25, -0.18], [-0.54, -1.25, -0.22]], 0.15, vcMat));
-      registerOrgan('vena_cava', vcG);
-
-      const corG = new THREE.Group();
-      const corMat = makeTissueMat(0xfb923c, 0.28, 0.78);
-      corG.add(makeTube([[0.08, 0.28, 0.45], [-0.02, -0.15, 0.58], [0.12, -0.78, 0.52]], 0.042, corMat));
-      corG.add(makeTube([[-0.02, -0.15, 0.58], [0.46, -0.35, 0.46]], 0.034, corMat));
-      corG.add(makeTube([[-0.18, 0.16, 0.5], [-0.45, -0.32, 0.48]], 0.035, corMat));
-      registerOrgan('coronary_vessels', corG);
-    }
-
-    // ==================== 2. HUMAN RESPIRATORY ====================
-    else if (systemId === 'human_respiratory') {
-      const ribCage = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.42, 2.75, 28, 1, true), makeXrayMat(0x38bdf8, 0.1));
-      shell.add(ribCage);
-
-      const tracG = new THREE.Group();
-      const cartilageMat = makeTissueMat(0xe2e8f0, 0.32, 0.55);
-      tracG.add(makeTube([[0, 1.75, 0], [0, 0.62, 0]], 0.15, makeTissueMat(0xfda4af, 0.4, 0.45)));
-      // Larynx shield & C-shaped rings
-      const larynx = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.19, 0.34, 20), cartilageMat);
-      larynx.position.set(0, 1.58, 0.04);
-      tracG.add(larynx);
-      for (let i = 0; i < 9; i++) {
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.165, 0.026, 10, 24, Math.PI * 1.55), cartilageMat);
-        ring.rotation.x = Math.PI / 2;
-        ring.rotation.z = -Math.PI * 0.27;
-        ring.position.set(0, 0.68 + i * 0.09, 0);
-        tracG.add(ring);
-      }
-      registerOrgan('trachea', tracG);
-
-      const bronG = new THREE.Group();
-      const bMat = makeTissueMat(0x94a3b8, 0.35, 0.5);
-      bronG.add(makeTube([[0, 0.65, 0], [-0.62, 0.25, 0]], 0.105, bMat));
-      bronG.add(makeTube([[0, 0.65, 0], [0.64, 0.22, 0]], 0.105, bMat));
-      bronG.add(makeTube([[-0.62, 0.25, 0], [-0.95, 0.55, 0.1]], 0.055, bMat));
-      bronG.add(makeTube([[-0.62, 0.25, 0], [-1.05, -0.35, 0.1]], 0.055, bMat));
-      bronG.add(makeTube([[0.64, 0.22, 0], [0.98, 0.52, 0.1]], 0.055, bMat));
-      bronG.add(makeTube([[0.64, 0.22, 0], [1.02, -0.38, 0.1]], 0.055, bMat));
-      registerOrgan('bronchi_tree', bronG);
-
-      const rlG = new THREE.Group();
-      const rlMat = makeTissueMat(0xfb7185, 0.42, 0.48, 0.88);
-      const rSup = new THREE.Mesh(new THREE.SphereGeometry(0.56, 26, 20), rlMat);
-      rSup.scale.set(0.88, 1.05, 0.85);
-      rSup.position.set(-0.88, 0.52, 0);
-      const rMid = new THREE.Mesh(new THREE.SphereGeometry(0.54, 26, 20), rlMat);
-      rMid.scale.set(0.92, 0.72, 0.88);
-      rMid.position.set(-0.92, -0.05, 0.12);
-      const rInf = new THREE.Mesh(new THREE.SphereGeometry(0.62, 26, 20), rlMat);
-      rInf.scale.set(0.98, 0.9, 0.92);
-      rInf.position.set(-0.92, -0.58, -0.05);
-      rlG.add(rSup, rMid, rInf);
-      registerOrgan('right_lung', rlG, (t, resp) => {
-        const inhale = 1 + 0.075 * (0.5 + 0.5 * Math.sin((t * resp * Math.PI) / 30));
-        rlG.scale.set(inhale, 0.96 + (inhale - 1) * 0.9, inhale);
-      });
-
-      const llG = new THREE.Group();
-      const llMat = makeTissueMat(0xf472b6, 0.42, 0.48, 0.88);
-      const lSup = new THREE.Mesh(new THREE.SphereGeometry(0.56, 26, 20), llMat);
-      lSup.scale.set(0.88, 1.12, 0.85);
-      lSup.position.set(0.88, 0.44, 0);
-      const lInf = new THREE.Mesh(new THREE.SphereGeometry(0.6, 26, 20), llMat);
-      lInf.scale.set(0.94, 0.95, 0.92);
-      lInf.position.set(0.94, -0.45, -0.04);
-      llG.add(lSup, lInf);
-      registerOrgan('left_lung', llG, (t, resp) => {
-        const inhale = 1 + 0.075 * (0.5 + 0.5 * Math.sin((t * resp * Math.PI) / 30));
-        llG.scale.set(inhale, 0.96 + (inhale - 1) * 0.9, inhale);
-      });
-
-      const diaG = new THREE.Group();
-      const diaGeo = new THREE.SphereGeometry(1.48, 32, 18, 0, Math.PI * 2, 0, Math.PI * 0.46);
-      const diaMesh = new THREE.Mesh(diaGeo, makeTissueMat(0xdc2626, 0.38, 0.45));
-      diaMesh.scale.set(1.05, 0.48, 0.78);
-      diaMesh.position.set(0, -1.32, 0);
-      diaG.add(diaMesh);
-      registerOrgan('diaphragm', diaG, (t, resp) => {
-        const drop = -0.18 * (0.5 + 0.5 * Math.sin((t * resp * Math.PI) / 30));
-        diaMesh.position.y = -1.24 + drop;
-      });
-    }
-
-    // ==================== 3. HUMAN NERVOUS SYSTEM ====================
-    else if (systemId === 'human_nervous') {
-      const cranium = new THREE.Mesh(new THREE.SphereGeometry(1.38, 32, 24), makeXrayMat(0xfacc15, 0.08));
-      cranium.position.set(0, 0.72, 0);
-      cranium.scale.set(0.95, 0.88, 1.15);
-      shell.add(cranium);
-
-      const frontG = new THREE.Group();
-      const fMat = makeTissueMat(0xf59e0b, 0.45, 0.42);
-      [-0.36, 0.36].forEach((hx) => {
-        const lobe = new THREE.Mesh(new THREE.SphereGeometry(0.56, 26, 22), fMat);
-        lobe.scale.set(0.82, 0.88, 1.08);
-        lobe.position.set(hx, 0.85, 0.48);
-        frontG.add(lobe);
-      });
-      registerOrgan('frontal_lobe', frontG);
-
-      const parG = new THREE.Group();
-      const pMat = makeTissueMat(0xec4899, 0.45, 0.42);
-      [-0.4, 0.4].forEach((hx) => {
-        const par = new THREE.Mesh(new THREE.SphereGeometry(0.62, 26, 22), pMat);
-        par.scale.set(0.84, 0.85, 1.1);
-        par.position.set(hx, 0.82, -0.36);
-        parG.add(par);
-        const temp = new THREE.Mesh(new THREE.SphereGeometry(0.38, 22, 18), pMat);
-        temp.scale.set(0.75, 0.68, 1.25);
-        temp.position.set(hx * 1.35, 0.42, 0.04);
-        parG.add(temp);
-      });
-      registerOrgan('parietal_occipital', parG);
-
-      const cerG = new THREE.Group();
-      const cerMat = makeTissueMat(0xa855f7, 0.48, 0.38);
-      [-0.32, 0.32].forEach((cx) => {
-        const c = new THREE.Mesh(new THREE.SphereGeometry(0.36, 22, 18), cerMat);
-        c.scale.set(1.0, 0.78, 0.9);
-        c.position.set(cx, 0.16, -0.62);
-        cerG.add(c);
-      });
-      registerOrgan('cerebellum', cerG);
-
-      const bsG = new THREE.Group();
-      bsG.add(makeTube([[0, 0.48, -0.05], [0, 0.1, -0.14], [0, -0.35, -0.2]], 0.18, makeTissueMat(0x38bdf8, 0.35, 0.55)));
-      registerOrgan('brainstem', bsG);
-
-      const scG = new THREE.Group();
-      const scMat = makeTissueMat(0x22d3ee, 0.3, 0.68);
-      scG.add(makeTube([[0, -0.32, -0.2], [0, -1.85, -0.15]], 0.1, scMat));
-      const vertMat = makeTissueMat(0xe2e8f0, 0.38, 0.4, 0.36);
-      for (let i = 0; i < 7; i++) {
-        const v = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.28, 0.15, 16), vertMat);
-        v.position.set(0, -0.48 - i * 0.21, -0.18);
-        scG.add(v);
-      }
-      registerOrgan('spinal_cord', scG, (t, hz) => {
-        scMat.emissiveIntensity = 0.08 + 0.14 * (0.5 + 0.5 * Math.sin(t * (hz / 4)));
-      });
-    }
-
-    // ==================== 4. HUMAN DIGESTIVE & RENAL ====================
-    else if (systemId === 'human_digestive_renal') {
-      const torso = new THREE.Mesh(new THREE.CylinderGeometry(1.48, 1.38, 3.0, 28, 1, true), makeXrayMat(0xf59e0b, 0.08));
-      shell.add(torso);
-
-      const livG = new THREE.Group();
-      const livMat = makeTissueMat(0xb91c1c, 0.28, 0.72);
-      const rLobe = new THREE.Mesh(new THREE.SphereGeometry(0.62, 26, 20), livMat);
-      rLobe.scale.set(1.15, 0.78, 0.88);
-      rLobe.position.set(-0.48, 0.72, 0.2);
-      const lLobe = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 18), livMat);
-      lLobe.scale.set(1.1, 0.65, 0.75);
-      lLobe.position.set(0.14, 0.78, 0.22);
-      const gall = new THREE.Mesh(new THREE.SphereGeometry(0.16, 18, 14), makeTissueMat(0x10b981, 0.25, 0.8));
-      gall.scale.set(0.75, 1.3, 0.75);
-      gall.position.set(-0.34, 0.35, 0.45);
-      livG.add(rLobe, lLobe, gall);
-      registerOrgan('liver_gallbladder', livG);
-
-      const stomG = new THREE.Group();
-      const sMat = makeTissueMat(0xf472b6, 0.35, 0.62);
-      stomG.add(makeTube([[0.05, 1.55, 0.05], [0.12, 0.92, 0.12], [0.58, 0.58, 0.24], [0.46, 0.18, 0.28], [0.08, 0.15, 0.18]], 0.22, sMat));
-      registerOrgan('stomach', stomG, (t, p) => {
-        const wave = 1 + 0.035 * Math.sin(t * (p / 24));
-        stomG.scale.set(wave, 1, wave);
-      });
-
-      const intG = new THREE.Group();
-      const colonMat = makeTissueMat(0xd97706, 0.4, 0.48);
-      intG.add(
-        makeTube(
-          [
-            [-0.78, -1.1, 0.22],
-            [-0.82, -0.05, 0.2],
-            [0.0, 0.05, 0.32],
-            [0.82, -0.02, 0.2],
-            [0.78, -1.05, 0.18],
-            [0.15, -1.35, 0.08],
-          ],
-          0.17,
-          colonMat
-        )
-      );
-      const smallPts: [number, number, number][] = [];
-      for (let i = 0; i <= 24; i++) {
-        const u = i / 24;
-        smallPts.push([
-          Math.sin(u * Math.PI * 5) * 0.46,
-          -0.25 - u * 0.85,
-          0.26 + Math.cos(u * Math.PI * 5) * 0.12,
-        ]);
-      }
-      intG.add(makeTube(smallPts, 0.095, makeTissueMat(0xfb923c, 0.36, 0.55), 60));
-      registerOrgan('intestines', intG);
-
-      const kidG = new THREE.Group();
-      const kMat = makeTissueMat(0x9f1239, 0.28, 0.72);
-      const urMat = makeTissueMat(0xfacc15, 0.35, 0.5);
-      [-0.65, 0.65].forEach((kx) => {
-        const kid = new THREE.Mesh(new THREE.SphereGeometry(0.32, 22, 18), kMat);
-        kid.scale.set(0.76, 1.32, 0.65);
-        kid.position.set(kx, 0.05, -0.45);
-        kidG.add(kid);
-        kidG.add(makeTube([[kx * 0.88, -0.1, -0.42], [kx * 0.42, -1.25, -0.18]], 0.04, urMat));
-      });
-      const blad = new THREE.Mesh(new THREE.SphereGeometry(0.28, 22, 16), makeTissueMat(0xfbbf24, 0.32, 0.6));
-      blad.position.set(0, -1.32, -0.12);
-      kidG.add(blad);
-      registerOrgan('kidneys_ureters', kidG);
-    }
-
-    // ==================== 5. ANIMAL: MAMMAL (RABBIT) ====================
-    else if (systemId === 'animal_mammal') {
-      const bodyShell = new THREE.Mesh(new THREE.SphereGeometry(1.4, 28, 22), makeXrayMat(0xf43f5e, 0.1));
-      bodyShell.scale.set(1.45, 0.78, 0.68);
-      shell.add(bodyShell);
-
-      const skullG = new THREE.Group();
-      const skull = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 18), makeTissueMat(0xfbbf24, 0.35, 0.45));
-      skull.scale.set(1.25, 0.88, 0.78);
-      skull.position.set(-1.32, 0.42, 0);
-      skullG.add(skull);
-      [-0.14, 0.14].forEach((ez) => {
-        const ear = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.75, 6, 12), makeTissueMat(0xfda4af, 0.4, 0.3, 0.55));
-        ear.position.set(-1.05, 1.05, ez);
-        ear.rotation.z = -0.35;
-        skullG.add(ear);
-      });
-      registerOrgan('mammal_brain_skull', skullG);
-
-      const mhG = new THREE.Group();
-      const mh = new THREE.Mesh(new THREE.SphereGeometry(0.32, 22, 18), makeTissueMat(0xe11d48, 0.28, 0.75));
-      mh.scale.set(1.1, 0.95, 0.9);
-      mh.position.set(-0.45, -0.2, 0.12);
-      mhG.add(mh);
-      registerOrgan('mammal_heart', mhG, (t, bpm) => {
-        const b = Math.pow(Math.max(0, Math.sin((t * bpm * Math.PI) / 60)), 6);
-        mhG.scale.setScalar(1 - b * 0.08);
-      });
-
-      const mlG = new THREE.Group();
-      [-0.25, 0.25].forEach((lz) => {
-        const lung = new THREE.Mesh(new THREE.SphereGeometry(0.36, 22, 18), makeTissueMat(0xfb7185, 0.4, 0.5, 0.88));
-        lung.scale.set(1.35, 0.82, 0.68);
-        lung.position.set(-0.25, 0.12, lz);
-        mlG.add(lung);
-      });
-      const dia = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.08, 24), makeTissueMat(0xdc2626, 0.4, 0.4));
-      dia.rotation.z = Math.PI / 2;
-      dia.position.set(0.22, -0.02, 0);
-      mlG.add(dia);
-      registerOrgan('mammal_lungs_diaphragm', mlG, (t, r) => {
-        const inh = 1 + 0.06 * Math.sin(t * (r / 20));
-        mlG.scale.set(1, inh, inh);
-      });
-
-      const cecG = new THREE.Group();
-      cecG.add(
-        makeTube(
-          [
-            [0.38, 0.15, 0],
-            [0.95, -0.05, 0.25],
-            [1.25, -0.25, -0.15],
-            [0.62, -0.4, -0.25],
-          ],
-          0.22,
-          makeTissueMat(0xf97316, 0.36, 0.5)
-        )
-      );
-      registerOrgan('mammal_cecum', cecG);
-    }
-
-    // ==================== 6. ANIMAL: BIRD (9 AIR SACS) ====================
-    else if (systemId === 'animal_bird') {
-      const birdShell = new THREE.Mesh(new THREE.SphereGeometry(1.32, 28, 20), makeXrayMat(0x22d3ee, 0.1));
-      birdShell.scale.set(1.45, 0.85, 0.72);
-      shell.add(birdShell);
-
-      const bLungG = new THREE.Group();
-      [-0.25, 0.25].forEach((lz) => {
-        const l = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.32, 0.28), makeTissueMat(0xf43f5e, 0.38, 0.5));
-        l.position.set(-0.15, 0.42, lz);
-        bLungG.add(l);
-      });
-      bLungG.add(makeTube([[-1.1, 0.65, 0], [-0.45, 0.42, 0]], 0.075, makeTissueMat(0xcbd5e1)));
-      registerOrgan('bird_lungs', bLungG);
-
-      const sacG = new THREE.Group();
-      const sacMat = makeTissueMat(0x38bdf8, 0.18, 0.85, 0.62);
-      const sacCoords: [number, number, number, number][] = [
-        [-0.75, 0.15, 0, 0.22],
-        [-0.55, 0.05, 0.35, 0.2],
-        [-0.55, 0.05, -0.35, 0.2],
-        [0.42, 0.12, 0.34, 0.26],
-        [0.42, 0.12, -0.34, 0.26],
-        [0.95, 0.05, 0.28, 0.3],
-        [0.95, 0.05, -0.28, 0.3],
-        [1.18, 0.2, 0, 0.24],
-        [0.1, 0.1, 0, 0.22],
-      ];
-      const sacMeshes: THREE.Mesh[] = [];
-      sacCoords.forEach(([x, y, z, r]) => {
-        const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), sacMat);
-        m.position.set(x, y, z);
-        sacG.add(m);
-        sacMeshes.push(m);
-      });
-      registerOrgan('bird_air_sacs', sacG, (t, rate) => {
-        const phase = Math.sin(t * (rate / 12));
-        sacMeshes.forEach((m, idx) => {
-          const isPost = idx >= 3;
-          const s = 1 + 0.14 * (isPost ? phase : -phase);
-          m.scale.setScalar(s);
+      activeSystem.organs.forEach((meta) => {
+        const labelObj = createLeaderArrowLabel({
+          text: meta.nameVi.split('(')[0].trim(),
+          labelPos: meta.labelPos,
+          anchorPos: meta.anchorPos,
+          fontSize: 0.115,
+          color: new THREE.Color(meta.colorHex).getHex(),
+          dotRadius: 0.016,
+          arrowScale: 0,
+          trimStart: 0.22,
+        });
+        lblGroup.add(labelObj);
+        const grp = anatomy.organGroups.get(meta.id) || new THREE.Group();
+        entriesRef.current.push({
+          meta,
+          group: grp,
+          basePos: grp.position.clone(),
+          meshes: [],
+          labelObj,
         });
       });
-
-      const bhG = new THREE.Group();
-      const bh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 22, 18), makeTissueMat(0xe11d48, 0.26, 0.78));
-      bh.scale.set(1.05, 1.2, 0.9);
-      bh.position.set(-0.55, -0.15, 0);
-      bhG.add(bh);
-      registerOrgan('bird_heart', bhG, (t, r) => {
-        const b = Math.pow(Math.max(0, Math.sin(t * (r / 8))), 4);
-        bhG.scale.setScalar(1 - b * 0.08);
-      });
-
-      const keelG = new THREE.Group();
-      const keel = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.45, 4), makeTissueMat(0xe2e8f0, 0.38, 0.45));
-      keel.rotation.z = -Math.PI / 2;
-      keel.scale.set(0.65, 1, 0.35);
-      keel.position.set(-0.1, -0.68, 0);
-      keelG.add(keel);
-      registerOrgan('bird_keel', keelG);
     }
 
-    // ==================== 7. ANIMAL: AMPHIBIAN (FROG) ====================
-    else if (systemId === 'animal_amphibian') {
-      const skinG = new THREE.Group();
-      const skinMesh = new THREE.Mesh(
-        new THREE.SphereGeometry(1.38, 30, 22),
-        makeTissueMat(0x10b981, 0.22, 0.85, 0.34)
-      );
-      skinMesh.scale.set(1.42, 0.72, 0.92);
-      skinG.add(skinMesh);
-      registerOrgan('amph_skin', skinG);
-
-      const h3G = new THREE.Group();
-      const vCommon = new THREE.Mesh(new THREE.SphereGeometry(0.3, 22, 18), makeTissueMat(0xa855f7, 0.28, 0.72));
-      vCommon.position.set(-0.2, -0.18, 0.12);
-      const aL = new THREE.Mesh(new THREE.SphereGeometry(0.18, 18, 14), makeTissueMat(0xf43f5e, 0.3, 0.65));
-      aL.position.set(-0.36, 0.12, 0.24);
-      const aR = new THREE.Mesh(new THREE.SphereGeometry(0.18, 18, 14), makeTissueMat(0x3b82f6, 0.3, 0.65));
-      aR.position.set(-0.36, 0.12, -0.02);
-      h3G.add(vCommon, aL, aR);
-      registerOrgan('amph_heart_3', h3G, (t, r) => {
-        const beat = Math.pow(Math.max(0, Math.sin(t * (r / 12))), 5);
-        h3G.scale.setScalar(1 - beat * 0.08);
-      });
-
-      const plG = new THREE.Group();
-      [-0.42, 0.42].forEach((pz) => {
-        const sac = new THREE.Mesh(new THREE.SphereGeometry(0.36, 22, 18), makeTissueMat(0xf472b6, 0.36, 0.55, 0.78));
-        sac.scale.set(1.25, 0.75, 0.68);
-        sac.position.set(0.15, 0.12, pz);
-        plG.add(sac);
-      });
-      registerOrgan('amph_lungs', plG, (t, r) => {
-        plG.scale.setScalar(1 + 0.08 * Math.sin(t * (r / 15)));
-      });
+    // ==================== 1–4. SCULPTED HUMAN SUB-SCENES (HEART, RESPIRATORY, NERVOUS, GI/RENAL) ====================
+    else if (
+      systemId === 'human_heart_circulatory' ||
+      systemId === 'human_respiratory' ||
+      systemId === 'human_nervous' ||
+      systemId === 'human_digestive_renal'
+    ) {
+      const vault = new BioMaterialVault(4, isSoftwareGl);
+      fullAnatomyVaultRef.current = vault;
+      buildSculptedHumanSubScene(systemId, shell, vault, isSoftwareGl, registerOrgan);
     }
 
-    // ==================== 8. ANIMAL: FISH (2-CHAMBER & GILLS) ====================
-    else if (systemId === 'animal_fish') {
-      const fishShell = new THREE.Mesh(new THREE.SphereGeometry(1.42, 30, 20), makeXrayMat(0x06b6d4, 0.11));
-      fishShell.scale.set(1.72, 0.72, 0.46);
-      shell.add(fishShell);
-      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.85, 4), makeXrayMat(0x06b6d4, 0.16));
-      tail.rotation.z = Math.PI / 2;
-      tail.scale.set(1, 1, 0.18);
-      tail.position.set(2.35, 0, 0);
-      shell.add(tail);
+    // ==================== 5–8. SCULPTED COMPARATIVE VERTEBRATE ANIMALS ====================
+    else if (
+      systemId === 'animal_mammal' ||
+      systemId === 'animal_bird' ||
+      systemId === 'animal_amphibian' ||
+      systemId === 'animal_fish'
+    ) {
+      const vault = new BioMaterialVault(4, isSoftwareGl);
+      fullAnatomyVaultRef.current = vault;
+      buildVertebrateAnimalScene(systemId, shell, vault, isSoftwareGl, registerOrgan);
+    }
 
-      const fhG = new THREE.Group();
-      const fhMat = makeTissueMat(0x3b82f6, 0.28, 0.72);
-      const fV = new THREE.Mesh(new THREE.SphereGeometry(0.24, 20, 16), fhMat);
-      fV.position.set(-1.1, -0.35, 0);
-      const fA = new THREE.Mesh(new THREE.SphereGeometry(0.18, 18, 14), makeTissueMat(0x1d4ed8, 0.3, 0.65));
-      fA.position.set(-0.85, -0.25, 0);
-      fhG.add(fV, fA);
-      registerOrgan('fish_heart_2', fhG, (t, r) => {
-        const b = Math.pow(Math.max(0, Math.sin(t * (r / 14))), 5);
-        fhG.scale.setScalar(1 - b * 0.085);
-      });
-
-      const gillG = new THREE.Group();
-      const gMat = makeTissueMat(0xef4444, 0.32, 0.65);
-      for (let i = 0; i < 4; i++) {
-        [-0.22, 0.22].forEach((gz) => {
-          const arc = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.045, 10, 20, Math.PI * 0.9), gMat);
-          arc.position.set(-1.05 + i * 0.11, 0.05, gz);
-          arc.rotation.z = -Math.PI * 0.45;
-          gillG.add(arc);
+    // Reset & frame full specimen cleanly whenever switching systems (never inherit previous close-up zoom)
+    const cam = cameraRef.current;
+    const ctrl = controlsRef.current;
+    if (cam && ctrl) {
+      const specimenBox = resolveObjectWorldBox3(root);
+      if (!specimenBox.isEmpty()) {
+        const pose = computeFocusPoseFromBox3(specimenBox, {
+          fovDeg: cam.fov,
+          aspect: cam.aspect,
+          padding: 1.5,
+          minDistance: systemId === 'human_full_layered' ? 4.35 : 3.6,
+          maxDistance: 12,
+          preferredDirection: new THREE.Vector3(0.42, 0.2, 0.88),
         });
+        cam.position.copy(pose.position);
+        ctrl.target.copy(pose.target);
+        ctrl.update();
+        cameraLerpRef.current = null;
       }
-      registerOrgan('fish_gills', gillG, (t, r) => {
-        gillG.scale.z = 1 + 0.08 * Math.sin(t * (r / 14));
-      });
-
-      const sbG = new THREE.Group();
-      const sb = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 1.05, 8, 16), makeTissueMat(0xe0f2fe, 0.12, 0.9, 0.72));
-      sb.rotation.z = Math.PI / 2;
-      sb.position.set(0.25, 0.28, 0);
-      sbG.add(sb);
-      registerOrgan('fish_swim_bladder', sbG, (t, r) => {
-        sbG.scale.setScalar(1 + 0.03 * Math.sin(t * (r / 20)));
-      });
-
-      const latG = new THREE.Group();
-      const lMat = makeTissueMat(0x22d3ee, 0.25, 0.8);
-      [-0.46, 0.46].forEach((lz) => {
-        latG.add(makeTube([[-0.85, 0.1, lz * 0.6], [0.2, 0.12, lz], [1.65, 0.04, lz * 0.45]], 0.03, lMat));
-      });
-      registerOrgan('fish_lateral_line', latG);
     }
   }, [systemId, activeSystem, isSoftwareGl]);
 
   const setCameraPreset = (preset: QuickCamPreset) => {
-    if (preset === 'iso') {
-      cameraLerpRef.current = { pos: new THREE.Vector3(2.9, 1.35, 5.25), target: new THREE.Vector3(0, 0.1, 0) };
+    const root = specimenRootRef.current;
+    const camera = cameraRef.current;
+    let center = new THREE.Vector3(0, 0.1, 0);
+    let radius = 2.4;
+    if (root) {
+      const box = resolveObjectWorldBox3(root);
+      if (!box.isEmpty()) {
+        const sp = new THREE.Sphere();
+        box.getCenter(center);
+        box.getBoundingSphere(sp);
+        radius = Math.max(0.8, sp.radius);
+      }
+    }
+    if (preset === 'iso' && camera && root) {
+      const pose = computeFocusPoseFromBox3(resolveObjectWorldBox3(root), {
+        fovDeg: camera.fov,
+        aspect: camera.aspect,
+        padding: 1.48,
+        minDistance: 2.2,
+        maxDistance: 12,
+        preferredDirection: new THREE.Vector3(0.45, 0.24, 0.86),
+      });
+      cameraLerpRef.current = pose;
     } else if (preset === 'top') {
-      cameraLerpRef.current = { pos: new THREE.Vector3(0, 6.2, 0.8), target: new THREE.Vector3(0, 0, 0) };
+      cameraLerpRef.current = {
+        position: center.clone().add(new THREE.Vector3(0, radius * 2.55, radius * 0.32)),
+        target: center,
+      };
     } else {
-      cameraLerpRef.current = { pos: new THREE.Vector3(0, 0.2, 5.4), target: new THREE.Vector3(0, 0.1, 0) };
+      cameraLerpRef.current = {
+        position: center.clone().add(new THREE.Vector3(0, radius * 0.08, radius * 2.3)),
+        target: center,
+      };
     }
   };
 
@@ -2046,7 +1947,7 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
               Phòng Giải Phẫu 3D Cơ Thể Người &amp; Động Vật Chuyên Sâu
             </h2>
             <p className="text-[11px] text-slate-400 truncate">
-              Chạm trực tiếp vào cơ quan 3D, tách lớp không gian, bật/tắt 4 lớp cơ quan, cắt mặt phẳng X/Y/Z và đối chiếu tiến hóa
+              Chạm trực tiếp vào cơ quan 3D, tách lớp không gian, bật/tắt 11 hệ cơ quan + Da/Cơ/Xương, cắt mặt phẳng X/Y/Z và đối chiếu tiến hóa
             </p>
           </div>
         </div>
@@ -2089,6 +1990,35 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
           </button>
           <button
             type="button"
+            onClick={() => handleZoomStep(0.78)}
+            className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold cursor-pointer"
+            title="Phóng to"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleZoomStep(1.26)}
+            className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold cursor-pointer"
+            title="Thu nhỏ"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setAutoRotate((r) => !r)}
+            className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold cursor-pointer ${
+              autoRotate
+                ? 'bg-teal-600 border-teal-400 text-white'
+                : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+            }`}
+            title="Xoay 360°"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${autoRotate ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">360°</span>
+          </button>
+          <button
+            type="button"
             onClick={() => captureCanvasPng(canvasRef.current, `synapse-anatomy-${systemId}`)}
             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold cursor-pointer"
           >
@@ -2103,6 +2033,19 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
             <Download className="w-3.5 h-3.5" />
             <span>Hồ sơ .MD</span>
           </button>
+          {realm === 'human' && (
+            <button
+              type="button"
+              onClick={() => setAssetModalOpen(true)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-teal-950/90 hover:bg-teal-900 border border-teal-500/50 text-teal-200 text-xs font-bold cursor-pointer"
+              title="Quản lý & nạp mô hình giải phẫu GLB/GLTF"
+            >
+              <FolderUp className="w-3.5 h-3.5" />
+              <span>
+                GLB ({anatomyAssetSummary.readyCount}/{anatomyAssetSummary.totalSlots})
+              </span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setIsFullscreen((f) => !f)}
@@ -2125,7 +2068,7 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
               onClick={() => handleSelectSystem(sys.id)}
               className={`rounded-xl border p-3 text-left transition-all cursor-pointer ${
                 active
-                  ? 'border-teal-400 bg-teal-500/15 text-white shadow-[0_0_20px_-6px_rgba(20,184,166,0.5)]'
+                  ? 'border-teal-400 bg-slate-900 ring-1 ring-teal-400/50 text-white shadow-[0_0_20px_-6px_rgba(20,184,166,0.5)]'
                   : 'border-slate-800 bg-slate-950/90 text-slate-300 hover:border-teal-500/50'
               }`}
             >
@@ -2139,37 +2082,87 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
         })}
       </div>
 
-      {/* Interactive Layer Toggle Bar for Full Human Map */}
+      {/* Interactive 11-System Layer Toggle Bar & Skin/Muscle/Bone Opacity for Full Human Map */}
       {systemId === 'human_full_layered' && (
-        <div className="rounded-xl border border-rose-500/35 bg-slate-950/90 px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-white">
-          <span className="font-bold text-rose-300 inline-flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5" />
-            Bật / Tắt từng Lớp Cơ Quan (Giữ đồng thời để đối chiếu vị trí &amp; nhịp sinh lí):
-          </span>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {(
-              [
-                { id: 'circulatory', label: 'Hệ Tuần Hoàn (Tim đập)', color: 'border-rose-400 bg-rose-500/20 text-rose-200' },
-                { id: 'respiratory', label: 'Hệ Hô Hấp (Phổi thở)', color: 'border-sky-400 bg-sky-500/20 text-sky-200' },
-                { id: 'nervous', label: 'Hệ Thần Kinh (Xung não–tủy)', color: 'border-amber-400 bg-amber-500/20 text-amber-200' },
-                { id: 'digestive', label: 'Hệ Tiêu Hóa (Nhu động)', color: 'border-orange-400 bg-orange-500/20 text-orange-200' },
-              ] as const
-            ).map((layer) => {
-              const on = layerVis[layer.id];
-              return (
-                <button
-                  key={layer.id}
-                  type="button"
-                  onClick={() => setLayerVis((prev) => ({ ...prev, [layer.id]: !prev[layer.id] }))}
-                  className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors ${
-                    on ? layer.color : 'border-slate-700 bg-slate-900 text-slate-500'
-                  }`}
-                >
-                  {on ? '✓ ' : '○ '}
-                  {layer.label}
-                </button>
-              );
-            })}
+        <div className="rounded-xl border border-teal-500/35 bg-slate-950/95 px-3.5 py-2.5 space-y-2.5 text-xs text-white">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-bold text-teal-300 inline-flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" />
+              11 Hệ Cơ Quan (Bật/tắt độc lập):
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(
+                [
+                  { id: 'skeletal', label: 'Hệ Xương', color: 'border-slate-300 bg-slate-200/20 text-slate-100' },
+                  { id: 'muscular', label: 'Hệ Cơ', color: 'border-rose-400 bg-rose-500/20 text-rose-200' },
+                  { id: 'circulatory', label: 'Tuần Hoàn', color: 'border-red-400 bg-red-500/20 text-red-200' },
+                  { id: 'respiratory', label: 'Hô Hấp', color: 'border-sky-400 bg-sky-500/20 text-sky-200' },
+                  { id: 'digestive', label: 'Tiêu Hóa', color: 'border-orange-400 bg-orange-500/20 text-orange-200' },
+                  { id: 'nervous', label: 'Thần Kinh', color: 'border-amber-400 bg-amber-500/20 text-amber-200' },
+                  { id: 'urinary', label: 'Tiết Niệu', color: 'border-pink-400 bg-pink-500/20 text-pink-200' },
+                  { id: 'endocrine', label: 'Nội Tiết', color: 'border-emerald-400 bg-emerald-500/20 text-emerald-200' },
+                  { id: 'lymphatic', label: 'Miễn Dịch', color: 'border-teal-400 bg-teal-500/20 text-teal-200' },
+                  { id: 'reproductive', label: 'Sinh Sản', color: 'border-fuchsia-400 bg-fuchsia-500/20 text-fuchsia-200' },
+                  { id: 'sensory', label: 'Giác Quan', color: 'border-cyan-400 bg-cyan-500/20 text-cyan-200' },
+                ] as const
+              ).map((layer) => {
+                const on = layerVis[layer.id];
+                return (
+                  <button
+                    key={layer.id}
+                    type="button"
+                    onClick={() => setLayerVis((prev) => ({ ...prev, [layer.id]: !prev[layer.id] }))}
+                    className={`px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors ${
+                      on ? layer.color : 'border-slate-700 bg-slate-900 text-slate-500'
+                    }`}
+                  >
+                    {on ? '✓ ' : '○ '}
+                    {layer.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <label className="flex items-center gap-2 rounded-lg bg-slate-900 border border-slate-800 px-2.5 py-1.5 text-[11px]">
+              <span className="font-bold text-amber-300 shrink-0">Độ rõ Da:</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={skinOpacity}
+                onChange={(e) => setSkinOpacity(Number(e.target.value))}
+                className="w-full accent-amber-400 cursor-pointer"
+              />
+              <span className="font-mono text-amber-200 w-9 text-right">{Math.round(skinOpacity * 100)}%</span>
+            </label>
+            <label className="flex items-center gap-2 rounded-lg bg-slate-900 border border-slate-800 px-2.5 py-1.5 text-[11px]">
+              <span className="font-bold text-rose-300 shrink-0">Độ rõ Cơ:</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={muscleOpacity}
+                onChange={(e) => setMuscleOpacity(Number(e.target.value))}
+                className="w-full accent-rose-400 cursor-pointer"
+              />
+              <span className="font-mono text-rose-200 w-9 text-right">{Math.round(muscleOpacity * 100)}%</span>
+            </label>
+            <label className="flex items-center gap-2 rounded-lg bg-slate-900 border border-slate-800 px-2.5 py-1.5 text-[11px]">
+              <span className="font-bold text-slate-200 shrink-0">Độ rõ Xương:</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={boneOpacity}
+                onChange={(e) => setBoneOpacity(Number(e.target.value))}
+                className="w-full accent-slate-300 cursor-pointer"
+              />
+              <span className="font-mono text-slate-200 w-9 text-right">{Math.round(boneOpacity * 100)}%</span>
+            </label>
           </div>
         </div>
       )}
@@ -2201,7 +2194,7 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
               const bm = savedBookmarkRef.current;
               if (bm) {
                 cameraLerpRef.current = {
-                  pos: new THREE.Vector3(...bm.pos),
+                  position: new THREE.Vector3(...bm.pos),
                   target: new THREE.Vector3(...bm.target),
                 };
               }
@@ -2300,45 +2293,79 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
         <div className="xl:col-span-4 space-y-4">
           {/* Organ Chips */}
           <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-white space-y-2.5">
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-xs gap-2">
               <span className="font-extrabold uppercase tracking-wider text-teal-300 flex items-center gap-1.5">
                 {realm === 'human' ? <Brain className="w-4 h-4" /> : <Wind className="w-4 h-4" />}
                 <span>Bộ phận trong Hệ ({activeSystem.organs.length})</span>
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setExplodePct(0);
-                  setIsolateSelected(false);
-                }}
-                className="text-[10px] font-semibold text-slate-400 hover:text-white inline-flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3" /> Hợp nhất
-              </button>
+              <div className="flex items-center gap-2">
+                {hiddenOrganIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setHiddenOrganIds([])}
+                    className="text-[10px] font-semibold text-amber-300 hover:text-amber-200 inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Eye className="w-3 h-3" /> Hiện tất cả ({hiddenOrganIds.length})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExplodePct(0);
+                    setIsolateSelected(false);
+                  }}
+                  className="text-[10px] font-semibold text-slate-400 hover:text-white inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" /> Hợp nhất
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-1.5">
               {activeSystem.organs.map((org) => {
                 const isSel = org.id === selectedOrgan.id;
+                const isHid = hiddenOrganIds.includes(org.id);
                 return (
-                  <button
-                    key={org.id}
-                    type="button"
-                    onClick={() => setSelectedOrganId(org.id)}
-                    className={`rounded-xl border px-3 py-2 text-left transition-colors cursor-pointer flex items-center gap-2.5 ${
-                      isSel
-                        ? 'border-teal-400 bg-teal-500/15 text-white'
-                        : 'border-slate-800 bg-slate-900/75 text-slate-300 hover:border-slate-700'
-                    }`}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: org.colorHex }}
-                    />
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold truncate">{org.nameVi}</div>
-                      <div className="text-[10px] italic text-slate-400 truncate">{org.latinName}</div>
-                    </div>
-                  </button>
+                  <div key={org.id} className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedOrganId(org.id);
+                        focusOrganById(org.id);
+                      }}
+                      className={`flex-1 min-w-0 rounded-xl border px-3 py-2 text-left transition-colors cursor-pointer flex items-center gap-2.5 ${
+                        isSel
+                          ? 'border-teal-400 bg-teal-500/15 text-white'
+                          : isHid
+                          ? 'border-slate-800 bg-slate-900/40 text-slate-500 line-through'
+                          : 'border-slate-800 bg-slate-900/75 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: org.colorHex }}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold truncate">{org.nameVi}</div>
+                        <div className="text-[10px] italic text-slate-400 truncate">{org.latinName}</div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setHiddenOrganIds((prev) =>
+                          prev.includes(org.id) ? prev.filter((x) => x !== org.id) : [...prev, org.id]
+                        )
+                      }
+                      className={`p-2 rounded-xl border cursor-pointer shrink-0 ${
+                        isHid
+                          ? 'border-amber-500/60 bg-amber-500/20 text-amber-200'
+                          : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
+                      }`}
+                      title={isHid ? 'Hiện bộ phận' : 'Ẩn bộ phận'}
+                    >
+                      {isHid ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -2354,10 +2381,43 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
                 <h3 className="text-base font-extrabold text-white mt-0.5">{selectedOrgan.nameVi}</h3>
                 <div className="text-xs italic text-slate-400">{selectedOrgan.latinName}</div>
               </div>
-              <span
-                className="w-4 h-4 rounded-md border border-white/25 shrink-0 mt-1"
-                style={{ backgroundColor: selectedOrgan.colorHex }}
-              />
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => focusOrganById(selectedOrgan.id)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-[11px] font-bold cursor-pointer"
+                  title="Tập trung camera vào bộ phận này"
+                >
+                  <Crosshair className="w-3 h-3" />
+                  <span>Tập trung</span>
+                </button>
+                {systemId === 'human_full_layered' && ORGAN_TO_DETAILED_SYSTEM[selectedOrgan.id] && (
+                  <button
+                    type="button"
+                    data-testid="sandbox-open-detailed-organ"
+                    onClick={() => handleSelectSystem(ORGAN_TO_DETAILED_SYSTEM[selectedOrgan.id]!)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold cursor-pointer"
+                    title="Chuyển sang mô hình giải phẫu đơn chi tiết của cơ quan này"
+                  >
+                    <Microscope className="w-3 h-3" />
+                    <span>Mở mô hình đơn chi tiết</span>
+                  </button>
+                )}
+                {(systemId === 'human_heart_circulatory' ||
+                  systemId === 'human_respiratory' ||
+                  systemId === 'human_nervous' ||
+                  systemId === 'human_digestive_renal') && (
+                  <button
+                    type="button"
+                    data-testid="sandbox-back-full-body"
+                    onClick={() => handleSelectSystem('human_full_layered')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-teal-500/40 text-teal-200 text-[11px] font-bold cursor-pointer"
+                    title="Quay lại bản đồ toàn thân 11 hệ"
+                  >
+                    <span>← Về Toàn thân 11 Hệ</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2 text-xs">
@@ -2413,6 +2473,14 @@ export const BioAnatomyExplorer3DSandbox: React.FC<{ onEarnXP?: (xp: number) => 
           </div>
         </div>
       </div>
+      <AnatomyAssetManagerModal
+        open={assetModalOpen}
+        onClose={() => setAssetModalOpen(false)}
+        bundledFiles={bundledAnatomyFiles}
+        sessionUploadedSlots={sessionUploadedSlots}
+        onUploadSlotFile={handleUploadAnatomyGltf}
+        onRestoreSlot={handleRestoreAnatomySlot}
+      />
     </div>
   );
 };

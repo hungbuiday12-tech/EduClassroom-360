@@ -69,6 +69,34 @@
       "lastMessagePreview": "Xin chào cả lớp! Mọi người có thể chia sẻ mẹo học tập, lịch ôn thi hoặc đặt câu hỏi chung tại đây nhé.",
       "lastMessageAt": "2026-11-15T00:04:00.000Z",
       "createdAt": "2026-11-15T00:04:00.000Z"
+    },
+    {
+      "id": "chemistry-lab-club",
+      "name": "CLB Hóa Học 2D/3D · Cân Bằng, Chuẩn Độ & Hữu Cơ",
+      "description": "Trao đổi phương trình ion-electron, chuẩn độ acid-base pH, liên kết VSEPR, điện hóa và cơ chế hữu cơ.",
+      "subject": "chemistry",
+      "isMandatoryAdminGroup": false,
+      "creatorId": "demo_user_5",
+      "creatorName": "Phạm Hoàng Minh",
+      "creatorUsername": "chuyenhoa2026",
+      "messageCount": 1,
+      "lastMessagePreview": "Chào mọi người! Cần phân tích bài toán điện phân, chuẩn độ hay đồng phân hữu cơ thì gửi vào đây nha.",
+      "lastMessageAt": "2026-11-15T00:03:00.000Z",
+      "createdAt": "2026-11-15T00:03:00.000Z"
+    },
+    {
+      "id": "biology-genetics-club",
+      "name": "CLB Sinh Học · Di Truyền Phân Tử & Sinh Lý",
+      "description": "Thảo luận cơ chế nhân đôi DNA, phiên mã-dịch mã, quy luật Mendel, Hardy-Weinberg và mô phỏng tế bào 3D.",
+      "subject": "biology",
+      "isMandatoryAdminGroup": false,
+      "creatorId": "demo_user_6",
+      "creatorName": "Nguyễn Ngọc Linh",
+      "creatorUsername": "chuyensinh2026",
+      "messageCount": 1,
+      "lastMessagePreview": "Chào các bạn! Mọi câu hỏi về cơ chế di truyền, enzyme, điện thế hoạt động hay hệ sinh thái đều có thể trao đổi ở đây.",
+      "lastMessageAt": "2026-11-15T00:04:00.000Z",
+      "createdAt": "2026-11-15T00:04:00.000Z"
     }
   ],
   "messages": [
@@ -127,6 +155,240 @@
       "senderRole": "student",
       "content": "Xin chào cả lớp! Mọi người có thể chia sẻ mẹo học tập, lịch ôn thi hoặc đặt câu hỏi chung ngoài khuôn khổ từng môn ở đây nhé.",
       "createdAt": "2026-11-15T00:04:00.000Z"
+    },
+    {
+      "id": "msg_seed_chemistry_1",
+      "groupId": "chemistry-lab-club",
+      "isAdminGroup": false,
+      "senderId": "demo_user_5",
+      "senderName": "Phạm Hoàng Minh",
+      "senderUsername": "chuyenhoa2026",
+      "senderRole": "student",
+      "content": "Chào mọi người! Ai cần thảo luận chuẩn độ pH, bảo toàn electron ($\\text{Fe} \\to \\text{Fe}^{3+} + 3e$) hay hình học phân tử VSEPR có thể nhắn ở đây nhé.",
+      "createdAt": "2026-11-15T00:03:00.000Z"
+    },
+    {
+      "id": "msg_seed_biology_1",
+      "groupId": "biology-genetics-club",
+      "isAdminGroup": false,
+      "senderId": "demo_user_6",
+      "senderName": "Nguyễn Ngọc Linh",
+      "senderUsername": "chuyensinh2026",
+      "senderRole": "student",
+      "content": "Chào các bạn! Cùng thảo luận bài tập nhân đôi DNA, di truyền quần thể Hardy-Weinberg ($p^2 + 2pq + q^2 = 1$) và sinh lý cơ thể tại đây nha.",
+      "createdAt": "2026-11-15T00:04:00.000Z"
+    }
+  ],
+  "posts": [
+    {
+      "id": "post_seed_synapse_update_1",
+      "authorId": "admin_synapse",
+      "authorName": "Synapse",
+      "authorUsername": "Synapse",
+      "authorAvatar": "/assets/aistudio/image_0883e005.png",
+      "authorRole": "admin",
+      "postType": "update",
+      "subject": "announcements",
+      "title": "Cập nhật Bảng Tin Cộng Đồng & Nâng cấp Mô phỏng 2D/3D Lí – Hóa – Sinh",
+      "content": "Chào mừng các bạn đến với không gian **Bảng Tin & Trải Nghiệm** mới trên Diễn đàn Synapse 360°!\n\nTừ hôm nay các bạn có thể:\n• Đăng bài chia sẻ góc nhìn học tập, chèn công thức KaTeX ($E = mc^2$), code C++/Python và gắn trực tiếp **Thí nghiệm 2D/3D, Sandbox KHTN/KHKT hoặc Bài giảng** để bạn bè bấm vào trải nghiệm ngay.\n• Toàn bộ mô phỏng 2D/3D Vật lí, Hóa học, Sinh học đã nâng cấp ánh sáng sắc nét và hỗ trợ kéo thả trực tiếp bằng chuột.\n• Theo dõi mục **Thông báo Cập nhật Web** bên phải để nắm các bản vá và tính năng mới nhất từ Admin Synapse.",
+      "attachment": {
+        "kind": "pre_lab",
+        "subject": "pre",
+        "targetId": "what_if_physics_3d",
+        "title": "Vũ Trụ \"Nếu Định Luật Vật Lí Thay Đổi\" 3D (Synapse Pre)",
+        "subtitle": "Bẻ cong hằng số G, tốc độ ánh sáng c & Planck h trong không gian 3D",
+        "formula": "F = G\\frac{m_1 m_2}{r^n},\\quad c = 3\\times 10^8\\text{ m/s}",
+        "gradeLabel": "Synapse Pre · Sandbox KHTN",
+        "openSim": true
+      },
+      "tags": [
+        "Cập nhật Web",
+        "Synapse Pre",
+        "Mô phỏng 3D"
+      ],
+      "gradeTag": "Toàn hệ thống",
+      "reactions": {
+        "👍": [
+          "demo_user_2",
+          "demo_user_3"
+        ],
+        "🔥": [
+          "demo_user_1",
+          "demo_user_5"
+        ]
+      },
+      "commentsCount": 1,
+      "comments": [
+        {
+          "id": "cmt_seed_1",
+          "postId": "post_seed_synapse_update_1",
+          "authorId": "demo_user_3",
+          "authorName": "Trần Minh Khoa",
+          "authorUsername": "chuyenli2026",
+          "authorRole": "student",
+          "content": "Tuyệt quá Admin ơi! Bấm nút \"Trải nghiệm ngay\" là bay thẳng vào mô phỏng luôn rất tiện ạ.",
+          "createdAt": "2026-11-15T00:04:00.000Z"
+        }
+      ],
+      "tryCount": 42,
+      "isPinned": true,
+      "createdAt": "2026-11-15T00:04:00.000Z"
+    },
+    {
+      "id": "post_seed_chem_titration",
+      "authorId": "demo_user_5",
+      "authorName": "Phạm Hoàng Minh",
+      "authorUsername": "chuyenhoa2026",
+      "authorRole": "student",
+      "postType": "experiment",
+      "subject": "chemistry",
+      "title": "Thí nghiệm Chuẩn độ Buret NaOH – Bình Tam Giác 3D & Điểm tương đương pH",
+      "content": "Mình vừa thử bàn chuẩn độ 3D ở Hóa học lớp 11, lúc nhỏ từng giọt kiềm xuống thấy dung dịch đổi màu hồng cánh sen bền vững cực trực quan! Mọi người nhớ công thức điểm tương đương $C_a V_a = C_b V_b$ và thử chỉnh tốc độ nhỏ giọt nhé.",
+      "attachment": {
+        "kind": "sim3d",
+        "subject": "chemistry",
+        "domainId": "equilibrium_acidbase",
+        "targetId": "titration_bench_3d",
+        "title": "Bàn Thí Nghiệm Chuẩn Độ Buret – Bình Tam Giác 3D",
+        "subtitle": "Hóa học 3D · Cân bằng & Dung dịch Acid–Base",
+        "formula": "C_a V_a = C_b V_b \\quad|\\quad \\text{pH} = -\\log[\\text{H}^+]",
+        "gradeLabel": "Lớp 9 · Lớp 11",
+        "openSim": true
+      },
+      "tags": [
+        "Hóa 3D",
+        "Chuẩn độ pH"
+      ],
+      "gradeTag": "Lớp 11",
+      "reactions": {
+        "👍": [
+          "demo_user_6"
+        ],
+        "💡": [
+          "demo_user_2"
+        ]
+      },
+      "commentsCount": 0,
+      "comments": [],
+      "tryCount": 18,
+      "createdAt": "2026-11-15T00:03:00.000Z"
+    },
+    {
+      "id": "post_seed_bio_mendel",
+      "authorId": "demo_user_6",
+      "authorName": "Nguyễn Ngọc Linh",
+      "authorUsername": "chuyensinh2026",
+      "authorRole": "student",
+      "postType": "experiment",
+      "subject": "biology",
+      "title": "Thí nghiệm Đậu Hà Lan Mendel 3D — Tại sao F₂ luôn ra tỉ lệ 9:3:3:1?",
+      "content": "Các bạn ôn thi Sinh 9 & Sinh 12 thử bấm vào mô phỏng Đậu Hà Lan Mendel 3D này xem! Tách hạt Vàng-Trơn / Xanh-Nhăn trực quan kèm bảng tổ hợp giao tử giúp nhớ ngay quy luật phân li độc lập $F_1 (AaBb \\times AaBb)$.",
+      "attachment": {
+        "kind": "sim3d",
+        "subject": "biology",
+        "domainId": "genetics_molecular",
+        "targetId": "mendel_peas_3d",
+        "title": "Thí Nghiệm Đậu Hà Lan Mendel & Bảng Phân Li F₂ 3D",
+        "subtitle": "Sinh học 3D · Di truyền Phân tử & Biến dị",
+        "formula": "F_1(AaBb \\times AaBb) \\implies 9\\text{A\\_B\\_} : 3\\text{A\\_bb} : 3\\text{aaB\\_} : 1\\text{aabb}",
+        "gradeLabel": "Lớp 9 · Lớp 12",
+        "openSim": true
+      },
+      "tags": [
+        "Sinh 3D",
+        "Mendel"
+      ],
+      "gradeTag": "Lớp 12",
+      "reactions": {
+        "❤️": [
+          "demo_user_4",
+          "demo_user_5"
+        ],
+        "🔥": [
+          "demo_user_1"
+        ]
+      },
+      "commentsCount": 0,
+      "comments": [],
+      "tryCount": 24,
+      "createdAt": "2026-11-15T00:02:00.000Z"
+    },
+    {
+      "id": "post_seed_physics_proj",
+      "authorId": "demo_user_3",
+      "authorName": "Trần Minh Khoa",
+      "authorUsername": "chuyenli2026",
+      "authorRole": "student",
+      "postType": "experiment",
+      "subject": "physics",
+      "title": "Kiểm chứng hai góc ném bù nhau (20° và 70°) cho cùng tầm xa L trên sàn 2D",
+      "content": "Vì $\\sin(2\\alpha) = \\sin(180^\\circ - 2\\alpha)$ nên khi giữ nguyên vận tốc đầu $v_0 = 28\\text{ m/s}$, góc bắn $20^\\circ$ và $70^\\circ$ chạm đất tại cùng một tầm xa $L = \\frac{v_0^2 \\sin 2\\alpha}{g}$! Bấm trải nghiệm rồi kéo thả thanh đo để tự kiểm chứng nha.",
+      "attachment": {
+        "kind": "sim2d",
+        "subject": "physics",
+        "domainId": "mechanics",
+        "targetId": "projectile_motion",
+        "title": "Quỹ đạo Ném Xiên Parabol 2D",
+        "subtitle": "Vật lí 2D · Cơ học & Chuyển động",
+        "formula": "L = \\frac{v_0^2 \\sin 2\\alpha}{g},\\quad H = \\frac{(v_0 \\sin\\alpha)^2}{2g}",
+        "gradeLabel": "Lớp 10",
+        "openSim": true
+      },
+      "tags": [
+        "Vật lí 2D",
+        "Ném xiên"
+      ],
+      "gradeTag": "Lớp 10",
+      "reactions": {
+        "👍": [
+          "demo_user_1"
+        ],
+        "💡": [
+          "demo_user_2",
+          "demo_user_4"
+        ]
+      },
+      "commentsCount": 0,
+      "comments": [],
+      "tryCount": 15,
+      "createdAt": "2026-11-15T00:01:00.000Z"
+    },
+    {
+      "id": "post_seed_cs_hull",
+      "authorId": "demo_user_1",
+      "authorName": "Học sinh Chuyên",
+      "authorUsername": "hocsinh",
+      "authorRole": "student",
+      "postType": "lecture",
+      "subject": "cs",
+      "title": "Mẹo cài đặt Bao Lồi Convex Hull (Monotone Chain) O(N log N) không bị lỗi thẳng hàng",
+      "content": "Khi làm các bài Hình học tính toán VNOI, chỉ cần chú ý điều kiện `cross(L[k-2], L[k-1], p) <= 0` để loại bỏ điểm rẽ phải hoặc thẳng hàng.\n```cpp\nlong long cross(Point O, Point A, Point B) {\n    return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);\n}\n```\nCác bạn có thể bấm vào trình trực quan hóa 2D bên dưới để xem từng bước dựng bao dưới và bao trên!",
+      "attachment": {
+        "kind": "sim2d",
+        "subject": "cs",
+        "targetId": "coord_hull",
+        "title": "Tọa độ Oxy: Bao lồi (Convex Hull) 2D",
+        "subtitle": "Tin học 2D · Thuật toán Monotone Chain O(N log N)",
+        "formula": "\\vec{OA} \\times \\vec{OB} = x_A y_B - y_A x_B",
+        "gradeLabel": "Chuyên Tin · VNOI",
+        "openSim": true
+      },
+      "tags": [
+        "C++",
+        "Hình học Oxy",
+        "VNOI"
+      ],
+      "gradeTag": "Chuyên / HSG",
+      "reactions": {
+        "🔥": [
+          "demo_user_2",
+          "demo_user_3"
+        ]
+      },
+      "commentsCount": 0,
+      "comments": [],
+      "tryCount": 19,
+      "createdAt": "2026-11-15T00:00:00.000Z"
     }
   ]
 }

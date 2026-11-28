@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "directory": "./assets/anatomy/",
+  "bundledFiles": [],
+  "notes": "Place licensed CC0/CC-BY anatomical .glb or .gltf files in public/assets/anatomy/ and list their filenames in bundledFiles, or import .glb/.gltf models directly via the in-app Human Anatomy GLB Asset Manager."
+}

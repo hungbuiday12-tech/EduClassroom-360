@@ -71,6 +71,30 @@ const makeBioCfg = (
 });
 
 export const BIOLOGY_3D_CONFIGS: Record<Biology3DMode, Bio3DModeConfig> = {
+  human_anatomy_3d: makeBioCfg(
+    'human_anatomy_3d',
+    'Giải Phẫu Cơ Thể Người 3D Đa Hệ Cơ Quan (8 Hệ)',
+    'Bật/tắt 8 hệ cơ quan (Xương, Cơ, Tuần hoàn, Hô hấp, Tiêu hóa, Thần kinh, Tiết niệu, Nội tiết), điều chỉnh độ trong suốt Da/Cơ/Xương và chọn từng cơ quan để phóng to chính xác.',
+    '\\text{8 Hệ Cơ Quan} \\leftrightarrow \\text{Tổ chức Cơ thể Thống nhất}',
+    [
+      { key: 'bpm', label: 'Nhịp tim sinh lí', unit: 'bpm', min: 50, max: 160, step: 5, defaultVal: 72, accentClass: 'accent-rose-500' },
+      { key: 'skinOpacity', label: 'Độ mờ lớp Da', unit: '%', min: 0, max: 90, step: 5, defaultVal: 25, accentClass: 'accent-amber-500' }
+    ],
+    [
+      { label: 'Nội tạng X-Quang', description: 'Da mờ 20% thấy rõ tim, phổi, gan, thận', params: { bpm: 72, skinOpacity: 20 } },
+      { label: 'Giải phẫu Toàn thân', description: 'Chế độ khám phá cân bằng đa lớp', params: { bpm: 75, skinOpacity: 35 } }
+    ],
+    [
+      { id: 'reset_bio', label: 'Đặt lại giải phẫu chuẩn', kind: 'reset', accent: 'teal' }
+    ],
+    {},
+    (p) => ({
+      equationText: `Nhịp tim ${p.bpm ?? 72} BPM · Da ${p.skinOpacity ?? 25}% · Nhấp trực tiếp lên cơ quan để tập trung camera`,
+      statusNote: 'Bạn có thể bật/tắt từng hệ cơ quan, ẩn/hiện hoặc cô lập riêng một bộ phận ở thanh công cụ phía dưới.',
+      metricsSummary: `BPM=${p.bpm ?? 72}, Skin=${p.skinOpacity ?? 25}%`
+    })
+  ),
+
   mendel_peas_3d: makeBioCfg(
     'mendel_peas_3d',
     'Thí Nghiệm Đậu Hà Lan Menđen (P → F₁ → F₂)',
@@ -515,28 +539,32 @@ export const BIOLOGY_3D_CONFIGS: Record<Biology3DMode, Bio3DModeConfig> = {
 
   virus_bacteriophage_3d: makeBioCfg(
     'virus_bacteriophage_3d',
-    'Thực Khuẩn Thể T4 (Bacteriophage) Bơm DNA Vào Vi Khuan',
-    'Kích hoạt bao đuôi co bóp để tiêm vật chất di truyền DNA từ đầu Capsid 20 mặt vào tế bào chủ.',
+    'Virus: Thực Khuẩn Thể T4 & Virus Có Vỏ Bọc Lipid (Gai S)',
+    'Kích hoạt bao đuôi co bóp để tiêm vật chất di truyền DNA hoặc chuyển sang chế độ Virus có vỏ ngoài quan sát gai Glycoprotein.',
     '\\text{Hấp phụ} \\to \\text{Xâm nhập} \\to \\text{Sinh tổng hợp} \\to \\text{Lắp ráp} \\to \\text{Phóng thích}',
     [
       { key: 'moi', label: 'Số Phage bám trên 1 tế bào', unit: 'phage', min: 1, max: 10, step: 1, defaultVal: 1, accentClass: 'accent-purple-500' },
       { key: 'tempC', label: 'Nhiệt độ nuôi cấy E. coli', unit: '°C', min: 20, max: 42, step: 2, defaultVal: 37, accentClass: 'accent-amber-500' }
     ],
     [
-      { label: 'Bám thụ thể (Hấp phụ)', description: '6 chân đuôi nhận diện thụ thể vi khuẩn', params: { moi: 1, tempC: 37 }, flags: { injected: false } },
-      { label: 'Tiêm DNA (Chu trình tan)', description: 'Bao đuôi co lại bơm DNA vào trong', params: { moi: 3, tempC: 37 }, flags: { injected: true } }
+      { label: 'Bám thụ thể (Hấp phụ)', description: '6 chân đuôi nhận diện thụ thể vi khuẩn', params: { moi: 1, tempC: 37 }, flags: { injected: false, envelopedMode: false } },
+      { label: 'Tiêm DNA (Chu trình tan)', description: 'Bao đuôi co lại bơm DNA vào trong', params: { moi: 3, tempC: 37 }, flags: { injected: true, envelopedMode: false } },
+      { label: 'Virus Vỏ Lipid + Gai S', description: 'So sánh cấu trúc virus vỏ ngoài (SARS-CoV-2)', params: { moi: 1, tempC: 37 }, flags: { injected: false, envelopedMode: true } }
     ],
     [
-      { id: 'inject', label: 'Co bao đuôi bơm DNA vào tế bào chủ', kind: 'toggle', flagKey: 'injected', accent: 'amber' },
+      { id: 'inject', label: 'Co bao đuôi bơm DNA', kind: 'toggle', flagKey: 'injected', accent: 'amber' },
+      { id: 'env_mode', label: 'Chế độ Virus vỏ bọc (Gai S)', kind: 'toggle', flagKey: 'envelopedMode', accent: 'sky' },
       { id: 'reset_bio', label: 'Về trạng thái hấp phụ', kind: 'reset', accent: 'rose' }
     ],
-    { injected: false },
+    { injected: false, envelopedMode: false },
     (p, f) => ({
-      equationText: f.injected
+      equationText: f.envelopedMode
+        ? 'Virus có vỏ bọc: Lớp kép Lipid + Gai Glycoprotein S bám thụ thể ACE2 · Lõi RNA'
+        : f.injected
         ? 'Bao đuôi đã co → DNA Phage xâm nhập bắt bộ máy E. coli nhân bản Phage mới!'
         : 'Giai đoạn Hấp phụ: Lông đuôi bám đặc hiệu thụ thể bề mặt vi khuẩn',
-      statusNote: 'Virus chỉ mang vỏ protein Capsid + lõi axit nucleic; khi bơm xong, vỏ rỗng nằm lại bên ngoài.',
-      metricsSummary: `MOI=${p.moi ?? 1}, Injected=${f.injected ? 'Yes' : 'No'}`
+      statusNote: 'Virus chỉ mang vỏ protein Capsid + lõi axit nucleic; một số virus động vật có thêm màng bọc lipid.',
+      metricsSummary: `Mode=${f.envelopedMode ? 'Enveloped' : 'PhageT4'}, Injected=${f.injected ? 'Yes' : 'No'}`
     })
   ),
 
@@ -932,5 +960,119 @@ export const BIOLOGY_3D_CONFIGS: Record<Biology3DMode, Bio3DModeConfig> = {
         metricsSummary: `Mol=${names[grp - 1] || 'Protein'}, T=${t}°C`
       };
     }
+  ),
+
+  human_brain_3d: makeBioCfg(
+    'human_brain_3d',
+    'Giải Phẫu Não Bộ Người 3D (4 Thùy – Tiểu não – Thân não)',
+    'Chạm trực tiếp vào thùy trán, thùy đỉnh/thái dương, thùy chẩm, tiểu não hoặc thân não để phóng to và xem chức năng từng vùng.',
+    '\\text{Đại não (Vỏ chất xám)} + \\text{Tiểu não (Thăng bằng)} + \\text{Thân não (Sinh tồn)}',
+    [
+      { key: 'neuralActivity', label: 'Mức hoạt động vỏ não', unit: '%', min: 20, max: 100, step: 10, defaultVal: 75, accentClass: 'accent-amber-500' }
+    ],
+    [
+      { label: 'Nghỉ thư giãn (Sóng Alpha)', description: 'Hoạt động ổn định điều hòa tự chủ', params: { neuralActivity: 40 } },
+      { label: 'Tư duy tập trung (Sóng Beta)', description: 'Thùy trán xử lí tích cực thông tin', params: { neuralActivity: 90 } }
+    ],
+    [{ id: 'reset_bio', label: 'Đặt lại góc nhìn chuẩn', kind: 'reset', accent: 'teal' }],
+    {},
+    (p) => ({
+      equationText: `Hoạt động vỏ não = ${p.neuralActivity ?? 75}% · Vỏ não có ~86 tỉ nơron liên kết`,
+      statusNote: 'Các nếp gấp hồi não (gyri) và rãnh não (sulci) làm tăng gấp 3 lần diện tích vỏ não chứa thân nơron.',
+      metricsSummary: `BrainAct=${p.neuralActivity ?? 75}%`
+    })
+  ),
+
+  liver_digestive_3d: makeBioCfg(
+    'liver_digestive_3d',
+    'Gan – Túi Mật – Dạ Dày & Hệ Ruột Người 3D',
+    'Khám phá giải phẫu 3D các cơ quan tiêu hóa chính: Gan giải độc & tiết mật, Dạ dày chữ J, Ruột non hấp thụ và Khung đại tràng.',
+    '\\text{Gan (Dịch mật)} + \\text{Dạ dày (HCl/Pepsin)} \\to \\text{Ruột non (Hấp thụ)}',
+    [
+      { key: 'digestionRate', label: 'Tốc độ nhu động tiêu hóa', unit: '%', min: 20, max: 100, step: 10, defaultVal: 70, accentClass: 'accent-amber-500' }
+    ],
+    [
+      { label: 'Sau ăn 30 phút (Nghiền dạ dày)', description: 'Nhu động dạ dày co bóp mạnh', params: { digestionRate: 90 } },
+      { label: 'Giai đoạn hấp thụ ruột non', description: 'Nhung mao hấp thụ axit amin và đường đơn', params: { digestionRate: 60 } }
+    ],
+    [{ id: 'reset_bio', label: 'Về mặc định', kind: 'reset', accent: 'teal' }],
+    {},
+    (p) => ({
+      equationText: `Tốc độ nhu động = ${p.digestionRate ?? 70}% · Mật nhũ tương hóa lipid tại tá tràng`,
+      statusNote: 'Gan nhận máu giàu dinh dưỡng từ tĩnh mạch cửa ruột để lọc độc, tổng hợp protein huyết tương và dự trữ glycogen.',
+      metricsSummary: `Digestion=${p.digestionRate ?? 70}%`
+    })
+  ),
+
+  plant_leaf_transpiration_3d: makeBioCfg(
+    'plant_leaf_transpiration_3d',
+    'Giải Phẫu Lá, Mô Giậu & Khí Khổng Thoát Hơi Nước 3D',
+    'Điều chỉnh độ mở khí khổng hoặc kích hoạt ABA chống hạn để quan sát sự biến dạng của cặp tế bào hạt đậu.',
+    '\\text{K}^+ \\text{ vào TB hạt đậu} \\to \\text{Trương nước} \\to \\text{Mở Khí khổng}',
+    [
+      { key: 'stomataOpen', label: 'Độ mở khí khổng', unit: '%', min: 0, max: 100, step: 10, defaultVal: 75, accentClass: 'accent-emerald-500' }
+    ],
+    [
+      { label: 'Mở rộng ban ngày (85%)', description: 'CO₂ khuếch tán vào mô giậu, hơi nước thoát ra', params: { stomataOpen: 85 }, flags: { abaClosed: false } },
+      { label: 'Đóng chống mất nước (ABA)', description: 'Hoocmôn ABA làm xẹp tế bào hạt đậu', params: { stomataOpen: 10 }, flags: { abaClosed: true } }
+    ],
+    [
+      { id: 'aba', label: 'Đóng khí khổng (ABA)', kind: 'toggle', flagKey: 'abaClosed', accent: 'amber' },
+      { id: 'reset_bio', label: 'Mở lại bình thường', kind: 'reset', accent: 'teal' }
+    ],
+    { abaClosed: false },
+    (p, f) => {
+      const open = f.abaClosed ? 10 : (p.stomataOpen ?? 75);
+      return {
+        equationText: `Độ mở khí khổng = ${open}% · ${open > 30 ? 'Đang hấp thụ CO₂ & thoát hơi nước' : 'Hạn chế thoát hơi nước khi khô hạn'}`,
+        statusNote: 'Thành trong của tế bào hạt đậu dày hơn thành ngoài nên khi trương nước chúng uốn cong mở khe khí khổng.',
+        metricsSummary: `Stomata=${open}%`
+      };
+    }
+  ),
+
+  bacteria_prokaryote_3d: makeBioCfg(
+    'bacteria_prokaryote_3d',
+    'Vi Khuẩn Nhân Sơ 3D (Vỏ Nhầy – DNA Vòng – Roi Xoắn)',
+    'Cắt lớp 3D vi khuẩn hình que: Thành Peptidoglycan, vùng nhân Nucleoid chưa có màng nhân, Plasmid, Ribôxôm 70S và động cơ roi Flagellum.',
+    '\\text{Nhân sơ}: \\text{DNA vòng trần} + \\text{Plasmid} + \\text{Peptidoglycan}',
+    [
+      { key: 'divisionMin', label: 'Chu kì thế hệ g', unit: 'phút', min: 15, max: 60, step: 5, defaultVal: 20, accentClass: 'accent-emerald-500' }
+    ],
+    [
+      { label: 'E. coli bơi tích cực', description: 'Roi xoắn quay đẩy tế bào về nguồn dinh dưỡng', params: { divisionMin: 20 }, flags: { motile: true } },
+      { label: 'Trạng thái đứng yên', description: 'Dừng chuyển động roi để quan sát lông Pili', params: { divisionMin: 35 }, flags: { motile: false } }
+    ],
+    [
+      { id: 'motile_toggle', label: 'Bật / Tắt quay roi Flagellum', kind: 'toggle', flagKey: 'motile', accent: 'sky' },
+      { id: 'reset_bio', label: 'Đặt lại chuẩn E. coli', kind: 'reset', accent: 'teal' }
+    ],
+    { motile: true },
+    (p, f) => ({
+      equationText: `Chu kì thế hệ g = ${p.divisionMin ?? 20} phút · Roi xoắn: ${f.motile !== false ? 'Đang quay' : 'Tạm dừng'}`,
+      statusNote: 'Vi khuẩn nhân sơ chưa có màng nhân hay bào quan có màng; plasmid mang gen kháng kháng sinh có thể truyền qua lông pili.',
+      metricsSummary: `GenTime=${p.divisionMin ?? 20}m`
+    })
+  ),
+
+  fungi_microorganisms_3d: makeBioCfg(
+    'fungi_microorganisms_3d',
+    'Nấm Sợi (Quả Thể – Mycelium) & Vi Sinh Vật Đơn Bào 3D',
+    'Khám phá đồng thời cấu trúc quả thể nấm (mũ nấm, vòng phiến, mạng sợi nấm dưới đất) và động vật nguyên sinh Trùng giày Paramecium.',
+    '\\text{Nấm (Thành Kitin, Dị dưỡng)} \\quad|\\quad \\text{Trùng giày (Không bào co bóp)}',
+    [
+      { key: 'humidity', label: 'Độ ẩm môi trường', unit: '%', min: 30, max: 100, step: 5, defaultVal: 80, accentClass: 'accent-amber-500' }
+    ],
+    [
+      { label: 'Rừng ẩm (Nấm phát triển mạnh)', description: 'Hệ sợi nấm phân giải chất mùn', params: { humidity: 85 } },
+      { label: 'Môi trường nước ngọt', description: 'Trùng giày co bóp không bào đẩy nước thừa', params: { humidity: 95 } }
+    ],
+    [{ id: 'reset_bio', label: 'Đặt lại chuẩn', kind: 'reset', accent: 'teal' }],
+    {},
+    (p) => ({
+      equationText: `Độ ẩm ${p.humidity ?? 80}% · Nấm hấp thụ dinh dưỡng qua thành Kitin; Trùng giày bơi bằng lông bơi`,
+      statusNote: 'Không bào co bóp hình hoa thị của trùng giày bơm liên tục giúp tế bào không bị vỡ trong nước ngọt nhược trương.',
+      metricsSummary: `Humidity=${p.humidity ?? 80}%`
+    })
   )
 };

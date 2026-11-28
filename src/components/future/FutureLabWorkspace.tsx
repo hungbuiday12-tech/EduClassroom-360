@@ -397,14 +397,14 @@ export const FutureLabWorkspace: React.FC<FutureLabWorkspaceProps> = ({
       },
       bio_anatomy_explorer_3d: {
         vi: [
-          'Chuyển đổi giữa 4 Hệ Cơ Thể Người (Tim–Hệ mạch, Phổi–Hô hấp, Não–Tủy sống, Tiêu hóa–Thận) và 4 Lớp Động Vật (Thú, Chim 9 túi khí, Lưỡng cư tim 3 ngăn, Cá tuần hoàn đơn).',
-          'Chạm trực tiếp vào từng bộ phận trên mô hình 3D (hoặc chọn trong danh sách) để đọc cấu tạo mô học, sinh lí và so sánh tiến hóa.',
-          'Kéo thanh Tách lớp Giải phẫu 0–100%, bật/tắt Vỏ X-Quang, Cô lập bộ phận đang xem hoặc dùng Mặt cắt X/Y/Z trên thanh Pro.',
+          'Khám phá Bản Đồ Cơ Thể Người 11 Hệ (Xương, Cơ, Tuần hoàn, Hô hấp, Tiêu hóa, Thần kinh, Tiết niệu, Nội tiết, Miễn dịch, Sinh sản, Giác quan) kèm chỉnh độ trong suốt Da/Cơ/Xương, chuyển nhanh sang 4 mô hình đơn chi tiết hoặc 4 Lớp Động Vật (Thú, Chim 9 túi khí, Lưỡng cư, Cá).',
+          'Chạm trực tiếp vào từng bộ phận trên mô hình 3D (hoặc chọn trong danh sách) để camera tự động phóng tới, đọc cấu tạo mô học, sinh lí và so sánh tiến hóa.',
+          'Kéo thanh Tách lớp Giải phẫu 0–100%, bật/tắt Vỏ X-Quang, Cô lập bộ phận đang xem, nạp GLB/GLTF hoặc dùng Mặt cắt X/Y/Z trên thanh Pro.',
         ],
         en: [
-          'Switch between 4 Human Systems (Heart/Circulatory, Respiratory, Nervous, Digestive/Renal) and 4 Animal Classes (Mammal, Bird 9-Air-Sacs, Amphibian 3-Chamber Heart, Fish Single Circulation).',
-          'Click any organ directly in 3D space to inspect histology, physiology, and comparative evolution notes.',
-          'Scrub Exploded Layers 0–100%, toggle X-Ray outer shell, Isolate the selected organ, or slice with X/Y/Z cutaway planes.',
+          'Explore the 11-System Human Body Atlas (Skeletal, Muscular, Circulatory, Respiratory, Digestive, Nervous, Urinary, Endocrine, Lymphatic, Reproductive, Sensory) with Skin/Muscle/Bone opacity sliders, 4 single-organ detail modes, and 4 Animal Classes.',
+          'Click any organ directly in 3D space to auto-focus camera and inspect histology, physiology, and comparative evolution notes.',
+          'Scrub Exploded Layers 0–100%, toggle X-Ray shell, Isolate the selected organ, import GLB/GLTF assets, or slice with X/Y/Z cutaway planes.',
         ],
       },
     };

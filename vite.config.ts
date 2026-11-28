@@ -185,6 +185,10 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(process.cwd(), '.'),
       },
+      dedupe: ['react', 'react-dom', 'three'],
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'three', 'lucide-react'],
     },
     server: {
       host: '0.0.0.0',
